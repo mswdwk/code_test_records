@@ -78,9 +78,55 @@ typedef struct TCPHeader_t
 	u_int16 Checksum; //校验和
 	u_int16 UrgentPointer;  //紧急指针
 }TCPHeader_t;
+
+struct TCP_DATA{
+    TCPHeader_t *tcp_header;
+    void*data;
+    int tcp_data_len;
+};
+
 //
 void match_http(FILE *fp, char *head_str, char *tail_str, char *buf, int total_len); //查找 http 信息函数
 																					 //
+
+void tcp_consumer_pthread(void*ptr)
+{
+   
+}
+
+void tcp_producer_pthread(void*ptr)
+{
+   
+}
+
+//Important!
+#pragma pack(1)
+#define TAG_TYPE_SCRIPT 18
+#define TAG_TYPE_AUDIO  8
+#define TAG_TYPE_VIDEO  9
+typedef unsigned char byte;
+typedef unsigned int uint;
+typedef struct {
+	byte Signature[3];
+	byte Version;
+	byte Flags;
+	uint DataOffset;
+} FLV_HEADER;
+typedef struct {
+	byte TagType;
+	byte DataSize[3];
+	byte Timestamp[3];
+	uint Reserved;
+} TAG_HEADER;
+
+typedef struct flv_val
+{
+	char *val;
+	int len;
+} flv_val;
+static unsigned char flv_header_data[] = { 0x46,0x4C,0x56,0x01,0x05,0x00,0x00,0x00,0x09,0x00,0x00,0x00,0x00 };//flv的header+previoustagsize
+static flv_val flv_val_header = { (char*)flv_header_data ,13 };
+
 int main(int argc,char *argv[])
 {
 	struct pcap_file_header *file_header;
@@ -115,6 +161,8 @@ int main(int argc,char *argv[])
 		printf("error: can not open output file\n");
 		exit(0);
 	}
+    pthread_t tcp_consumer_tid;
+    pthread_create(&tcp_consumer_tid,NULL,tcp_consumer_pthread,NULL);
 	//开始读数据包
 	pkt_offset = 24; //pcap文件头结构 24个字节
 	while (fseek(fp, pkt_offset, SEEK_SET) == 0) //遍历数据包
@@ -190,18 +238,28 @@ int main(int argc,char *argv[])
 		}
          #else
              if(src_port == 80 || dst_port == 80){
-                unsigned short int tcp_data_len = ntohs(ip_len) - ip_header_len- tcp_header_len;
-                char tcp_data_buf[1460] ={0},*tcp_data_p;
+                unsigned short int tcp_data_len = ntohs(ip_len) - ip_header_len - tcp_header_len;
+                char *tcp_data_p;char *tcp_data_buf = calloc(1,tcp_data_len);
                 tcp_data_p = tcp_data_buf;
-		//int *four_byte = (int*)tcp_data_p;
                 fread(tcp_data_buf,tcp_data_len,1,fp);
-                sprintf(buf,"[%s]%5u tcp_data_len %5u flag 0x%02x win %5u %15s:%5u -> %15s:%5u %08x...\n",my_time,
-                    i,tcp_data_len,0xff&tcp_flags,(tcp_header->Window),src_ip, src_port, dst_ip, dst_port,*(int*)tcp_data_p);
+#if 0
+                TCP_DATA *tcp_ptr = calloc(1,sizeof(TCP_DATA));
+                tcp_ptr->data = tcp_data_buf;
+                tcp_ptr->tcp_data_len = tcp_data_len;
+                tcp_ptr->tcp_header = calloc(1,TCPHeader_t);
+                memcpy(tcp_ptr->tcp_header,tcp_header,sizeof(TCPHeader_t));
+                int ret = ring_enqueue(ring_ptr,(void*)tcp_ptr);
+#endif
+                int found_flv = find_flv_data(tcp_data_buf,tcp_data_len);
+                free(tcp_data_buf);
+                sprintf(buf,"[%s]%5u tcp_data_len %5u flag 0x%02x win %5u %15s:%5u -> %15s:%5u flv %1u %08x..\n",my_time,
+                    i,tcp_data_len,0xff&tcp_flags,(tcp_header->Window),src_ip, src_port, dst_ip, dst_port,found_flv,*(int*)tcp_data_p);
                 fwrite(buf, strlen(buf), 1, output);
                 memset(buf,0,sizeof(buf));
+                if(found_flv)
+                    printf("packet %d is flv\n",i);
              }
          #endif
-	
 	} // end while
 	fclose(fp);
 	fclose(output);
@@ -209,7 +267,7 @@ int main(int argc,char *argv[])
     free(pkt_header);
     free(ip_header);
     free(tcp_header);
-    
+    pthread_join(tcp_consumer_tid,NULL);
 	return 0;
 }
 
@@ -276,3 +334,20 @@ void match_http(FILE *fp, char *head_str, char *tail_str, char *buf, int total_l
 	// printf("val=%s\n", buf);
 	fseek(fp, http_offset, SEEK_SET); //将文件指针 回到初始偏移
 }
+
+int find_flv_data(void*data,int len)
+{
+    char *ch = (char*)data;
+    char *flv_val = flv_val_header.val;
+    int i ;
+    for( i = 0; i < len - 3 ; ++i){
+        int flv_ver = htonl(0x464C5601);
+        if( *(int*)ch == flv_ver){
+            return 1;
+        }
+        ch++;
+    }
+    
+    return 0;
+}
+
