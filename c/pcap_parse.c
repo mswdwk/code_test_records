@@ -139,9 +139,9 @@ int main(int argc,char *argv[])
 		struct tm * tinfo = localtime(&ti);
 		//strftime(my_time, sizeof(my_time), "%Y - %m - %d %T", localtime(&(pkt_header->ts.tv_sec))); //获取时间
 		if(tinfo)
-			strftime(my_time, sizeof(my_time), "%Y - %m - %d %T", tinfo); //获取时间
+			strftime(my_time, sizeof(my_time), "%Y-%m-%d %T", tinfo); //获取时间
 		else
-			printf("localtime failed. tv_sec = %u.error %s\n",pkt_header->ts.tv_sec,strerror(errno));																						// printf("%d: %s\n", i, my_time);
+			printf("localtime failed. tv_sec = %u. Error %s\n",pkt_header->ts.tv_sec,strerror(errno));																						// printf("%d: %s\n", i, my_time);
 																									//数据帧头 14字节
 		fseek(fp, 14, SEEK_CUR); //忽略数据帧头
 								 //IP数据报头 20字节
@@ -157,12 +157,16 @@ int main(int argc,char *argv[])
 									  // printf("%d:  src=%s\n", i, src_ip);
 		if (ip_proto != 0x06) continue; //判断是否是 TCP 协议
 		
+		
 		//TCP头 20字节
 		if (fread(tcp_header, sizeof(TCPHeader_t), 1, fp) != 1)
 		{
 			printf("%d: can not read tcp_header\n", i);
 			break;
 		}
+        short unsigned int ip_header_len = ((ip_header->Ver_HLen & 0xf)<<2);
+        //short unsigned int tcp_header_len = (((tcp_header->HeaderLen & 0xf0)>>4)<<2);
+        short unsigned int tcp_header_len = ((tcp_header->HeaderLen & 0xf0)>>2);
 		src_port = ntohs(tcp_header->SrcPort);
 		dst_port = ntohs(tcp_header->DstPort);
 		tcp_flags = tcp_header->Flags;
@@ -186,10 +190,15 @@ int main(int argc,char *argv[])
 		}
          #else
              if(src_port == 80 || dst_port == 80){
-                sprintf(buf,"[%s] tcp_data_len %5u flag 0x%02x window %5u %15s:%5u -> %15s:%5u\n",my_time,
-                    ntohs(ip_len) - 40,0xff&tcp_flags,(tcp_header->Window),src_ip, src_port, dst_ip, dst_port);
+                unsigned short int tcp_data_len = ntohs(ip_len) - ip_header_len- tcp_header_len;
+                char tcp_data_buf[1460] ={0},*tcp_data_p;
+                tcp_data_p = tcp_data_buf;
+		//int *four_byte = (int*)tcp_data_p;
+                fread(tcp_data_buf,tcp_data_len,1,fp);
+                sprintf(buf,"[%s]%5u tcp_data_len %5u flag 0x%02x win %5u %15s:%5u -> %15s:%5u %08x...\n",my_time,
+                    i,tcp_data_len,0xff&tcp_flags,(tcp_header->Window),src_ip, src_port, dst_ip, dst_port,*(int*)tcp_data_p);
                 fwrite(buf, strlen(buf), 1, output);
-                memset(buf,sizeof(buf),0);
+                memset(buf,0,sizeof(buf));
              }
          #endif
 	
@@ -200,6 +209,7 @@ int main(int argc,char *argv[])
     free(pkt_header);
     free(ip_header);
     free(tcp_header);
+    
 	return 0;
 }
 
