@@ -8,31 +8,101 @@
 #include <netinet/in.h>
 #include <time.h>
 #include <errno.h>
+#include <pthread.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+
 #include "ip_flow.h"
 #include "rte_jhash.h"
 #include "pcap_parse.h"
 #include "flv.h"
-#include <pthread.h>
-#include <arpa/inet.h>
-
+#include "ring_buffer.h"
 //
 void match_http(FILE *fp, char *head_str, char *tail_str, char *buf, int total_len); //查找 http 信息函数
-																					 //
-
-void *tcp_consumer_pthread(void*ptr)
-{
-    return NULL;
-}
-
-void *tcp_producer_pthread(void*ptr)
-{
-   return NULL;
-}
-
 
 #define MAX_FLV_STREAM_NUM 12
 
 FLV_FLOW_HEADER flv_stream_table[MAX_FLV_STREAM_NUM];
+
+
+void * consumer_proc(void *arg)
+{
+	if(!arg){
+		printf("error thread arg\n");
+		return NULL;
+	}
+	FLV_FLOW_HEADER*h = (FLV_FLOW_HEADER*)arg;
+    struct ring_buffer *ring_buf = h->ring_buf;
+    FLV_TAG ftag;
+    FLV_TAG_HEADER *ftagheader;
+	int get_data_len = 0,need_data_len = 0;
+	int tag_data_size = 0;
+	unsigned int last_prev_tag_size = h->flvfp.prev_tag_size;
+	unsigned int prev_tag_size = sizeof(FLV_TAG_HEADER); // current tag size
+	unsigned int last_tag_size = 0;
+	int offset = 0;
+	char tag_data_buf[RING_BUFFER_SIZE] = {0};
+	char*tag_data_p = tag_data_buf;
+	h->thread_run = 1;
+
+    while(ring_buf != NULL && h->thread_run )
+    {
+        //printf("get a flv stream info from ring buffer.\n");
+		
+		get_data_len = 0;
+		need_data_len = sizeof(int) + sizeof(FLV_TAG_HEADER);
+		while(ring_buffer_len < need_data_len &&  h->thread_run)usleep(100);
+		
+		get_data_len = ring_buffer_get(ring_buf, (void *)&ftag, need_data_len);
+		prev_tag_size = ntohl(ftag.prev_tag_size);
+		ftagheader = &ftag.tag_header;
+		tag_data_size  = ftagheader->DataSize[0];
+		tag_data_size<<=8;
+		tag_data_size += ftagheader->DataSize[1];
+		tag_data_size<<=8;
+		tag_data_size += ftagheader->DataSize[2];
+		need_data_len = tag_data_size;
+		if(tag_data_size >= RING_BUFFER_SIZE){
+			printf("tag_data_size %u is >= RING_BUFFER_SIZE %u\n",tag_data_size ,RING_BUFFER_SIZE);
+			break;
+		}
+		if(prev_tag_size != last_tag_size){
+			printf("flv data error:prev_tag_size %u !=  %u last_tag_size\n",prev_tag_size,last_tag_size);
+			break;
+		}
+		while(ring_buffer_len < need_data_len &&  h->thread_run)usleep(100);
+		get_data_len = ring_buffer_get(ring_buf,( void*)tag_data_p, need_data_len);
+		
+		ftag.prev_tag_size = prev_tag_size;
+		ftag.tag_data = tag_data_p;
+		ftag.tag_header = *ftagheader;
+		ftag.tag_id = h->flvfp.prev_tag_id + 1;
+		record_flv_data(h,&ftag,tag_data_size);
+		printf("last_prev_tag_size %8u prev_tag_size %8u tag_id %4u tag_data_size %8u\n",
+			last_prev_tag_size,prev_tag_size,ftag.tag_id, tag_data_size);
+		
+		last_prev_tag_size = prev_tag_size;
+		last_tag_size = tag_data_size + sizeof(FLV_TAG_HEADER);
+		tag_data_size = 0;
+    }
+	
+    return (void *)ring_buf;
+}
+
+pthread_t consumer_thread(void *arg)
+{
+    int err;
+    pthread_t tid;
+    err = pthread_create(&tid, NULL, consumer_proc, arg);
+    if (err != 0)
+    {
+        fprintf(stderr, "Failed to create consumer thread.errno:%u, reason:%s\n",
+            errno, strerror(errno));
+        return -1;
+    }
+    printf("consumer thread id %zu\n",tid);
+    return tid;
+}
 
 int find_flv_header(void*data,int len)
 {
@@ -44,7 +114,7 @@ int find_flv_header(void*data,int len)
         if( *(int*)ch == flv_ver_flag){
 			FLV_HEADER*flv_head = (FLV_HEADER*)ch;
 			if((flv_head->Flags&0xfa) != 0x00)	continue;
-			if(flv_head->DataOffset != htonl(9))	continue;
+			if(flv_head->Headersize != htonl(9))	continue;
 			int previous_tag_size = *(int*)(flv_head + 1);
 			if( 0 == previous_tag_size )
 			{
@@ -71,6 +141,32 @@ int ip_flow_hash(IP_FLOW*flow)
 	hash = rte_jhash_3words(flow->high_ip, flow->low_ip, c,hash);
 	flow->hash = hash;
 	return hash;
+}
+
+// flag means is or not flv header
+inline int record_flv_data(FLV_FLOW_HEADER*h,FLV_TAG*tag,int data_size)
+{
+	if(!h||!tag || data_size < 0)return -1;
+	FILE*fp = h->fp;
+	FLV_TAG_HEADER*fth = &tag->tag_header;
+	uint prev_tag_size = htonl(h->flvfp.prev_tag_size);
+	fwrite(&prev_tag_size,sizeof(int),1,fp);
+	fwrite(fth,sizeof(FLV_TAG_HEADER),1,fp);
+	fwrite(tag->tag_data,data_size,1,fp);
+	h->flvfp.prev_tag_id = tag->tag_id;
+	h->flvfp.prev_tag_size = data_size + sizeof(FLV_TAG_HEADER);
+	return 0;
+}
+
+int record_flv_head(FLV_FILE*f,void*data,int len)
+{
+	if(!f || !data || len <= 0)return -1;
+	FLV_HEADER *fh = &f->flvh;
+	memcpy(fh,data,sizeof(FLV_HEADER));
+	List*l = &f->tag_list;
+	list_init(l,free);
+	
+	return 0; 
 }
 
 /*
@@ -143,11 +239,36 @@ int process_http_flv_stream_header(IPHeader_t*iph,TCPHeader_t*tcph,void*data,int
 			flv_stream_table[i].last_seqno = ntohl(tcph->SeqNO);
 			printf("tcp stream %2u pkt_id %6u seq %10u ack %10u len %4u flag 0x%02x cache_num %3u\n",
 				i,pkt_id,ntohl(tcph->SeqNO),ntohl(tcph->AckNO),len,tcph->Flags,flv_stream_table[i].cache_num);
-			fwrite(ch + flv_offset,len - flv_offset,1,flv_stream_table[i].fp);
+
+			void * buffer = NULL;
+		    struct ring_buffer *ring_buf = NULL;
+		    pthread_t consumer_pid;
+	
+		    buffer = (void *)malloc(RING_BUFFER_SIZE);
+		    if (!buffer){
+		        fprintf(stderr, "Failed to malloc memory.\n");
+		        return -1;
+		    }
+		    ring_buf = ring_buffer_init(buffer, RING_BUFFER_SIZE);
+		    if (!ring_buf){
+		        fprintf(stderr, "Failed to init ring buffer.\n");
+		        return -1;
+		    }
+			
+			flv_stream_table[i].ring_buf = ring_buf;
+			flv_stream_table[i].flvfp.prev_tag_size = 0;
+			flv_stream_table[i].flvfp.prev_tag_id = 0;
+			flv_stream_table[i].flvfp.tag_list.size = 0;
+			fwrite(ch + flv_offset,sizeof(FLV_HEADER),1,flv_stream_table[i].fp);
+			FLV_FLOW_HEADER*fh = &flv_stream_table[i];
+			consumer_pid = consumer_thread((void*)fh);
+			flv_stream_table[i].consumer_id = consumer_pid;
+			flv_offset += sizeof(FLV_HEADER);
+			ring_buffer_put(ring_buf,ch + flv_offset,len - flv_offset);
+			
 			return i;
 		}
 	}
-	
 	return -1;
 }
 
@@ -239,7 +360,6 @@ void FLV_FLOW_FREE(FLV_FLOW_ITEM*flow)
 	if(flow)free(flow);
 }
 
-
 void flv_tcp_data_dequeue(FLV_FLOW_ITEM*flow)
 {
 	if(!flow)return;
@@ -278,7 +398,7 @@ FLV_FLOW_ITEM*flv_tcp_data_enqueue(FLV_FLOW_ITEM*flow)
 	return flow;
 }
 
- int FLV_FLOW_ITEM_COPY(FLV_FLOW_ITEM*dst,FLV_FLOW_ITEM*src) 
+inline int FLV_FLOW_ITEM_COPY(FLV_FLOW_ITEM*dst,FLV_FLOW_ITEM*src) 
 {
 	if(!dst||!src)return -1;
 	
@@ -331,8 +451,8 @@ int tcp_stream_recombine(FLV_FLOW_HEADER*h,FLV_FLOW_ITEM*item,FLV_FLOW_ITEM**res
 	unsigned long long next_expect_tcp_seqno = last_seqno + last_tcp->data_len;
 	u_int32 item_seqno = ntohl(item->tcpflow.tcph->SeqNO);
 	u_int32 item_ackno = ntohl(item->tcpflow.tcph->AckNO);
-	printf("last_pkt_id %5u next_expect_tcp_seqno %10u last_seqno %10u data_len %5u ,item pkt_id %5u item_seqno %10u cache_num %3u\n",
-		h->last->pkt_id,next_expect_tcp_seqno,last_seqno,last_tcp->data_len,item->pkt_id,item_seqno,h->cache_num);
+	//printf("last_pkt_id %5u next_expect_tcp_seqno %10u last_seqno %10u data_len %5u ,item pkt_id %5u item_seqno %10u cache_num %3u\n",
+	//	h->last->pkt_id,next_expect_tcp_seqno,last_seqno,last_tcp->data_len,item->pkt_id,item_seqno,h->cache_num);
 	// as is client not send data back!
 	if(last_ackno != item_ackno) return 0;
 	
@@ -370,7 +490,6 @@ int tcp_stream_recombine(FLV_FLOW_HEADER*h,FLV_FLOW_ITEM*item,FLV_FLOW_ITEM**res
 			result[counter++] = item;
 			FLV_FLOW_ITEM_COPY_FOR_LAST(h->last,item);
 			next_expect_tcp_seqno = item_seqno + item->tcpflow.data_len;
-			
 			flv_tcp_data_dequeue(item);
 		}
 		item = item->next;
@@ -399,33 +518,16 @@ void flv_stream_process(void*data)
 			if( tmp && tmp->tcpflow.data && tmp->tcpflow.data_len <= 1500 ){
 				flv_offset = tmp->flv_offset;
 				int data_len = tmp->tcpflow.data_len;
-				header->recv_data_len += data_len - flv_offset;
-				fwrite(tmp->tcpflow.data + flv_offset,data_len - flv_offset,1,header->fp);
+				header->recv_data_len += data_len ;//- flv_offset;
+				//fwrite(tmp->tcpflow.data + flv_offset,data_len - flv_offset,1,header->fp);
+				ring_buffer_put(header->ring_buf,tmp->tcpflow.data+flv_offset,tmp->tcpflow.data_len-flv_offset);
 				FLV_FLOW_FREE(tmp);
 			}
-		}		
-#if 0		
-		FLV_FLOW_ITEM*prev = tmp->prev;
-		if(!prev){
-			if( ntohl(header->tcpflow.tcph->SeqNO) + header->tcpflow.data_len == ntohl(tcph->SeqNO)) {
-				fwrite(tmp->tcpflow.data + flv_offset,data_len - flv_offset,1,header->fp);
-				flv_tcp_data_dequeue(tmp);
-			}else{
-				printf("pkt %d HEADER seq %10u len %4u ,seq %10u\n",flow->pkt_id,ntohl(header->tcpflow.tcph->SeqNO)
-				,header->tcpflow.data_len, ntohl(tcph->SeqNO));
-			}
 		}
-		else if(ntohl(prev->tcpflow.tcph->SeqNO) + prev->tcpflow.data_len == ntohl(tcph->SeqNO) ){
-			fwrite(tmp->tcpflow.data + flv_offset,data_len - flv_offset,1,header->fp);
-			flv_tcp_data_dequeue(tmp);
-		}else{
-			printf("pkt %d PREV seq %10u len %4u ,seq %10u\n",flow->pkt_id,ntohl(prev->tcpflow.tcph->SeqNO)
-				,prev->tcpflow.data_len, ntohl(tcph->SeqNO));
-		}
-#endif
 	}
 }
-void print_flv_stream_info()
+
+void print_flv_stream_info(void)
 {
 	int i ;
 	char high_ip[16],low_ip[16];
@@ -447,7 +549,7 @@ void print_flv_stream_info()
 	}
 }
 
-void init_flv_stream()
+void init_flv_stream(void)
 {
 	memset(flv_stream_table,0,sizeof(flv_stream_table));
 	int i ;
@@ -455,6 +557,7 @@ void init_flv_stream()
 		flv_stream_table[i].process = flv_stream_process;
 	}
 }
+
 void free_flv_stream(void)
 {
 	int i ;
@@ -466,11 +569,17 @@ void free_flv_stream(void)
 		for ( ; it ;it = it->next){
 			FLV_FLOW_FREE(it);
 		}
+		
 		if(h->tcpflow.data) free(h->tcpflow.data);
 		if(h->tcpflow.tcph) free(h->tcpflow.tcph);
+		if(h->thread_run == 1 ){
+			h->thread_run = 0;
+			pthread_join(h->consumer_id,NULL);
+		}
 		if(h->fp)fclose(h->fp);
 	}
 }
+
 
 int main(int argc,char *argv[])
 {
@@ -484,10 +593,9 @@ int main(int argc,char *argv[])
 	int src_port, dst_port, tcp_flags;
 	char buf[BUFSIZE], my_time[STRSIZE];
 	char src_ip[STRSIZE], dst_ip[STRSIZE];
-	char  host[STRSIZE], uri[BUFSIZE];
+	//char  host[STRSIZE], uri[BUFSIZE];
 	
 	init_flv_stream();
-	
 	//初始化
 	file_header = (struct pcap_file_header *)malloc(sizeof(struct pcap_file_header));
 	pkt_header = (struct pcap_pkthdr *)malloc(sizeof(struct pcap_pkthdr));
@@ -519,7 +627,7 @@ int main(int argc,char *argv[])
 		//pcap_pkt_header 16 byte
 		if (fread(pkt_header, 16, 1, fp) != 1) //读pcap数据包头结构
 		{
-			printf("\nRead end of pcap file. Total parse %d packets.\n",i-1);
+			printf("\nRead end of pcap file. Total parse %d packets.\n",i - 1);
 			break;
 		}
         if(pkt_header->caplen < 14 + sizeof(IPHeader_t)) {

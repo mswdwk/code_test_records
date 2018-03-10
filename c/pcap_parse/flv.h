@@ -1,6 +1,8 @@
 #ifndef _FLV_H
 #define _FLV_H
 
+#include "list.h"
+
 //Important!
 #pragma pack(1)
 #define TAG_TYPE_SCRIPT 18
@@ -12,7 +14,7 @@ typedef struct {
 	byte Signature[3];
 	byte Version;
 	byte Flags;
-	uint DataOffset;
+	uint Headersize; // Headersize
 } FLV_HEADER;
 
 typedef struct {
@@ -21,6 +23,23 @@ typedef struct {
 	byte Timestamp[3];
 	uint Reserved;
 } FLV_TAG_HEADER;
+
+typedef struct{
+	unsigned int prev_tag_size ; // previous tag size
+	FLV_TAG_HEADER tag_header;
+	// below two fields do not exist in real data;
+	void*tag_data;
+	unsigned int tag_id ;
+}FLV_TAG;
+
+typedef struct FLV_FILE{
+	FLV_HEADER flvh;
+	unsigned int prev_tag_size ;
+	unsigned int prev_tag_id;
+	FLV_TAG prev_tag;
+	//FLV_BODY body;
+	List tag_list; // flv body
+}FLV_FILE;
 
 typedef struct flv_val
 {
@@ -63,10 +82,13 @@ typedef struct FLV_FLOW_HEADER{
 	// total receive tcp data len
 	int recv_data_len;
 	void(*process)(void*);
+	
 	FILE*fp;
+	FLV_FILE flvfp;
+	pthread_t consumer_id ;
+	char thread_run; // control thread run or not
+	struct ring_buffer *ring_buf; // store flv tag data buffer
 }FLV_FLOW_HEADER;
-
-
 
 
 #endif
