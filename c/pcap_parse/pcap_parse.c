@@ -69,7 +69,7 @@ void * consumer_proc(void *arg)
 			break;
 		}
 		if(prev_tag_size != last_tag_size){
-			printf("flv data error:prev_tag_size %u !=  %u last_tag_size.ring_buffer_len %u\n",
+			printf("flv data error:prev_tag_size %u !=  %u last_tag_size. ring_data_len %u\n",
 				prev_tag_size,last_tag_size,ring_data_len(ring_buf));
 			dump_print("FLV_TAG_HEADER", get_data_len, &ftag);
 			break;
@@ -439,7 +439,7 @@ inline int FLV_FLOW_ITEM_COPY_FOR_LAST(FLV_FLOW_ITEM*dst,FLV_FLOW_ITEM*src)
 	memcpy(d,s,sizeof(TCPHeader_t));
 	
 	if(src->tcpflow.data && src->tcpflow.data_len <= 1500){
-		memcpy(dst->tcpflow.data,src->tcpflow.data,src->tcpflow.data_len);
+		//memcpy(dst->tcpflow.data,src->tcpflow.data,src->tcpflow.data_len);
 	}
 	return 0;
 }
@@ -530,8 +530,13 @@ void flv_stream_process(void*data)
 				//fwrite(tmp->tcpflow.data + flv_offset,data_len - flv_offset,1,header->fp);
 				ring_buffer_put(header->ring_buf,tmp->tcpflow.data+flv_offset,tmp->tcpflow.data_len - flv_offset);
 				unsigned int relative_seq = ntohl(tmp->tcpflow.tcph->SeqNO) - ntohl(header->tcpflow.tcph->SeqNO) + 1;
-				fprintf(header->tcp_log,"pkt_id %5u seqno %7u tcp_data_len %4u offset %3u\n",
-					tmp->pkt_id,relative_seq,tmp->tcpflow.data_len,tmp->flv_offset);
+				int *data_tmp = (int*)tmp->tcpflow.data;
+				fprintf(header->tcp_log,"pkt_id %5u seqno %7u tcp_data_len %4u offset %3u 0x%08X..\n",
+					tmp->pkt_id,relative_seq,tmp->tcpflow.data_len,tmp->flv_offset,*data_tmp);
+				if(*data_tmp == 0 ){
+					dump_print("pkt flv data error", tmp->tcpflow.data_len, tmp->tcpflow.data);
+					exit(0);
+				}
 				FLV_FLOW_FREE(tmp);
 			}
 		}
