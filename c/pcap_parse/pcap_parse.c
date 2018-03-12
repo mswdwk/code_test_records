@@ -18,9 +18,12 @@
 #include "flv.h"
 #include "ring_buffer.h"
 #include "dump_print.h"
+#include "queue.h"
+
 //
 void match_http(FILE *fp, char *head_str, char *tail_str, char *buf, int total_len); //查找 http 信息函数
 inline int record_flv_data(FLV_FLOW_HEADER*h,FLV_TAG*tag,int data_size);
+void FLV_FLOW_FREE(void*);
 
 #define MAX_FLV_STREAM_NUM 12
 
@@ -160,6 +163,24 @@ inline int record_flv_data(FLV_FLOW_HEADER*h,FLV_TAG*tag,int data_size)
 	fwrite(tag->tag_data,data_size,1,fp);
 	h->flvfp.prev_tag_id = tag->tag_id;
 	h->flvfp.prev_tag_size = data_size + sizeof(FLV_TAG_HEADER);
+	
+	FLV_FLOW_ITEM*flow ;
+	int total_data_len = 0;// some continuous tcp flv data len 
+	while(  (flow = (FLV_FLOW_ITEM*)queue_peek(h->flv_pkt_queue)) ) {
+		total_data_len += (flow->tcpflow.data_len - flow->flv_offset);
+		if((data_size >= total_data_len)){
+			// from head start remove list
+			queue_dequeue(h->flv_pkt_queue,(void*)&flow);
+			if(flow){
+				int relative_seqno = ntohl(flow->tcpflow.tcph->SeqNO) - ntohl(h->tcpflow.tcph->SeqNO) + 1;
+				printf("queue size %u,free pkt %5u flag 0x%02x seqno %7u flv_data_len %4u\n",queue_size(h->flv_pkt_queue),
+				flow->pkt_id,flow->tcpflow.tcph->Flags,relative_seqno,flow->tcpflow.data_len - flow->flv_offset);
+			}
+			FLV_FLOW_FREE(flow);
+		}else
+			break;
+	}
+	
 	return 0;
 }
 
@@ -213,6 +234,7 @@ int process_http_flv_stream_header(IPHeader_t*iph,TCPHeader_t*tcph,void*data,int
 	int i ;
 	for(i= 0; i < MAX_FLV_STREAM_NUM; ++i){
 		if (flv_stream_table[i].tcpflow.hash == 0){
+			//// !!!!!!!!!!!!!!!!! may cause  memory leak!!!!!!!!!!!!!
 			flv.stream_id = i;
 			ip_flow_hash(&flv);
 			memcpy(&flv_stream_table[i].tcpflow,&flv,sizeof(flv));
@@ -259,6 +281,12 @@ int process_http_flv_stream_header(IPHeader_t*iph,TCPHeader_t*tcph,void*data,int
 		        fprintf(stderr, "Failed to init ring buffer.\n");
 		        return -1;
 		    }
+			flv_stream_table[i].flv_pkt_queue = malloc(sizeof(Queue));
+			if (!flv_stream_table[i].flv_pkt_queue){
+		        fprintf(stderr, "Failed to init Queue.\n");
+		        return -1;
+		    }
+			queue_init(flv_stream_table[i].flv_pkt_queue,FLV_FLOW_FREE);
 			
 			flv_stream_table[i].ring_buf = ring_buf;
 			flv_stream_table[i].flvfp.prev_tag_size = 0;
@@ -347,10 +375,10 @@ int process_http_flv_stream(int stream_id,TCPHeader_t*tcph,void*data,int data_le
 	return 0;
 }
 
-void FLV_FLOW_FREE(FLV_FLOW_ITEM*flow)
+void FLV_FLOW_FREE(void*data)
 {
-	if(!flow)return;
-	
+	if(!data)return;
+	FLV_FLOW_ITEM*flow =(FLV_FLOW_ITEM*)data;
 	TCPHeader_t*tcph = flow->tcpflow.tcph;
 	void *tcp_data = flow->tcpflow.data;
 	if(tcph)free(tcph);
@@ -364,7 +392,7 @@ void FLV_FLOW_FREE(FLV_FLOW_ITEM*flow)
 	}
 	if(flow->next)
 		flow->next->prev = flow->prev;
-	
+	//flow->ref_counter--;
 	if(flow)free(flow);
 }
 
@@ -537,7 +565,9 @@ void flv_stream_process(void*data)
 					dump_print("pkt flv data error", tmp->tcpflow.data_len, tmp->tcpflow.data);
 					exit(0);
 				}
-				FLV_FLOW_FREE(tmp);
+				queue_enqueue(header->flv_pkt_queue,(void*) tmp);
+				// because function flv_record_data will use this recombine data  ,so do not free them right now
+				//FLV_FLOW_FREE(tmp);
 			}
 		}
 	}
@@ -668,7 +698,7 @@ int main(int argc,char *argv[])
 			printf("localtime failed. tv_sec = %u. Error %s\n",pkt_header->ts.tv_sec,strerror(errno));																						// printf("%d: %s\n", i, my_time);
 																									//数据帧头 14字节
 		fseek(fp, 14, SEEK_CUR); //忽略数据帧头
-								 //IP数据报头 20字节
+								 //IP数据报头 20字节 // may cause error!!!
 		if (fread(ip_header, sizeof(IPHeader_t), 1, fp) != 1)
 		{
 			printf("%d: can not read ip_header\n", i);
@@ -729,7 +759,7 @@ int main(int argc,char *argv[])
                 	found_flv_header = find_flv_header(tcp_data_buf,tcp_data_len);
                 
                 sprintf(buf,"[%s]%5u flag 0x%02x seq %10u ack %10u tcp_data_len %5u %15s:%5u -> %15s:%5u flv %1u\n",my_time,
-                    i,0xff&tcp_flags,ntohl(tcp_header->SeqNO),ntohl(tcp_header->AckNO),tcp_data_len,src_ip, src_port, dst_ip, dst_port,0x3&found_flv_header);
+                    i,0xff&tcp_flags,ntohl(tcp_header->SeqNO),ntohl(tcp_header->AckNO),tcp_data_len,src_ip, src_port, dst_ip, dst_port,found_flv_header);
                 fwrite(buf, strlen(buf), 1, output);
                 memset(buf,0,sizeof(buf));
 				

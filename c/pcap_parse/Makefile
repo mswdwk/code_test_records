@@ -9,7 +9,7 @@ TARGET=$(RING_TEST)
 .PHONY:all clean
 all:$(BIN) $(RING_TEST)
 
-$(BIN):list.o pcap_parse.o  ring_buffer.o dump_print.o
+$(BIN): queue.o list.o pcap_parse.o  ring_buffer.o dump_print.o
 	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@ 
 
 %.O:%.C

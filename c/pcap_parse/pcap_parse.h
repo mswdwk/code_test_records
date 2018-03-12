@@ -71,9 +71,10 @@ typedef struct TCPHeader_t
 	u_int16 UrgentPointer;  //紧急指针
 }TCPHeader_t;
 
-struct TCP_DATA{
-    TCPHeader_t *tcp_header;
-    void*data;
-    int tcp_data_len;
-};
+typedef struct IP_PACKET{
+	IPHeader_t iph;
+	//int len; // data len
+	unsigned char data[];
+}IP_PACKET;
+
 #endif

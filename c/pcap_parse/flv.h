@@ -2,7 +2,7 @@
 #define _FLV_H
 
 #include "list.h"
-
+#include "queue.h"
 //Important!
 #pragma pack(1)
 #define TAG_TYPE_SCRIPT 18
@@ -37,8 +37,8 @@ typedef struct FLV_FILE{
 	unsigned int prev_tag_size ;
 	unsigned int prev_tag_id;
 	FLV_TAG prev_tag;
+	List tag_list;
 	//FLV_BODY body;
-	List tag_list; // flv body
 }FLV_FILE;
 
 typedef struct flv_val
@@ -66,6 +66,7 @@ typedef struct FLV_FLOW_ITEM{
 	unsigned char state; // 
 	struct FLV_FLOW_ITEM *next;
 	struct FLV_FLOW_ITEM *prev;
+	int ref_counter ; // reference counter
 }FLV_FLOW_ITEM;
 
 typedef struct FLV_FLOW_HEADER{
@@ -79,9 +80,9 @@ typedef struct FLV_FLOW_HEADER{
 	uint last_seqno;
 	int flv_flow_pkt_num;
 	int cache_num;
-	// total receive tcp data len
-	int recv_data_len;
+	int recv_data_len; // total receive tcp data len
 	void(*process)(void*);
+	Queue *flv_pkt_queue; // ordered pakcet queue which are used to prepared  for flv tag data analysis.
 	FILE*tcp_log; // record tcp_stream_recombine log 
 	FILE*fp; // record flv file data
 	FLV_FILE flvfp;
