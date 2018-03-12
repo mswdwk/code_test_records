@@ -82,8 +82,8 @@ typedef struct FLV_FLOW_HEADER{
 	// total receive tcp data len
 	int recv_data_len;
 	void(*process)(void*);
-	
-	FILE*fp;
+	FILE*tcp_log; // record tcp_stream_recombine log 
+	FILE*fp; // record flv file data
 	FLV_FILE flvfp;
 	pthread_t consumer_id ;
 	char thread_run; // control thread run or not

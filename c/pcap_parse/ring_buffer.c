@@ -64,6 +64,14 @@ uint32_t __ring_buffer_len(const struct ring_buffer *ring_buf)
     //return (ring_buf->in - ring_buf->out);
     return (ring_buf->size - ring_buf->in + ring_buf->out);
 }
+
+//  @return vaild data buffer len.
+//有效数据的长度
+uint32_t __ring_data_len(const struct ring_buffer *ring_buf)
+{
+    return (ring_buf->in - ring_buf->out);
+}
+
 /*
 **     case 1 : ring_buffer_len = in - out
 **     this means vaild data buffer len
@@ -123,6 +131,20 @@ uint32_t ring_buffer_len(const struct ring_buffer *ring_buf)
     uint32_t len = 0;
     pthread_mutex_lock(ring_buf->f_lock);
     len = __ring_buffer_len(ring_buf);
+    pthread_mutex_unlock(ring_buf->f_lock);
+    return len;
+}
+
+/*
+** @return vaild data buf len
+*/
+uint32_t ring_data_len(const struct ring_buffer *ring_buf)
+{
+    assert(ring_buf);
+    //assert(ring_buf->f_lock);
+    uint32_t len = 0;
+    pthread_mutex_lock(ring_buf->f_lock);
+    len = __ring_data_len(ring_buf);
     pthread_mutex_unlock(ring_buf->f_lock);
     return len;
 }

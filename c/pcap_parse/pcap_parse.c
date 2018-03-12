@@ -17,8 +17,10 @@
 #include "pcap_parse.h"
 #include "flv.h"
 #include "ring_buffer.h"
+#include "dump_print.h"
 //
 void match_http(FILE *fp, char *head_str, char *tail_str, char *buf, int total_len); //查找 http 信息函数
+inline int record_flv_data(FLV_FLOW_HEADER*h,FLV_TAG*tag,int data_size);
 
 #define MAX_FLV_STREAM_NUM 12
 
@@ -35,13 +37,13 @@ void * consumer_proc(void *arg)
     struct ring_buffer *ring_buf = h->ring_buf;
     FLV_TAG ftag;
     FLV_TAG_HEADER *ftagheader;
-	int get_data_len = 0,need_data_len = 0;
+	uint get_data_len = 0,need_data_len = 0;
 	int tag_data_size = 0;
 	unsigned int last_prev_tag_size = h->flvfp.prev_tag_size;
 	unsigned int prev_tag_size = sizeof(FLV_TAG_HEADER); // current tag size
-	unsigned int last_tag_size = 0;
+	unsigned int last_tag_size = 0;//ring_data_buf_len = 0;
 	int offset = 0;
-	char tag_data_buf[RING_BUFFER_SIZE] = {0};
+	char *tag_data_buf= calloc(1,RING_BUFFER_SIZE);
 	char*tag_data_p = tag_data_buf;
 	h->thread_run = 1;
 
@@ -51,7 +53,7 @@ void * consumer_proc(void *arg)
 		
 		get_data_len = 0;
 		need_data_len = sizeof(int) + sizeof(FLV_TAG_HEADER);
-		while(ring_buffer_len < need_data_len &&  h->thread_run)usleep(100);
+		while((ring_data_len(ring_buf) < need_data_len) &&  h->thread_run)usleep(100);
 		
 		get_data_len = ring_buffer_get(ring_buf, (void *)&ftag, need_data_len);
 		prev_tag_size = ntohl(ftag.prev_tag_size);
@@ -67,10 +69,12 @@ void * consumer_proc(void *arg)
 			break;
 		}
 		if(prev_tag_size != last_tag_size){
-			printf("flv data error:prev_tag_size %u !=  %u last_tag_size\n",prev_tag_size,last_tag_size);
+			printf("flv data error:prev_tag_size %u !=  %u last_tag_size.ring_buffer_len %u\n",
+				prev_tag_size,last_tag_size,ring_data_len(ring_buf));
+			dump_print("FLV_TAG_HEADER", get_data_len, &ftag);
 			break;
 		}
-		while(ring_buffer_len < need_data_len &&  h->thread_run)usleep(100);
+		while((ring_data_len(ring_buf) < need_data_len) &&  h->thread_run)usleep(100);
 		get_data_len = ring_buffer_get(ring_buf,( void*)tag_data_p, need_data_len);
 		
 		ftag.prev_tag_size = prev_tag_size;
@@ -85,6 +89,7 @@ void * consumer_proc(void *arg)
 		last_tag_size = tag_data_size + sizeof(FLV_TAG_HEADER);
 		tag_data_size = 0;
     }
+	if(tag_data_buf)free(tag_data_buf);
 	
     return (void *)ring_buf;
 }
@@ -260,6 +265,9 @@ int process_http_flv_stream_header(IPHeader_t*iph,TCPHeader_t*tcph,void*data,int
 			flv_stream_table[i].flvfp.prev_tag_id = 0;
 			flv_stream_table[i].flvfp.tag_list.size = 0;
 			fwrite(ch + flv_offset,sizeof(FLV_HEADER),1,flv_stream_table[i].fp);
+			char tcp_stream_recombine_file_name[128]={0};
+			sprintf(tcp_stream_recombine_file_name,"tcp_stream_%u_recombine.log",i);
+			flv_stream_table[i].tcp_log = fopen(tcp_stream_recombine_file_name,"w+");//////////maybe error
 			FLV_FLOW_HEADER*fh = &flv_stream_table[i];
 			consumer_pid = consumer_thread((void*)fh);
 			flv_stream_table[i].consumer_id = consumer_pid;
@@ -520,7 +528,10 @@ void flv_stream_process(void*data)
 				int data_len = tmp->tcpflow.data_len;
 				header->recv_data_len += data_len ;//- flv_offset;
 				//fwrite(tmp->tcpflow.data + flv_offset,data_len - flv_offset,1,header->fp);
-				ring_buffer_put(header->ring_buf,tmp->tcpflow.data+flv_offset,tmp->tcpflow.data_len-flv_offset);
+				ring_buffer_put(header->ring_buf,tmp->tcpflow.data+flv_offset,tmp->tcpflow.data_len - flv_offset);
+				unsigned int relative_seq = ntohl(tmp->tcpflow.tcph->SeqNO) - ntohl(header->tcpflow.tcph->SeqNO) + 1;
+				fprintf(header->tcp_log,"pkt_id %5u seqno %7u tcp_data_len %4u offset %3u\n",
+					tmp->pkt_id,relative_seq,tmp->tcpflow.data_len,tmp->flv_offset);
 				FLV_FLOW_FREE(tmp);
 			}
 		}
@@ -536,6 +547,7 @@ void print_flv_stream_info(void)
 	printf("-----------------------------------------------------------------------------\n");
 	for(i = 0 ; i < sizeof(flv_stream_table)/sizeof(flv_stream_table[0] ); ++i){
 		FLV_FLOW_HEADER*head = &flv_stream_table[i];
+		if(0 == head->tcpflow.hash)continue;
 		IP_FLOW*iph = &head->tcpflow;
 		inet_ntop(AF_INET, (void *)&(iph->high_ip), high_ip, 16);
 		inet_ntop(AF_INET, (void *)&(iph->low_ip), low_ip, 16);
@@ -576,7 +588,10 @@ void free_flv_stream(void)
 			h->thread_run = 0;
 			pthread_join(h->consumer_id,NULL);
 		}
+		
+		if(h->ring_buf)ring_buffer_free(h->ring_buf);
 		if(h->fp)fclose(h->fp);
+		if(h->tcp_log)fclose(h->tcp_log);
 	}
 }
 
@@ -729,7 +744,10 @@ int main(int argc,char *argv[])
     free(pkt_header);
     free(ip_header);
     free(tcp_header);
+
+	// maybe data in ring_buf not complete process 
 	free_flv_stream();
+	
 	print_flv_stream_info();
     //pthread_join(tcp_consumer_tid,NULL);
 	return 0;

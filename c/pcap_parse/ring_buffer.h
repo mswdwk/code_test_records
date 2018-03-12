@@ -61,6 +61,10 @@ uint32_t __ring_buffer_get(struct ring_buffer *ring_buf, void * buffer, uint32_t
 uint32_t __ring_buffer_put(struct ring_buffer *ring_buf, void *buffer, uint32_t size);
 
 uint32_t ring_buffer_len(const struct ring_buffer *ring_buf);
+/*
+** @return vaild data buf len
+*/
+uint32_t ring_data_len(const struct ring_buffer *ring_buf);
 
 uint32_t ring_buffer_get(struct ring_buffer *ring_buf, void *buffer, uint32_t size);
 
