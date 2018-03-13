@@ -29,7 +29,6 @@ void FLV_FLOW_FREE(void*);
 
 FLV_FLOW_HEADER flv_stream_table[MAX_FLV_STREAM_NUM];
 
-
 void * consumer_proc(void *arg)
 {
 	if(!arg){
@@ -40,25 +39,24 @@ void * consumer_proc(void *arg)
     struct ring_buffer *ring_buf = h->ring_buf;
     FLV_TAG ftag;
     FLV_TAG_HEADER *ftagheader;
-	uint get_data_len = 0,need_data_len = 0;
+	uint get_data_len = 0, need_data_len = 0;
 	int tag_data_size = 0;
 	unsigned int last_prev_tag_size = h->flvfp.prev_tag_size;
 	unsigned int prev_tag_size = sizeof(FLV_TAG_HEADER); // current tag size
 	unsigned int last_tag_size = 0;//ring_data_buf_len = 0;
-	int offset = 0;
+	//int offset = 0;
+	FLV_FLOW_ITEM*item;
+	#if 1
 	char *tag_data_buf= calloc(1,RING_BUFFER_SIZE);
-	char*tag_data_p = tag_data_buf;
 	h->thread_run = 1;
-
     while(ring_buf != NULL && h->thread_run )
     {
         //printf("get a flv stream info from ring buffer.\n");
-		
 		get_data_len = 0;
 		need_data_len = sizeof(int) + sizeof(FLV_TAG_HEADER);
 		while((ring_data_len(ring_buf) < need_data_len) &&  h->thread_run)usleep(100);
-		
 		get_data_len = ring_buffer_get(ring_buf, (void *)&ftag, need_data_len);
+		
 		prev_tag_size = ntohl(ftag.prev_tag_size);
 		ftagheader = &ftag.tag_header;
 		tag_data_size  = ftagheader->DataSize[0];
@@ -75,14 +73,19 @@ void * consumer_proc(void *arg)
 			printf("flv data error:prev_tag_size %u !=  %u last_tag_size. ring_data_len %u\n",
 				prev_tag_size,last_tag_size,ring_data_len(ring_buf));
 			dump_print("FLV_TAG_HEADER", get_data_len, &ftag);
+			item = (FLV_FLOW_ITEM*)queue_peek(h->flv_pkt_queue);
+			if(item){
+				printf("queue_size %u queue_peek pkt_id %5u seqno %10u\n",queue_size(h->flv_pkt_queue),
+					item->pkt_id,ntohl(item->tcpflow.tcph->SeqNO));
+			}
+			//dump_print("ring_buf", , ring_buf->buffer);
 			break;
 		}
-		while((ring_data_len(ring_buf) < need_data_len) &&  h->thread_run)usleep(100);
-		get_data_len = ring_buffer_get(ring_buf,( void*)tag_data_p, need_data_len);
 		
-		ftag.prev_tag_size = prev_tag_size;
-		ftag.tag_data = tag_data_p;
-		ftag.tag_header = *ftagheader;
+		while((ring_data_len(ring_buf) < need_data_len) &&  h->thread_run)usleep(100);
+		get_data_len = ring_buffer_get(ring_buf,( void*)tag_data_buf, need_data_len);
+		
+		ftag.tag_data = tag_data_buf;
 		ftag.tag_id = h->flvfp.prev_tag_id + 1;
 		record_flv_data(h,&ftag,tag_data_size);
 		printf("last_prev_tag_size %8u prev_tag_size %8u tag_id %4u tag_data_size %8u\n",
@@ -93,6 +96,11 @@ void * consumer_proc(void *arg)
 		tag_data_size = 0;
     }
 	if(tag_data_buf)free(tag_data_buf);
+	#else
+	
+	//queue_dequeue(h->flv_pkt_queue, &item);
+	
+	#endif
 	
     return (void *)ring_buf;
 }
@@ -156,25 +164,29 @@ inline int record_flv_data(FLV_FLOW_HEADER*h,FLV_TAG*tag,int data_size)
 {
 	if(!h||!tag || data_size < 0)return -1;
 	FILE*fp = h->fp;
-	FLV_TAG_HEADER*fth = &tag->tag_header;
-	uint prev_tag_size = htonl(h->flvfp.prev_tag_size);
-	fwrite(&prev_tag_size,sizeof(int),1,fp);
-	fwrite(fth,sizeof(FLV_TAG_HEADER),1,fp);
+	fwrite(&tag->prev_tag_size,sizeof(int),1,fp);
+	fwrite(&tag->tag_header,sizeof(FLV_TAG_HEADER),1,fp);
 	fwrite(tag->tag_data,data_size,1,fp);
 	h->flvfp.prev_tag_id = tag->tag_id;
 	h->flvfp.prev_tag_size = data_size + sizeof(FLV_TAG_HEADER);
 	
 	FLV_FLOW_ITEM*flow ;
-	int total_data_len = 0;// some continuous tcp flv data len 
+	int i = 0;
+	int total_data_len = (h->tcpflow.data_len - h->flv_offset);// some continuous tcp flv data len 
 	while(  (flow = (FLV_FLOW_ITEM*)queue_peek(h->flv_pkt_queue)) ) {
-		total_data_len += (flow->tcpflow.data_len - flow->flv_offset);
+		// must be care of the flv header pkt data_len
+		total_data_len += (flow->tcpflow.data_len - flow->flv_offset) ;
+		
 		if((data_size >= total_data_len)){
 			// from head start remove list
 			queue_dequeue(h->flv_pkt_queue,(void*)&flow);
 			if(flow){
+				i++;
 				int relative_seqno = ntohl(flow->tcpflow.tcph->SeqNO) - ntohl(h->tcpflow.tcph->SeqNO) + 1;
-				printf("queue size %u,free pkt %5u flag 0x%02x seqno %7u flv_data_len %4u\n",queue_size(h->flv_pkt_queue),
-				flow->pkt_id,flow->tcpflow.tcph->Flags,relative_seqno,flow->tcpflow.data_len - flow->flv_offset);
+				int next_seqno = relative_seqno +  flow->tcpflow.data_len - flow->flv_offset;
+				printf("%d queue size %u,free pkt %5u flag 0x%02x seqno %7u next %7u flv_data_len %4u\n",
+				i,queue_size(h->flv_pkt_queue),flow->pkt_id,flow->tcpflow.tcph->Flags,
+				relative_seqno,next_seqno,flow->tcpflow.data_len - flow->flv_offset);
 			}
 			FLV_FLOW_FREE(flow);
 		}else
@@ -248,6 +260,7 @@ int process_http_flv_stream_header(IPHeader_t*iph,TCPHeader_t*tcph,void*data,int
 			flv_stream_table[i].fp = fopen(flv_file_name,"wb+");
 			flv_stream_table[i].flv_offset = flv_offset;
 			flv_stream_table[i].tail = NULL;
+			flv_stream_table[i].head = NULL;
 			
 			#if 1
 			flv_stream_table[i].last = calloc(1,sizeof(FLV_FLOW_ITEM));
@@ -292,15 +305,23 @@ int process_http_flv_stream_header(IPHeader_t*iph,TCPHeader_t*tcph,void*data,int
 			flv_stream_table[i].flvfp.prev_tag_size = 0;
 			flv_stream_table[i].flvfp.prev_tag_id = 0;
 			flv_stream_table[i].flvfp.tag_list.size = 0;
+			
 			fwrite(ch + flv_offset,sizeof(FLV_HEADER),1,flv_stream_table[i].fp);
+			
 			char tcp_stream_recombine_file_name[128]={0};
 			sprintf(tcp_stream_recombine_file_name,"tcp_stream_%u_recombine.log",i);
 			flv_stream_table[i].tcp_log = fopen(tcp_stream_recombine_file_name,"w+");//////////maybe error
+
+			//queue_enqueue(flv_stream_table[i].flv_pkt_queue, * data);
 			FLV_FLOW_HEADER*fh = &flv_stream_table[i];
 			consumer_pid = consumer_thread((void*)fh);
+			
 			flv_stream_table[i].consumer_id = consumer_pid;
 			flv_offset += sizeof(FLV_HEADER);
 			ring_buffer_put(ring_buf,ch + flv_offset,len - flv_offset);
+			FILE* ring_log = fopen("ring_log","w+");
+			fprintf(ring_log,"pkt %5u put %u \n",pkt_id,len - flv_offset);
+			flv_stream_table[i].ring_log = ring_log;
 			
 			return i;
 		}
@@ -556,13 +577,14 @@ void flv_stream_process(void*data)
 				int data_len = tmp->tcpflow.data_len;
 				header->recv_data_len += data_len ;//- flv_offset;
 				//fwrite(tmp->tcpflow.data + flv_offset,data_len - flv_offset,1,header->fp);
-				ring_buffer_put(header->ring_buf,tmp->tcpflow.data+flv_offset,tmp->tcpflow.data_len - flv_offset);
+				ring_buffer_put(header->ring_buf,tmp->tcpflow.data + flv_offset,data_len - flv_offset);
 				unsigned int relative_seq = ntohl(tmp->tcpflow.tcph->SeqNO) - ntohl(header->tcpflow.tcph->SeqNO) + 1;
 				int *data_tmp = (int*)tmp->tcpflow.data;
 				fprintf(header->tcp_log,"pkt_id %5u seqno %7u tcp_data_len %4u offset %3u 0x%08X..\n",
 					tmp->pkt_id,relative_seq,tmp->tcpflow.data_len,tmp->flv_offset,*data_tmp);
+				fprintf(header->ring_log,"pkt %5u flag 0x%02x put %u \n",tmp->pkt_id,tmp->tcpflow.tcph->Flags,data_len - flv_offset);
 				if(*data_tmp == 0 ){
-					dump_print("pkt flv data error", tmp->tcpflow.data_len, tmp->tcpflow.data);
+					dump_print("pkt flv data error", data_len, tmp->tcpflow.data);
 					exit(0);
 				}
 				queue_enqueue(header->flv_pkt_queue,(void*) tmp);
@@ -624,9 +646,12 @@ void free_flv_stream(void)
 			pthread_join(h->consumer_id,NULL);
 		}
 		
-		if(h->ring_buf)ring_buffer_free(h->ring_buf);
+		if(h->ring_buf){
+			ring_buffer_free(h->ring_buf);
+		}
 		if(h->fp)fclose(h->fp);
 		if(h->tcp_log)fclose(h->tcp_log);
+		if(h->ring_log)fclose(h->ring_log);
 	}
 }
 
@@ -639,7 +664,7 @@ int main(int argc,char *argv[])
 	TCPHeader_t *tcp_header;
 	FILE *fp, *output;
 	int   pkt_offset, i = 0;
-	int ip_len, http_len, ip_proto;
+	int ip_len,  ip_proto; //http_len,
 	int src_port, dst_port, tcp_flags;
 	char buf[BUFSIZE], my_time[STRSIZE];
 	char src_ip[STRSIZE], dst_ip[STRSIZE];
@@ -758,7 +783,7 @@ int main(int argc,char *argv[])
 				else
                 	found_flv_header = find_flv_header(tcp_data_buf,tcp_data_len);
                 
-                sprintf(buf,"[%s]%5u flag 0x%02x seq %10u ack %10u tcp_data_len %5u %15s:%5u -> %15s:%5u flv %1u\n",my_time,
+                sprintf(buf,"[%s]%5u flag 0x%02x seq %10u ack %10u tcp_data_len %5u %15s:%5u -> %15s:%5u flv %d\n",my_time,
                     i,0xff&tcp_flags,ntohl(tcp_header->SeqNO),ntohl(tcp_header->AckNO),tcp_data_len,src_ip, src_port, dst_ip, dst_port,found_flv_header);
                 fwrite(buf, strlen(buf), 1, output);
                 memset(buf,0,sizeof(buf));

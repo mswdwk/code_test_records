@@ -76,18 +76,18 @@ uint32_t __ring_data_len(const struct ring_buffer *ring_buf)
 **     case 1 : ring_buffer_len = in - out
 **     this means vaild data buffer len
 **
-**     |<--------ring buffer size--------------->|
-**     -------------------------------------------
-**     |        |///vaild///data///buffer///|    |
-**     -------------------------------------------
-**     |       out                          in   |
+**     |<-------------ring buffer size-------------->|
+**     -----------------------------------------------
+**     |        |///vaild///data///buffer///|        |
+**     -----------------------------------------------
+**     |       out                          in       |
 **
 **		case 2 :ring_buffer_len = in - out
-**     |<--------ring buffer size--------------->|
-**     -------------------------------------------
-**     |////////|     free buffer space     |////|
-**     -------------------------------------------
-**     |       in                          out   |
+**     |<-------------ring buffer size-------------->|
+**     -----------------------------------------------
+**     |////////|     free buffer space     |////////|
+**     -----------------------------------------------
+**     |       in                          out       |
 **     beacuse ring_buffer_size is 2^n, so unsigned int in minus out
 **     can get the ring buffer len.
 */

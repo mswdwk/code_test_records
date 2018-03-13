@@ -51,7 +51,7 @@ typedef struct flv_val
 //static unsigned char flv_header_data[] = { 0x46,0x4C,0x56,0x01,0x05,0x00,0x00,0x00,0x09,0x00,0x00,0x00,0x00 };
   static unsigned char flv_header_data[] = { 0x46,0x4C,0x56,0x01,0x00,0x00,0x00,0x00,0x09,0x00,0x00,0x00,0x00 };
 
-static flv_val flv_val_header = { (char*)flv_header_data ,13 };
+//static flv_val flv_val_header = { (char*)flv_header_data ,13 };
 
 #include "ip_flow.h"
 
@@ -85,6 +85,7 @@ typedef struct FLV_FLOW_HEADER{
 	Queue *flv_pkt_queue; // ordered pakcet queue which are used to prepared  for flv tag data analysis.
 	FILE*tcp_log; // record tcp_stream_recombine log 
 	FILE*fp; // record flv file data
+	FILE*ring_log; 
 	FLV_FILE flvfp;
 	pthread_t consumer_id ;
 	char thread_run; // control thread run or not

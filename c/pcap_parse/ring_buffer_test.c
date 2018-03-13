@@ -7,6 +7,7 @@
 #include <time.h>
 #include <unistd.h> // function sleep header file
 
+#include "dump_print.h"
 
 typedef struct student_info
 {
@@ -33,10 +34,12 @@ student_info * get_student_info(time_t timer)
         return NULL;
     }
     srand(timer);
-    stu_info->stu_id = 10000 + rand() % 9999;
-    stu_info->age = rand() % 30;
-    stu_info->score = rand() % 101;
-    //print_student_info(stu_info);
+	static int i = 0;
+    stu_info->stu_id =0x5670 +i ;//10000 + rand() % 9999;
+    stu_info->age = 12 ;//rand() % 30;
+    stu_info->score = 80 + i;//rand() % 101;
+    print_student_info(stu_info);
+    i++;
     return stu_info;
 }
 
