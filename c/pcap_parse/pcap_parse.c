@@ -184,7 +184,7 @@ inline int record_flv_data(FLV_FLOW_HEADER*h,FLV_TAG*tag,int data_size)
 				i++;
 				int relative_seqno = ntohl(flow->tcpflow.tcph->SeqNO) - ntohl(h->tcpflow.tcph->SeqNO) + 1;
 				int next_seqno = relative_seqno +  flow->tcpflow.data_len - flow->flv_offset;
-				printf("%d queue size %u,free pkt %5u flag 0x%02x seqno %7u next %7u flv_data_len %4u\n",
+				printf("%3u queue size %u,free pkt %5u flag 0x%02x seqno %7u next %7u flv_data_len %4u\n",
 				i,queue_size(h->flv_pkt_queue),flow->pkt_id,flow->tcpflow.tcph->Flags,
 				relative_seqno,next_seqno,flow->tcpflow.data_len - flow->flv_offset);
 			}
@@ -257,7 +257,7 @@ int process_http_flv_stream_header(IPHeader_t*iph,TCPHeader_t*tcph,void*data,int
 			
 			char flv_file_name[256];
 			sprintf(flv_file_name,"flv_%d.flv",i);
-			flv_stream_table[i].fp = fopen(flv_file_name,"wb+");
+			flv_stream_table[i].fp = fopen(flv_file_name,"wb");
 			flv_stream_table[i].flv_offset = flv_offset;
 			flv_stream_table[i].tail = NULL;
 			flv_stream_table[i].head = NULL;
@@ -279,12 +279,11 @@ int process_http_flv_stream_header(IPHeader_t*iph,TCPHeader_t*tcph,void*data,int
 			flv_stream_table[i].last_seqno = ntohl(tcph->SeqNO);
 			printf("tcp stream %2u pkt_id %6u seq %10u ack %10u len %4u flag 0x%02x cache_num %3u\n",
 				i,pkt_id,ntohl(tcph->SeqNO),ntohl(tcph->AckNO),len,tcph->Flags,flv_stream_table[i].cache_num);
-
-			void * buffer = NULL;
+			
 		    struct ring_buffer *ring_buf = NULL;
 		    pthread_t consumer_pid;
 	
-		    buffer = (void *)malloc(RING_BUFFER_SIZE);
+		    void * buffer = (void *)malloc(RING_BUFFER_SIZE);
 		    if (!buffer){
 		        fprintf(stderr, "Failed to malloc memory.\n");
 		        return -1;
@@ -319,7 +318,9 @@ int process_http_flv_stream_header(IPHeader_t*iph,TCPHeader_t*tcph,void*data,int
 			flv_stream_table[i].consumer_id = consumer_pid;
 			flv_offset += sizeof(FLV_HEADER);
 			ring_buffer_put(ring_buf,ch + flv_offset,len - flv_offset);
-			FILE* ring_log = fopen("ring_log","w+");
+			int ret = sprintf(tcp_stream_recombine_file_name,"ring_%u.log",i);
+			tcp_stream_recombine_file_name[ret] = 0;
+			FILE* ring_log = fopen(tcp_stream_recombine_file_name,"w+");
 			fprintf(ring_log,"pkt %5u put %u \n",pkt_id,len - flv_offset);
 			flv_stream_table[i].ring_log = ring_log;
 			
@@ -583,10 +584,12 @@ void flv_stream_process(void*data)
 				fprintf(header->tcp_log,"pkt_id %5u seqno %7u tcp_data_len %4u offset %3u 0x%08X..\n",
 					tmp->pkt_id,relative_seq,tmp->tcpflow.data_len,tmp->flv_offset,*data_tmp);
 				fprintf(header->ring_log,"pkt %5u flag 0x%02x put %u \n",tmp->pkt_id,tmp->tcpflow.tcph->Flags,data_len - flv_offset);
+				#if 0
 				if(*data_tmp == 0 ){
 					dump_print("pkt flv data error", data_len, tmp->tcpflow.data);
 					exit(0);
 				}
+				#endif
 				queue_enqueue(header->flv_pkt_queue,(void*) tmp);
 				// because function flv_record_data will use this recombine data  ,so do not free them right now
 				//FLV_FLOW_FREE(tmp);

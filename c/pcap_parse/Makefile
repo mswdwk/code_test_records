@@ -18,4 +18,4 @@ $(BIN): queue.o list.o pcap_parse.o  ring_buffer.o dump_print.o
 $(RING_TEST):ring_buffer_test.o ring_buffer.o
 	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
 clean:
-	rm -rf *.o $(TARGET) $(BIN)
+	rm -rf *.o $(TARGET) $(BIN) *.log 
