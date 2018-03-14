@@ -25,7 +25,7 @@ void match_http(FILE *fp, char *head_str, char *tail_str, char *buf, int total_l
 inline int record_flv_data(FLV_FLOW_HEADER*h,FLV_TAG*tag,int data_size);
 void FLV_FLOW_FREE(void*);
 
-#define MAX_FLV_STREAM_NUM 12
+#define MAX_FLV_STREAM_NUM 16
 
 FLV_FLOW_HEADER flv_stream_table[MAX_FLV_STREAM_NUM];
 
@@ -45,7 +45,7 @@ void * consumer_proc(void *arg)
 	unsigned int prev_tag_size = sizeof(FLV_TAG_HEADER); // current tag size
 	unsigned int last_tag_size = 0;//ring_data_buf_len = 0;
 	//int offset = 0;
-	FLV_FLOW_ITEM*item;
+	
 	#if 1
 	char *tag_data_buf= calloc(1,RING_BUFFER_SIZE);
 	h->thread_run = 1;
@@ -73,23 +73,23 @@ void * consumer_proc(void *arg)
 			printf("flv data error:prev_tag_size %u !=  %u last_tag_size. ring_data_len %u\n",
 				prev_tag_size,last_tag_size,ring_data_len(ring_buf));
 			dump_print("FLV_TAG_HEADER", get_data_len, &ftag);
-			item = (FLV_FLOW_ITEM*)queue_peek(h->flv_pkt_queue);
+			#if 0
+			FLV_FLOW_ITEM*item = (FLV_FLOW_ITEM*)queue_peek(h->flv_pkt_queue);
 			if(item){
-				printf("queue_size %u queue_peek pkt_id %5u seqno %10u\n",queue_size(h->flv_pkt_queue),
-					item->pkt_id,ntohl(item->tcpflow.tcph->SeqNO));
+				//printf("queue_size %u queue_peek pkt_id %5u seqno %10u\n",queue_size(h->flv_pkt_queue),item->pkt_id,ntohl(item->tcpflow.tcph->SeqNO));
 			}
 			//dump_print("ring_buf", , ring_buf->buffer);
+			#endif
 			break;
 		}
 		
-		while((ring_data_len(ring_buf) < need_data_len) &&  h->thread_run)usleep(100);
+		while((ring_data_len(ring_buf) < need_data_len) && h->thread_run)usleep(100);
 		get_data_len = ring_buffer_get(ring_buf,( void*)tag_data_buf, need_data_len);
 		
 		ftag.tag_data = tag_data_buf;
 		ftag.tag_id = h->flvfp.prev_tag_id + 1;
 		record_flv_data(h,&ftag,tag_data_size);
-		printf("last_prev_tag_size %8u prev_tag_size %8u tag_id %4u tag_data_size %8u\n",
-			last_prev_tag_size,prev_tag_size,ftag.tag_id, tag_data_size);
+		//printf("last_prev_tag_size %8u prev_tag_size %8u tag_id %4u tag_data_size %8u\n",last_prev_tag_size,prev_tag_size,ftag.tag_id, tag_data_size);
 		
 		last_prev_tag_size = prev_tag_size;
 		last_tag_size = tag_data_size + sizeof(FLV_TAG_HEADER);
@@ -169,11 +169,14 @@ inline int record_flv_data(FLV_FLOW_HEADER*h,FLV_TAG*tag,int data_size)
 	fwrite(tag->tag_data,data_size,1,fp);
 	h->flvfp.prev_tag_id = tag->tag_id;
 	h->flvfp.prev_tag_size = data_size + sizeof(FLV_TAG_HEADER);
-	
+	#if 0
 	FLV_FLOW_ITEM*flow ;
 	int i = 0;
-	int total_data_len = (h->tcpflow.data_len - h->flv_offset);// some continuous tcp flv data len 
-	while(  (flow = (FLV_FLOW_ITEM*)queue_peek(h->flv_pkt_queue)) ) {
+	int total_data_len = 0;
+	if(tag->tag_id == 1){
+		total_data_len += (h->tcpflow.data_len - h->flv_offset);
+	} // some continuous tcp flv data len
+	while( (flow = (FLV_FLOW_ITEM*)queue_peek(h->flv_pkt_queue)) ) {
 		// must be care of the flv header pkt data_len
 		total_data_len += (flow->tcpflow.data_len - flow->flv_offset) ;
 		
@@ -183,15 +186,18 @@ inline int record_flv_data(FLV_FLOW_HEADER*h,FLV_TAG*tag,int data_size)
 			if(flow){
 				i++;
 				int relative_seqno = ntohl(flow->tcpflow.tcph->SeqNO) - ntohl(h->tcpflow.tcph->SeqNO) + 1;
-				int next_seqno = relative_seqno +  flow->tcpflow.data_len - flow->flv_offset;
-				printf("%3u queue size %u,free pkt %5u flag 0x%02x seqno %7u next %7u flv_data_len %4u\n",
-				i,queue_size(h->flv_pkt_queue),flow->pkt_id,flow->tcpflow.tcph->Flags,
+				int next_seqno = relative_seqno + flow->tcpflow.data_len - flow->flv_offset;
+		#if 0		
+		printf("stream %2u %3u queue size %u,free pkt %5u flag 0x%02x seqno %7u next %7u flv_data_len %4u\n",
+				h->tcpflow.stream_id,i,queue_size(h->flv_pkt_queue),flow->pkt_id,flow->tcpflow.tcph->Flags,
 				relative_seqno,next_seqno,flow->tcpflow.data_len - flow->flv_offset);
+		#endif
 			}
 			FLV_FLOW_FREE(flow);
 		}else
 			break;
 	}
+	#endif
 	
 	return 0;
 }
@@ -400,13 +406,10 @@ int process_http_flv_stream(int stream_id,TCPHeader_t*tcph,void*data,int data_le
 void FLV_FLOW_FREE(void*data)
 {
 	if(!data)return;
-	FLV_FLOW_ITEM*flow =(FLV_FLOW_ITEM*)data;
-	TCPHeader_t*tcph = flow->tcpflow.tcph;
-	void *tcp_data = flow->tcpflow.data;
-	if(tcph)free(tcph);
+	FLV_FLOW_ITEM*flow = (FLV_FLOW_ITEM*)data;
 	
-	if(tcp_data)free(tcp_data);
-	
+	if(flow->tcpflow.data)free(flow->tcpflow.data);
+	if(flow->tcpflow.tcph)free(flow->tcpflow.tcph);
 	
 	// release this node
 	if(flow->prev){
@@ -414,7 +417,7 @@ void FLV_FLOW_FREE(void*data)
 	}
 	if(flow->next)
 		flow->next->prev = flow->prev;
-	//flow->ref_counter--;
+	//flow->refcnt--;
 	if(flow)free(flow);
 }
 
@@ -436,7 +439,8 @@ void flv_tcp_data_dequeue(FLV_FLOW_ITEM*flow)
 		flow->next->prev = flow->prev;
 	
 	//free(flow);
-	header->cache_num--;
+	if(header->cache_num > 0)
+		header->cache_num--;
 }
 
 FLV_FLOW_ITEM*flv_tcp_data_enqueue(FLV_FLOW_ITEM*flow)
@@ -444,7 +448,12 @@ FLV_FLOW_ITEM*flv_tcp_data_enqueue(FLV_FLOW_ITEM*flow)
 	if(!flow)return NULL;
 	int stream_id = flow->tcpflow.stream_id;
 	FLV_FLOW_HEADER*header = &flv_stream_table[stream_id];
-	if(header->cache_num >= MAX_PKT_CACHE_NUM_IN_FLV_STREAM)return NULL;
+	#if 0
+	if(header->cache_num >= MAX_PKT_CACHE_NUM_IN_FLV_STREAM){
+		printf("tcpflow cache is full! pkt_id %6u seqno %10u\n",flow->pkt_id,ntohl(flow->tcpflow.tcph->SeqNO));
+		return NULL;
+	}
+	#endif
 	
 	header->cache_num++;
 	flow->next = NULL;
@@ -589,10 +598,10 @@ void flv_stream_process(void*data)
 					dump_print("pkt flv data error", data_len, tmp->tcpflow.data);
 					exit(0);
 				}
-				#endif
 				queue_enqueue(header->flv_pkt_queue,(void*) tmp);
 				// because function flv_record_data will use this recombine data  ,so do not free them right now
 				//FLV_FLOW_FREE(tmp);
+				#endif
 			}
 		}
 	}
@@ -655,6 +664,10 @@ void free_flv_stream(void)
 		if(h->fp)fclose(h->fp);
 		if(h->tcp_log)fclose(h->tcp_log);
 		if(h->ring_log)fclose(h->ring_log);
+		if(h->flv_pkt_queue){
+			queue_destroy(h->flv_pkt_queue);
+			free(h->flv_pkt_queue);
+		}
 	}
 }
 

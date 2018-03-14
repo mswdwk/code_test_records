@@ -57,7 +57,7 @@ typedef struct flv_val
 
 
 // flv stream list length must less than this
-#define MAX_PKT_CACHE_NUM_IN_FLV_STREAM   100
+#define MAX_PKT_CACHE_NUM_IN_FLV_STREAM   2048
 
 typedef struct FLV_FLOW_ITEM{
 	IP_FLOW tcpflow;
