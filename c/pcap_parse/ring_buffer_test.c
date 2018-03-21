@@ -112,7 +112,6 @@ pthread_t producer_thread(void *arg)
     return tid;
 }
 
-
 int main()
 {
     void * buffer = NULL;

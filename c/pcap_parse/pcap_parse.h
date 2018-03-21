@@ -77,4 +77,16 @@ typedef struct IP_PACKET{
 	unsigned char data[];
 }IP_PACKET;
 
+/**
+ * IPv6 Header
+ */
+typedef struct ipv6_hdr {
+	uint32_t vtc_flow;     /**< IP version, traffic class & flow label. */
+	uint16_t payload_len;  /**< IP packet length - includes sizeof(ip_header). */
+	uint8_t  proto;        /**< Protocol, next header. */
+	uint8_t  hop_limits;   /**< Hop limits. */
+	uint8_t  src_addr[16]; /**< IP address of source host. */
+	uint8_t  dst_addr[16]; /**< IP address of destination host(s). */
+} __attribute__((__packed__))IPV6Header_t;
+
 #endif

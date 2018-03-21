@@ -29,6 +29,13 @@ void FLV_FLOW_FREE(void*);
 
 FLV_FLOW_HEADER flv_stream_table[MAX_FLV_STREAM_NUM];
 
+#define GET_FLV_TAG_DATA_SIZE(tag_data_size,ftagheader) do{ \
+		tag_data_size  = (ftagheader)->DataSize[0];\
+		tag_data_size<<=8;\
+		tag_data_size += (ftagheader)->DataSize[1];\
+		tag_data_size<<=8;\
+		tag_data_size += (ftagheader)->DataSize[2];}while(0)
+
 void * consumer_proc(void *arg)
 {
 	if(!arg){
@@ -38,7 +45,7 @@ void * consumer_proc(void *arg)
 	FLV_FLOW_HEADER*h = (FLV_FLOW_HEADER*)arg;
     struct ring_buffer *ring_buf = h->ring_buf;
     FLV_TAG ftag;
-    FLV_TAG_HEADER *ftagheader;
+    //FLV_TAG_HEADER *ftagheader;
 	uint get_data_len = 0, need_data_len = 0;
 	int tag_data_size = 0;
 	unsigned int last_prev_tag_size = h->flvfp.prev_tag_size;
@@ -54,16 +61,11 @@ void * consumer_proc(void *arg)
         //printf("get a flv stream info from ring buffer.\n");
 		get_data_len = 0;
 		need_data_len = sizeof(int) + sizeof(FLV_TAG_HEADER);
-		while((ring_data_len(ring_buf) < need_data_len) &&  h->thread_run)usleep(100);
+		while((ring_data_len(ring_buf) < need_data_len) &&  ! h->stream_last_packet)usleep(100);
 		get_data_len = ring_buffer_get(ring_buf, (void *)&ftag, need_data_len);
-		
+		if(get_data_len != need_data_len)return NULL;
 		prev_tag_size = ntohl(ftag.prev_tag_size);
-		ftagheader = &ftag.tag_header;
-		tag_data_size  = ftagheader->DataSize[0];
-		tag_data_size<<=8;
-		tag_data_size += ftagheader->DataSize[1];
-		tag_data_size<<=8;
-		tag_data_size += ftagheader->DataSize[2];
+		GET_FLV_TAG_DATA_SIZE(tag_data_size,&ftag.tag_header);
 		need_data_len = tag_data_size;
 		if(tag_data_size >= RING_BUFFER_SIZE){
 			printf("tag_data_size %u is >= RING_BUFFER_SIZE %u\n",tag_data_size ,RING_BUFFER_SIZE);
@@ -83,9 +85,9 @@ void * consumer_proc(void *arg)
 			break;
 		}
 		
-		while((ring_data_len(ring_buf) < need_data_len) && h->thread_run)usleep(100);
+		while((ring_data_len(ring_buf) < need_data_len) && ! h->stream_last_packet)usleep(100);
 		get_data_len = ring_buffer_get(ring_buf,( void*)tag_data_buf, need_data_len);
-		
+		if(get_data_len != need_data_len)return NULL;
 		ftag.tag_data = tag_data_buf;
 		ftag.tag_id = h->flvfp.prev_tag_id + 1;
 		record_flv_data(h,&ftag,tag_data_size);
@@ -602,6 +604,8 @@ void flv_stream_process(void*data)
 				// because function flv_record_data will use this recombine data  ,so do not free them right now
 				//FLV_FLOW_FREE(tmp);
 				#endif
+				// because tmp pkt data are write into ring_buf!!! now
+				FLV_FLOW_FREE(tmp);
 			}
 		}
 	}
@@ -654,8 +658,9 @@ void free_flv_stream(void)
 		if(h->tcpflow.data) free(h->tcpflow.data);
 		if(h->tcpflow.tcph) free(h->tcpflow.tcph);
 		if(h->thread_run == 1 ){
-			h->thread_run = 0;
+			h->stream_last_packet = 1;
 			pthread_join(h->consumer_id,NULL);
+			h->thread_run = 0;
 		}
 		
 		if(h->ring_buf){
@@ -679,7 +684,7 @@ int main(int argc,char *argv[])
 	IPHeader_t *ip_header;
 	TCPHeader_t *tcp_header;
 	FILE *fp, *output;
-	int   pkt_offset, i = 0;
+	unsigned long int   pkt_offset ; int i = 0;
 	int ip_len,  ip_proto; //http_len,
 	int src_port, dst_port, tcp_flags;
 	char buf[BUFSIZE], my_time[STRSIZE];
@@ -698,6 +703,7 @@ int main(int argc,char *argv[])
 		return 0;
 	}
 	char *pcapfilename = argv[1];
+	// file size must be smaller than unsigned long int,or integer will overflow
 	if ((fp = fopen(pcapfilename, "rb")) == NULL)
 	{
 		printf("error: can not open pcap file\n");
@@ -721,7 +727,7 @@ int main(int argc,char *argv[])
 			printf("\nRead end of pcap file. Total parse %d packets.\n",i - 1);
 			break;
 		}
-        if(pkt_header->caplen < 14 + sizeof(IPHeader_t)) {
+        if(pkt_header->caplen < 14 + sizeof(IPHeader_t) || pkt_header->caplen > 0xffff) {
             printf("total parser %d packets.pkt_header->caplen 0x%08x len 0x%08x second %d size %zu %zu\n",i,
                 pkt_header->caplen ,pkt_header->len,pkt_header->ts.tv_sec,sizeof(pkt_header->ts.tv_sec)
                 ,sizeof(pkt_header->caplen));
@@ -738,8 +744,16 @@ int main(int argc,char *argv[])
 		else
 			printf("localtime failed. tv_sec = %u. Error %s\n",pkt_header->ts.tv_sec,strerror(errno));																						// printf("%d: %s\n", i, my_time);
 																									//数据帧头 14字节
-		fseek(fp, 14, SEEK_CUR); //忽略数据帧头
-								 //IP数据报头 20字节 // may cause error!!!
+		//fseek(fp, 14, SEEK_CUR); //忽略数据帧头
+		
+		FramHeader_t frameh;
+		fread(&frameh,sizeof(FramHeader_t),1,fp);
+		if( frameh.FrameType != htons(0x800) ){
+			//printf("packet %u is not ipv4 packet! type 0x%04X\n",i,ntohs(frameh.FrameType));
+			continue;
+		}
+		
+		//IP数据报头 20字节 // may cause error!!!
 		if (fread(ip_header, sizeof(IPHeader_t), 1, fp) != 1)
 		{
 			printf("%d: can not read ip_header\n", i);
@@ -751,15 +765,15 @@ int main(int argc,char *argv[])
 		ip_len = ip_header->TotalLen; //IP数据报总长度
 									  // printf("%d:  src=%s\n", i, src_ip);
 		if (ip_proto != 0x06) continue; //判断是否是 TCP 协议
-		
-		
+		short unsigned int ip_header_len = ((ip_header->Ver_HLen & 0xf)<<2);
+		if(ip_header_len > 20)fseek(fp, ip_header_len - 20, SEEK_CUR); //ignore ip option segment
 		//TCP头 20字节
 		if (fread(tcp_header, sizeof(TCPHeader_t), 1, fp) != 1)
 		{
 			printf("%d: can not read tcp_header\n", i);
 			break;
 		}
-        short unsigned int ip_header_len = ((ip_header->Ver_HLen & 0xf)<<2);
+        
 		short unsigned int tcp_header_len = ((tcp_header->HeaderLen & 0xf0)>>2);
 		src_port = ntohs(tcp_header->SrcPort);
 		dst_port = ntohs(tcp_header->DstPort);
@@ -784,10 +798,10 @@ int main(int argc,char *argv[])
          #else
              if(src_port == 80 || dst_port == 80){
                 unsigned short int tcp_data_len = ntohs(ip_len) - ip_header_len - tcp_header_len;
-                char tcp_data_buf[1500] = {0};//= calloc(1,tcp_data_len);
+                char tcp_data_buf[65536] = {0};//= calloc(1,tcp_data_len);
                 
 				// ignore tcpheader options
-				fseek(fp, tcp_header_len - 20, SEEK_CUR);
+				if(tcp_header_len > 20 )fseek(fp, tcp_header_len - 20, SEEK_CUR);
 				
                 fread(tcp_data_buf,tcp_data_len,1,fp);
 				int http_flv_stream_id = -1;

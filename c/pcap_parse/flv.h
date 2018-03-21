@@ -89,6 +89,7 @@ typedef struct FLV_FLOW_HEADER{
 	FLV_FILE flvfp;
 	pthread_t consumer_id ;
 	char thread_run; // control thread run or not
+	char stream_last_packet;// stream last packet
 	struct ring_buffer *ring_buf; // store flv tag data buffer
 }FLV_FLOW_HEADER;
 

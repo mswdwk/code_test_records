@@ -29,4 +29,4 @@ $(RING_TEST):ring_buffer_test.o ring_buffer.o
 $(SORT_TEST):sort_test.o
 	$(CPP) $(CPPFLAGS) $^ -o $@
 clean:
-	rm -rf *.o $(TARGET) $(BIN) *.log 
+	rm -rf *.o $(TARGET) $(BIN) *.log *.flv 

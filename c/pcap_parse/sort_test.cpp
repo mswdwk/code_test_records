@@ -258,15 +258,27 @@ void HeapSort(int *arr, int N)
     }
 }
 
+void print_arr(int arr[],int n)
+{
+	int i;
+	for(i = 0; i < n ;++i){
+		printf("%d ",arr[i]);
+	}
+	printf("\n");
+}
 
 int main(void)
 {
     int arr[] = { 9, 2, 5, 8, 3, 4, 7, 1, 6, 10};
-    HeapSort(arr, 10);
-    for (int i = 0; i < 10; i++)
+	cout<<"before sort"<<endl;
+	print_arr(arr,sizeof(arr)/sizeof(arr[0]));
+	int n = sizeof(arr)/sizeof(arr[0]);
+    HeapSort(arr, n);
+	cout<<"after sort"<<endl;
+	
+    for (int i = 0; i < n; i++)
         cout << arr[i] << ' ';
     cout << endl;
 
     return 0;
 }
-
