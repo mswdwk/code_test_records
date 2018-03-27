@@ -68,6 +68,27 @@ void PreOrderTraversal(BitNode *root)
     }
 }
 
+void destory_tree(BitNode *root)
+{
+    stack<BitNode*> nodeStack;
+    nodeStack.push(root);
+    while (!nodeStack.empty())
+    {
+        BitNode *node = nodeStack.top();
+        cout << node->ch << ' ';
+        nodeStack.pop();
+        if (node->right)
+        {
+            nodeStack.push(node->right);
+        }
+        if (node->left)
+        {
+            nodeStack.push(node->left);
+        }
+        delete node;
+    }
+    cout<<endl;
+}
 //深度优先搜索
 //利用栈，现将右子树压栈再将左子树压栈
 void DepthFirstSearch(BitNode *root)
@@ -111,6 +132,7 @@ void BreadthFirstSearch(BitNode *root)
             nodeQueue.push(node->right);
         }
     }
+    cout<<endl;
 }
 
 int  main()
@@ -126,5 +148,7 @@ int  main()
     //广度优先搜索
     cout << endl << "bfs" << endl;
     BreadthFirstSearch(root);
+    cout << endl << "destroy tree by depth" << endl;
+    destory_tree(root);
     return 0;
 }
