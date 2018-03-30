@@ -82,7 +82,7 @@ void * consumer_proc(void *arg)
 		need_data_len = sizeof(int) + sizeof(FLV_TAG_HEADER);
 		while((ring_data_len(ring_buf) < need_data_len) &&  ! h->stream_last_packet)usleep(100);
 		get_data_len = ring_buffer_get(ring_buf, (void *)&ftag, need_data_len);
-		if(get_data_len != need_data_len)return NULL;
+		if(get_data_len != need_data_len)goto end;
 		prev_tag_size = ntohl(ftag.prev_tag_size);
 		GET_FLV_TAG_DATA_SIZE(tag_data_size,&ftag.tag_header);
 		need_data_len = tag_data_size;
@@ -106,7 +106,7 @@ void * consumer_proc(void *arg)
 		
 		while((ring_data_len(ring_buf) < need_data_len) && ! h->stream_last_packet)usleep(100);
 		get_data_len = ring_buffer_get(ring_buf,( void*)tag_data_buf, need_data_len);
-		if(get_data_len != need_data_len)return NULL;
+		if(get_data_len != need_data_len)goto end;
 		ftag.tag_data = tag_data_buf;
 		ftag.tag_id = h->flvfp.prev_tag_id + 1;
 		record_flv_data(h,&ftag,tag_data_size);
@@ -116,13 +116,14 @@ void * consumer_proc(void *arg)
 		last_tag_size = tag_data_size + sizeof(FLV_TAG_HEADER);
 		tag_data_size = 0;
     }
-	if(tag_data_buf)free(tag_data_buf);
 	#else
-	
 	//queue_dequeue(h->flv_pkt_queue, &item);
-	
 	#endif
-	
+end:
+	if(tag_data_buf)free(tag_data_buf);
+	tag_data_buf = NULL;
+	printf("thread_id %zu quit\n",pthread_self());
+	pthread_detach(pthread_self());
     return (void *)ring_buf;
 }
 
@@ -707,8 +708,8 @@ void free_flv_stream(void)
 		if(h->tcpflow.tcph) free(h->tcpflow.tcph);
 		if(h->thread_run == 1 ){
 			h->stream_last_packet = 1;
-			pthread_join(h->consumer_id,NULL);
 			h->thread_run = 0;
+			pthread_join(h->consumer_id,NULL);
 		}
 		
 		if(h->ring_buf){
@@ -743,8 +744,9 @@ int main(int argc,char *argv[])
 	//初始化
 	file_header = (struct pcap_file_header *)malloc(sizeof(struct pcap_file_header));
 	pkt_header = (struct pcap_pkthdr *)malloc(sizeof(struct pcap_pkthdr));
-	ip_header = (IPHeader_t *)malloc(sizeof(IPHeader_t) + 1500);
+	ip_header = (IPHeader_t *)malloc(sizeof(IPHeader_t) + 2048);
 	//tcp_header = (TCPHeader_t *)malloc(sizeof(TCPHeader_t));
+	char* tcp_data_buf;
 	memset(buf, 0, sizeof(buf));
 	if(argc < 2){
 		printf("use %s pcapfilename\n",argv[0]);
@@ -850,8 +852,8 @@ int main(int argc,char *argv[])
          #else
              if(src_port == 80 || dst_port == 80){
                 unsigned short int tcp_data_len = ntohs(ip_len) - ip_header_len - tcp_header_len;
-                char tcp_data_buf[65536] = {0};//= calloc(1,tcp_data_len);
-                
+                //char tcp_data_buf[65536] = {0};//= calloc(1,tcp_data_len);
+                tcp_data_buf = (char*)tcp_header + tcp_header_len;
 				// ignore tcpheader options
 				if(tcp_header_len > 20 )fseek(fp, tcp_header_len - 20, SEEK_CUR);
 				
@@ -859,7 +861,7 @@ int main(int argc,char *argv[])
 				int http_flv_stream_id = -1;
 				int found_flv_header = -1;
 				if(0 == tcp_data_len)continue;
-				
+				if(tcp_data_len > 2048 ){printf("tcp_data_len %d > 2048\n",tcp_data_len);break;}
 				if(-1 != (http_flv_stream_id = is_http_flv_stream(i,ip_header,tcp_header)))
 					process_http_flv_stream(http_flv_stream_id,tcp_header,tcp_data_buf,tcp_data_len,i);
 				else
