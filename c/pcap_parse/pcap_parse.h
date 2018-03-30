@@ -57,6 +57,24 @@ typedef struct IPHeader_t
 	u_int32 SrcIP; //源IP地址
 	u_int32 DstIP; //目的IP地址
 } IPHeader_t;
+
+/**
+ * IPv4 Header
+ */
+struct ipv4_hdr {
+	uint8_t  version_ihl;		/**< version and header length */
+	uint8_t  type_of_service;	/**< type of service */
+	uint16_t total_length;		/**< length of packet */
+	uint16_t packet_id;		/**< packet ID */
+	uint16_t fragment_offset;	/**< fragmentation offset */
+	uint8_t  time_to_live;		/**< time to live */
+	uint8_t  next_proto_id;		/**< protocol ID */
+	uint16_t hdr_checksum;		/**< header checksum */
+	uint32_t src_addr;		/**< source address */
+	uint32_t dst_addr;		/**< destination address */
+} __attribute__((__packed__));
+
+
 //TCP数据报头
 typedef struct TCPHeader_t
 { //TCP数据报头
@@ -88,5 +106,62 @@ typedef struct ipv6_hdr {
 	uint8_t  src_addr[16]; /**< IP address of source host. */
 	uint8_t  dst_addr[16]; /**< IP address of destination host(s). */
 } __attribute__((__packed__))IPV6Header_t;
+
+#define IPV4_IHL_MULTIPLIER	(4)
+
+/* Fragment Offset * Flags. */
+#define	IPV4_HDR_DF_SHIFT	14
+#define	IPV4_HDR_MF_SHIFT	13
+#define	IPV4_HDR_FO_SHIFT	3
+
+#define	IPV4_HDR_DF_FLAG	(1 << IPV4_HDR_DF_SHIFT)
+#define	IPV4_HDR_MF_FLAG	(1 << IPV4_HDR_MF_SHIFT)
+
+#define	IPV4_HDR_OFFSET_MASK	((1 << IPV4_HDR_MF_SHIFT) - 1)
+
+#define	IPV4_HDR_OFFSET_UNITS	8
+
+
+/**
+ * Check if the IPv4 packet is fragmented
+ *
+ * @param hdr
+ *   IPv4 header of the packet
+ * @return
+ *   1 if fragmented, 0 if not fragmented
+ */
+ #define rte_be_to_cpu_16 ntohs
+static inline int
+rte_ipv4_frag_pkt_is_fragmented(const struct ipv4_hdr * hdr) {
+	uint16_t flag_offset, ip_flag, ip_ofs;
+
+	flag_offset = rte_be_to_cpu_16(hdr->fragment_offset);
+	ip_ofs = (uint16_t)(flag_offset & IPV4_HDR_OFFSET_MASK);
+	ip_flag = (uint16_t)(flag_offset & IPV4_HDR_MF_FLAG);
+
+	return ip_flag != 0 || ip_ofs  != 0;
+}
+
+/* TCP flags */
+
+#define TH_FIN                               0x01
+#define TH_SYN                               0x02
+#define TH_RST                               0x04
+#define TH_PUSH                              0x08
+#define TH_ACK                               0x10
+#define TH_URG                               0x20
+/** Establish a new connection reducing window */
+#define TH_ECN                               0x40
+/** Echo Congestion flag */
+#define TH_CWR                               0x80
+
+// short int
+#define BigLittleSwap16(A)  ((((uint16_t)(A) & 0xff00) >> 8) | (((uint16_t)(A) & 0x00ff) << 8))
+
+// 长整型大小端互换
+#define BigLittleSwap32(A)  ((((uint32_t)(A) & 0xff000000) >> 24) | \
+                             (((uint32_t)(A) & 0x00ff0000) >> 8)  | \
+                             (((uint32_t)(A) & 0x0000ff00) << 8)  | \
+                             (((uint32_t)(A) & 0x000000ff) << 24) )
 
 #endif

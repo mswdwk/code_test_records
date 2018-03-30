@@ -69,7 +69,10 @@ typedef struct FLV_FLOW_ITEM{
 	int ref_counter ; // reference counter
 }FLV_FLOW_ITEM;
 
+typedef   pthread_mutex_t LOCK_T;
+
 typedef struct FLV_FLOW_HEADER{
+	LOCK_T *lock;
 	IP_FLOW tcpflow;
 	//char flv_header_flag;
 	int flv_offset;

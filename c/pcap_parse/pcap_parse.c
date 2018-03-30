@@ -35,6 +35,25 @@ FLV_FLOW_HEADER flv_stream_table[MAX_FLV_STREAM_NUM];
 		tag_data_size += (ftagheader)->DataSize[1];\
 		tag_data_size<<=8;\
 		tag_data_size += (ftagheader)->DataSize[2];}while(0)
+		
+#define IP_PORT_HEADER2FLV_HIGH_LOW(flv,iph,tcph)		\
+	do{													\
+		if( (iph)->DstIP > (iph)->SrcIP ) {				\
+			(flv).high_ip = (iph)->DstIP;				\
+			(flv).low_ip = (iph)->SrcIP;				\
+		}else{											\
+			(flv).high_ip = (iph)->SrcIP;				\
+			(flv).low_ip = (iph)->DstIP;				\
+		}												\
+		\
+		if( (tcph)->DstPort > (tcph)->SrcPort ){		\
+			(flv).high_port = (tcph)->DstPort;			\
+			(flv).low_port = (tcph)->SrcPort;			\
+		}else{											\
+			(flv).high_port = (tcph)->SrcPort;			\
+			(flv).low_port = (tcph)->DstPort;			\
+		} 												\
+	}while(0)
 
 void * consumer_proc(void *arg)
 {
@@ -155,7 +174,7 @@ int ip_flow_hash(IP_FLOW*flow)
 	int hash = 0;
 	if(!flow)
 		return -1;
-	int c = (flow->high_port<<16)&flow->low_port;
+	int c = (flow->high_port<<16)|flow->low_port;
 	hash = rte_jhash_3words(flow->high_ip, flow->low_ip, c,hash);
 	flow->hash = hash;
 	return hash;
@@ -215,6 +234,125 @@ int record_flv_head(FLV_FILE*f,void*data,int len)
 	return 0; 
 }
 
+int flv_stream_construct(int i,IP_FLOW *flv,TCPHeader_t*tcph,void*data,int len,int flv_offset,int pkt_id)
+{
+	FLV_FLOW_HEADER*h = &flv_stream_table[i];
+	memcpy(&flv_stream_table[i].tcpflow,flv,sizeof(IP_FLOW));
+	flv_stream_table[i].tcpflow.tcph = calloc(1,sizeof(TCPHeader_t));
+	memcpy(flv_stream_table[i].tcpflow.tcph,tcph,sizeof(TCPHeader_t));
+	flv_stream_table[i].tcpflow.data = calloc(1,len);
+	memcpy(flv_stream_table[i].tcpflow.data,data,len);
+	
+	char flv_file_name[256];
+	sprintf(flv_file_name,"%d.flv",i);
+	flv_stream_table[i].fp = fopen(flv_file_name,"wb");
+	flv_stream_table[i].flv_offset = flv_offset;
+	flv_stream_table[i].tail = NULL;
+	flv_stream_table[i].head = NULL;
+	printf("stream %d sport %d dport %d\n",i,ntohs(h->tcpflow.tcph->SrcPort),ntohs(h->tcpflow.tcph->DstPort));
+#if 1
+	flv_stream_table[i].last = calloc(1,sizeof(FLV_FLOW_ITEM));
+	if(flv_stream_table[i].last){
+		memcpy(&flv_stream_table[i].last->tcpflow,flv,sizeof(IP_FLOW) );
+		flv_stream_table[i].last->tcpflow.tcph = calloc(1,sizeof(TCPHeader_t));
+		flv_stream_table[i].last->tcpflow.data = calloc(1,1500);
+		flv_stream_table[i].last->pkt_id = pkt_id;
+		if(flv_stream_table[i].last->tcpflow.tcph)
+			memcpy(flv_stream_table[i].last->tcpflow.tcph,tcph,sizeof(TCPHeader_t) );
+	}
+#endif
+	char*ch = (void*)data;
+	flv_stream_table[i].recv_data_len = len ;
+	flv_stream_table[i].pkt_id = pkt_id;
+	flv_stream_table[i].last_seqno = ntohl(tcph->SeqNO);
+	printf("tcp stream %2u pkt_id %6u seq %10u ack %10u len %4u flag 0x%02x cache_num %3u\n",
+		i,pkt_id,ntohl(tcph->SeqNO),ntohl(tcph->AckNO),len,tcph->Flags,flv_stream_table[i].cache_num);
+	
+	struct ring_buffer *ring_buf = NULL;
+	pthread_t consumer_pid;
+
+	void * buffer = (void *)malloc(RING_BUFFER_SIZE);
+	if (!buffer){
+		fprintf(stderr, "Failed to malloc memory.\n");
+		return -1;
+	}
+	ring_buf = ring_buffer_init(buffer, RING_BUFFER_SIZE);
+	if (!ring_buf){
+		fprintf(stderr, "Failed to init ring buffer.\n");
+		return -1;
+	}
+	flv_stream_table[i].flv_pkt_queue = malloc(sizeof(Queue));
+	if (!flv_stream_table[i].flv_pkt_queue){
+		fprintf(stderr, "Failed to init Queue.\n");
+		return -1;
+	}
+	queue_init(flv_stream_table[i].flv_pkt_queue,FLV_FLOW_FREE);
+	
+	flv_stream_table[i].ring_buf = ring_buf;
+	flv_stream_table[i].flvfp.prev_tag_size = 0;
+	flv_stream_table[i].flvfp.prev_tag_id = 0;
+	flv_stream_table[i].flvfp.tag_list.size = 0;
+	
+	fwrite(ch + flv_offset,sizeof(FLV_HEADER),1,flv_stream_table[i].fp);
+	
+	char tcp_stream_recombine_file_name[128]={0};
+	sprintf(tcp_stream_recombine_file_name,"tcp_stream_%u_recombine.log",i);
+	flv_stream_table[i].tcp_log = fopen(tcp_stream_recombine_file_name,"w+");//////////maybe error
+
+	//queue_enqueue(flv_stream_table[i].flv_pkt_queue, * data);
+	FLV_FLOW_HEADER*fh = &flv_stream_table[i];
+	consumer_pid = consumer_thread((void*)fh);
+	
+	flv_stream_table[i].consumer_id = consumer_pid;
+	flv_offset += sizeof(FLV_HEADER);
+	ring_buffer_put(ring_buf,ch + flv_offset,len - flv_offset);
+	int ret = sprintf(tcp_stream_recombine_file_name,"ring_%u.log",i);
+	tcp_stream_recombine_file_name[ret] = 0;
+	FILE* ring_log = fopen(tcp_stream_recombine_file_name,"w+");
+	fprintf(ring_log,"pkt %5u put %u \n",pkt_id,len - flv_offset);
+	flv_stream_table[i].ring_log = ring_log;
+	return 0;
+}
+
+int flv_stream_destruct(int i)
+{
+	FLV_FLOW_HEADER*h = &flv_stream_table[i];
+	//PTHREAD_LOCK(h->lock);
+	if(h->tcpflow.tcph)free(h->tcpflow.tcph);
+
+	if(h->fp)fclose(h->fp);
+
+	if(h->last){
+		if(h->last->tcpflow.tcph)free(h->last->tcpflow.tcph);
+		//h->last->tcpflow.tcph = NULL;
+		if(h->last->tcpflow.data)free(h->last->tcpflow.data);
+		if(h->last )free(h->last);
+	}
+	
+	if (h->ring_buf){
+		ring_buffer_free(h->ring_buf);
+		h->ring_buf = NULL;
+	}
+
+	if(h->flv_pkt_queue){
+		queue_destroy(h->flv_pkt_queue);
+		//free(h->flv_pkt_queue);
+		h->flv_pkt_queue = NULL;
+	}
+
+	if(h->ring_log)fclose(h->ring_log);
+	if(h->tcp_log)fclose(h->tcp_log);
+	FLV_FLOW_ITEM*tmp = h->head;
+	while(tmp){
+		FLV_FLOW_FREE(tmp);
+		tmp = tmp->next;
+	}
+	//PTHREAD_UNLOCK(h->lock);
+	memset(h,0,sizeof(FLV_FLOW_HEADER));
+	return 0;
+}
+
+
 /*
 ** @param flv_offset ,flv tage data or header offset from tcp data;
 */
@@ -232,106 +370,20 @@ int process_http_flv_stream_header(IPHeader_t*iph,TCPHeader_t*tcph,void*data,int
 	/////
 	//flv.tcph = (TCPHeader_t*)calloc(sizeof(TCPHeader_t),1);
 	//memcpy(flv.tcph,tcph,sizeof(TCPHeader_t));
-	
-	if(iph->DstIP > iph->SrcIP){
-		flv.high_ip = iph->DstIP;
-		flv.low_ip = iph->SrcIP;
-	}
-	else{
-		flv.high_ip = iph->SrcIP;
-		flv.low_ip = iph->DstIP;
-	}
-	
-	if( tcph->DstPort> tcph->SrcPort ){
-		flv.high_port = tcph->DstPort;
-		flv.low_port = tcph->SrcPort;
-	}else{
-		flv.high_port = tcph->SrcPort;
-		flv.low_port = tcph->DstPort;
-	}
 
+	IP_PORT_HEADER2FLV_HIGH_LOW(flv,iph,tcph);
 	// search flv stream table;
 	int i ;
-	for(i= 0; i < MAX_FLV_STREAM_NUM; ++i){
+	ip_flow_hash(&flv);
+	for( i= 0; i < MAX_FLV_STREAM_NUM; ++i ){
 		if (flv_stream_table[i].tcpflow.hash == 0){
 			//// !!!!!!!!!!!!!!!!! may cause  memory leak!!!!!!!!!!!!!
 			flv.stream_id = i;
-			ip_flow_hash(&flv);
-			memcpy(&flv_stream_table[i].tcpflow,&flv,sizeof(flv));
-			flv_stream_table[i].tcpflow.tcph = calloc(1,sizeof(TCPHeader_t));
-			memcpy(flv_stream_table[i].tcpflow.tcph,tcph,sizeof(TCPHeader_t));
-			flv_stream_table[i].tcpflow.data = calloc(1,len);
-			memcpy(flv_stream_table[i].tcpflow.data,data,len);
-			
-			char flv_file_name[256];
-			sprintf(flv_file_name,"flv_%d.flv",i);
-			flv_stream_table[i].fp = fopen(flv_file_name,"wb");
-			flv_stream_table[i].flv_offset = flv_offset;
-			flv_stream_table[i].tail = NULL;
-			flv_stream_table[i].head = NULL;
-			
-			#if 1
-			flv_stream_table[i].last = calloc(1,sizeof(FLV_FLOW_ITEM));
-			if(flv_stream_table[i].last){
-				memcpy(&flv_stream_table[i].last->tcpflow,&flv,sizeof(IP_FLOW) );
-				flv_stream_table[i].last->tcpflow.tcph = calloc(1,sizeof(TCPHeader_t));
-				flv_stream_table[i].last->tcpflow.data = calloc(1,1500);
-				flv_stream_table[i].last->pkt_id = pkt_id;
-				if(flv_stream_table[i].last->tcpflow.tcph)
-					memcpy(flv_stream_table[i].last->tcpflow.tcph,tcph,sizeof(TCPHeader_t) );
-			}
-			#endif
-			char*ch = (void*)data;
-			flv_stream_table[i].recv_data_len = len ;
-			flv_stream_table[i].pkt_id = pkt_id;
-			flv_stream_table[i].last_seqno = ntohl(tcph->SeqNO);
-			printf("tcp stream %2u pkt_id %6u seq %10u ack %10u len %4u flag 0x%02x cache_num %3u\n",
-				i,pkt_id,ntohl(tcph->SeqNO),ntohl(tcph->AckNO),len,tcph->Flags,flv_stream_table[i].cache_num);
-			
-		    struct ring_buffer *ring_buf = NULL;
-		    pthread_t consumer_pid;
-	
-		    void * buffer = (void *)malloc(RING_BUFFER_SIZE);
-		    if (!buffer){
-		        fprintf(stderr, "Failed to malloc memory.\n");
-		        return -1;
-		    }
-		    ring_buf = ring_buffer_init(buffer, RING_BUFFER_SIZE);
-		    if (!ring_buf){
-		        fprintf(stderr, "Failed to init ring buffer.\n");
-		        return -1;
-		    }
-			flv_stream_table[i].flv_pkt_queue = malloc(sizeof(Queue));
-			if (!flv_stream_table[i].flv_pkt_queue){
-		        fprintf(stderr, "Failed to init Queue.\n");
-		        return -1;
-		    }
-			queue_init(flv_stream_table[i].flv_pkt_queue,FLV_FLOW_FREE);
-			
-			flv_stream_table[i].ring_buf = ring_buf;
-			flv_stream_table[i].flvfp.prev_tag_size = 0;
-			flv_stream_table[i].flvfp.prev_tag_id = 0;
-			flv_stream_table[i].flvfp.tag_list.size = 0;
-			
-			fwrite(ch + flv_offset,sizeof(FLV_HEADER),1,flv_stream_table[i].fp);
-			
-			char tcp_stream_recombine_file_name[128]={0};
-			sprintf(tcp_stream_recombine_file_name,"tcp_stream_%u_recombine.log",i);
-			flv_stream_table[i].tcp_log = fopen(tcp_stream_recombine_file_name,"w+");//////////maybe error
-
-			//queue_enqueue(flv_stream_table[i].flv_pkt_queue, * data);
-			FLV_FLOW_HEADER*fh = &flv_stream_table[i];
-			consumer_pid = consumer_thread((void*)fh);
-			
-			flv_stream_table[i].consumer_id = consumer_pid;
-			flv_offset += sizeof(FLV_HEADER);
-			ring_buffer_put(ring_buf,ch + flv_offset,len - flv_offset);
-			int ret = sprintf(tcp_stream_recombine_file_name,"ring_%u.log",i);
-			tcp_stream_recombine_file_name[ret] = 0;
-			FILE* ring_log = fopen(tcp_stream_recombine_file_name,"w+");
-			fprintf(ring_log,"pkt %5u put %u \n",pkt_id,len - flv_offset);
-			flv_stream_table[i].ring_log = ring_log;
-			
+			flv_stream_construct(i,&flv,tcph,data,len,flv_offset,pkt_id);
+			return i;
+		}else if ( flv.hash != 0 && flv.hash == flv_stream_table[i].tcpflow.hash ){
+			// 同一条流 第二次 找到 该视频的 flv header
+			printf("same flv stream find flv header twice!\n");
 			return i;
 		}
 	}
@@ -342,7 +394,7 @@ int process_http_flv_stream_header(IPHeader_t*iph,TCPHeader_t*tcph,void*data,int
 ** @return ,return the stream id.
 */
 
-int is_http_flv_stream(IPHeader_t*iph,TCPHeader_t*tcph)
+int is_http_flv_stream(int pkt_id,IPHeader_t*iph,TCPHeader_t*tcph)
 {
 	IP_FLOW flv ;
 	flv.protocol = 6;
@@ -350,28 +402,24 @@ int is_http_flv_stream(IPHeader_t*iph,TCPHeader_t*tcph)
 	flv.hash = 0;
 	flv.stream_id = -1;
 	
-	if(iph->DstIP > iph->SrcIP){
-		flv.high_ip = iph->DstIP;
-		flv.low_ip = iph->SrcIP;
-	}
-	else{
-		flv.high_ip = iph->SrcIP;
-		flv.low_ip = iph->DstIP;
-	}
-	
-	if( tcph->DstPort> tcph->SrcPort ){
-		flv.high_port = tcph->DstPort;
-		flv.low_port = tcph->SrcPort;
-	}else{
-		flv.high_port = tcph->SrcPort;
-		flv.low_port = tcph->DstPort;
-	}
+	IP_PORT_HEADER2FLV_HIGH_LOW(flv, iph, tcph);
+	ip_flow_hash(&flv);
 
 	// search flv stream table;
 	int i ;
-	ip_flow_hash(&flv);
-	for(i= 0; i< MAX_FLV_STREAM_NUM; ++i){
-		if (flv_stream_table[i].tcpflow.hash == flv.hash && flv.hash != 0){
+	
+	for(i = 0; i < MAX_FLV_STREAM_NUM; ++i){
+		if ( flv.hash != 0 && flv_stream_table[i].tcpflow.hash == flv.hash){
+			if(tcph->Flags & TH_FIN){
+				flv_stream_table[i].stream_last_packet = 1;
+				flv_stream_table[i].thread_run = 0;
+				printf("packet id %u send fin flag,close flv stream %d,sport %d dport %d\n",pkt_id,i,
+					ntohs(tcph->SrcPort),ntohs(tcph->DstPort));
+				dump_print("",ntohs(iph->TotalLen),(void*)iph);
+				pthread_join(flv_stream_table[i].consumer_id,NULL);
+				flv_stream_destruct(i);
+				return -1;
+			}
 			return i;
 		}
 	}
@@ -695,8 +743,8 @@ int main(int argc,char *argv[])
 	//初始化
 	file_header = (struct pcap_file_header *)malloc(sizeof(struct pcap_file_header));
 	pkt_header = (struct pcap_pkthdr *)malloc(sizeof(struct pcap_pkthdr));
-	ip_header = (IPHeader_t *)malloc(sizeof(IPHeader_t));
-	tcp_header = (TCPHeader_t *)malloc(sizeof(TCPHeader_t));
+	ip_header = (IPHeader_t *)malloc(sizeof(IPHeader_t) + 1500);
+	//tcp_header = (TCPHeader_t *)malloc(sizeof(TCPHeader_t));
 	memset(buf, 0, sizeof(buf));
 	if(argc < 2){
 		printf("use %s pcapfilename\n",argv[0]);
@@ -767,6 +815,9 @@ int main(int argc,char *argv[])
 		if (ip_proto != 0x06) continue; //判断是否是 TCP 协议
 		short unsigned int ip_header_len = ((ip_header->Ver_HLen & 0xf)<<2);
 		if(ip_header_len > 20)fseek(fp, ip_header_len - 20, SEEK_CUR); //ignore ip option segment
+		if(rte_ipv4_frag_pkt_is_fragmented((const struct ipv4_hdr*)ip_header))
+			printf("packet_id %d is fragment\n",i);
+		tcp_header = (TCPHeader_t*)(((char*)ip_header) + ip_header_len);
 		//TCP头 20字节
 		if (fread(tcp_header, sizeof(TCPHeader_t), 1, fp) != 1)
 		{
@@ -778,6 +829,7 @@ int main(int argc,char *argv[])
 		src_port = ntohs(tcp_header->SrcPort);
 		dst_port = ntohs(tcp_header->DstPort);
 		tcp_flags = tcp_header->Flags;
+		
 	#if 0
 		if (tcp_flags == 0x18) // (PSH, ACK) 3路握手成功后
 		{
@@ -808,7 +860,7 @@ int main(int argc,char *argv[])
 				int found_flv_header = -1;
 				if(0 == tcp_data_len)continue;
 				
-				if(-1 != (http_flv_stream_id = is_http_flv_stream(ip_header,tcp_header)))
+				if(-1 != (http_flv_stream_id = is_http_flv_stream(i,ip_header,tcp_header)))
 					process_http_flv_stream(http_flv_stream_id,tcp_header,tcp_data_buf,tcp_data_len,i);
 				else
                 	found_flv_header = find_flv_header(tcp_data_buf,tcp_data_len);
@@ -827,13 +879,14 @@ int main(int argc,char *argv[])
                 }
              }
          #endif
+		 memset(ip_header,0,sizeof(*ip_header));
 	} // end while
 	fclose(fp);
 	fclose(output);
     free(file_header);
     free(pkt_header);
     free(ip_header);
-    free(tcp_header);
+    //free(tcp_header);
 
 	// maybe data in ring_buf not complete process 
 	free_flv_stream();
