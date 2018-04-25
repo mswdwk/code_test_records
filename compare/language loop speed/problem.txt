@@ -1,0 +1,18 @@
+1) 
+   problem detail:
+   Error: Could not find or load main class Loop
+   Caused by: java.lang.ClassNotFoundException: Loop
+   
+   method:
+   java filename.calss
+   
+   right method 1:
+   java -classpath . filename.calss
+
+   right method 2:
+   modify  environment variable CLASSPATH in file /etc/profile,
+   include current dir path.
+   export CLASSPATH=$CLASSPATH:.
+   
+
+
