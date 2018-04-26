@@ -24,7 +24,7 @@ $(BIN): queue.o list.o pcap_parse.o  ring_buffer.o dump_print.o
 	$(CPP) $(CPPFLAGS) -c $< -o $@
 
 $(RING_TEST):ring_buffer_test.o ring_buffer.o
-	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
+	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
 
 $(SORT_TEST):sort_test.o
 	$(CPP) $(CPPFLAGS) $^ -o $@
