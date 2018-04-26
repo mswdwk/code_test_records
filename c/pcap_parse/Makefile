@@ -1,4 +1,5 @@
 BIN=pp
+CC=gcc
 SRCS:=$(wildcard *.c)
 CFLAGS= -g -Wall 
 CPPFLAGS= -g -Wall 
@@ -16,7 +17,7 @@ all:$(BIN)
 test:$(RING_TEST) $(SORT_TEST)
 
 $(BIN): queue.o list.o pcap_parse.o  ring_buffer.o dump_print.o
-	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@ 
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 %.O:%.C
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -28,5 +29,6 @@ $(RING_TEST):ring_buffer_test.o ring_buffer.o
 
 $(SORT_TEST):sort_test.o
 	$(CPP) $(CPPFLAGS) $^ -o $@
+
 clean:
-	rm -rf *.o $(TARGET) $(BIN) *.log *.flv  *.txt
+	rm -rf *.o $(TARGET) $(BIN) *.log *.flv  
