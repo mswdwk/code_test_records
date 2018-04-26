@@ -22,7 +22,6 @@
 
 //
 void match_http(FILE *fp, char *head_str, char *tail_str, char *buf, int total_len); //查找 http 信息函数
-inline int record_flv_data(FLV_FLOW_HEADER*h,FLV_TAG*tag,int data_size);
 void FLV_FLOW_FREE(void*);
 
 #define MAX_FLV_STREAM_NUM 16
@@ -55,6 +54,48 @@ FLV_FLOW_HEADER flv_stream_table[MAX_FLV_STREAM_NUM];
 		} 												\
 	}while(0)
 
+// flag means is or not flv header
+int record_flv_data(FLV_FLOW_HEADER*h,FLV_TAG*tag,int data_size)
+{
+	if(!h||!tag || data_size < 0)return -1;
+	FILE*fp = h->fp;
+	fwrite(&tag->prev_tag_size,sizeof(int),1,fp);
+	fwrite(&tag->tag_header,sizeof(FLV_TAG_HEADER),1,fp);
+	fwrite(tag->tag_data,data_size,1,fp);
+	h->flvfp.prev_tag_id = tag->tag_id;
+	h->flvfp.prev_tag_size = data_size + sizeof(FLV_TAG_HEADER);
+	#if 0
+	FLV_FLOW_ITEM*flow ;
+	int i = 0;
+	int total_data_len = 0;
+	if(tag->tag_id == 1){
+		total_data_len += (h->tcpflow.data_len - h->flv_offset);
+	} // some continuous tcp flv data len
+	while( (flow = (FLV_FLOW_ITEM*)queue_peek(h->flv_pkt_queue)) ) {
+		// must be care of the flv header pkt data_len
+		total_data_len += (flow->tcpflow.data_len - flow->flv_offset) ;
+		
+		if((data_size >= total_data_len)){
+			// from head start remove list
+			queue_dequeue(h->flv_pkt_queue,(void*)&flow);
+			if(flow){
+				i++;
+				int relative_seqno = ntohl(flow->tcpflow.tcph->SeqNO) - ntohl(h->tcpflow.tcph->SeqNO) + 1;
+				int next_seqno = relative_seqno + flow->tcpflow.data_len - flow->flv_offset;
+		#if 0		
+		printf("stream %2u %3u queue size %u,free pkt %5u flag 0x%02x seqno %7u next %7u flv_data_len %4u\n",
+				h->tcpflow.stream_id,i,queue_size(h->flv_pkt_queue),flow->pkt_id,flow->tcpflow.tcph->Flags,
+				relative_seqno,next_seqno,flow->tcpflow.data_len - flow->flv_offset);
+		#endif
+			}
+			FLV_FLOW_FREE(flow);
+		}else
+			break;
+	}
+	#endif
+	
+	return 0;
+}
 void * consumer_proc(void *arg)
 {
 	if(!arg){
@@ -179,49 +220,6 @@ int ip_flow_hash(IP_FLOW*flow)
 	hash = rte_jhash_3words(flow->high_ip, flow->low_ip, c,hash);
 	flow->hash = hash;
 	return hash;
-}
-
-// flag means is or not flv header
-inline int record_flv_data(FLV_FLOW_HEADER*h,FLV_TAG*tag,int data_size)
-{
-	if(!h||!tag || data_size < 0)return -1;
-	FILE*fp = h->fp;
-	fwrite(&tag->prev_tag_size,sizeof(int),1,fp);
-	fwrite(&tag->tag_header,sizeof(FLV_TAG_HEADER),1,fp);
-	fwrite(tag->tag_data,data_size,1,fp);
-	h->flvfp.prev_tag_id = tag->tag_id;
-	h->flvfp.prev_tag_size = data_size + sizeof(FLV_TAG_HEADER);
-	#if 0
-	FLV_FLOW_ITEM*flow ;
-	int i = 0;
-	int total_data_len = 0;
-	if(tag->tag_id == 1){
-		total_data_len += (h->tcpflow.data_len - h->flv_offset);
-	} // some continuous tcp flv data len
-	while( (flow = (FLV_FLOW_ITEM*)queue_peek(h->flv_pkt_queue)) ) {
-		// must be care of the flv header pkt data_len
-		total_data_len += (flow->tcpflow.data_len - flow->flv_offset) ;
-		
-		if((data_size >= total_data_len)){
-			// from head start remove list
-			queue_dequeue(h->flv_pkt_queue,(void*)&flow);
-			if(flow){
-				i++;
-				int relative_seqno = ntohl(flow->tcpflow.tcph->SeqNO) - ntohl(h->tcpflow.tcph->SeqNO) + 1;
-				int next_seqno = relative_seqno + flow->tcpflow.data_len - flow->flv_offset;
-		#if 0		
-		printf("stream %2u %3u queue size %u,free pkt %5u flag 0x%02x seqno %7u next %7u flv_data_len %4u\n",
-				h->tcpflow.stream_id,i,queue_size(h->flv_pkt_queue),flow->pkt_id,flow->tcpflow.tcph->Flags,
-				relative_seqno,next_seqno,flow->tcpflow.data_len - flow->flv_offset);
-		#endif
-			}
-			FLV_FLOW_FREE(flow);
-		}else
-			break;
-	}
-	#endif
-	
-	return 0;
 }
 
 int record_flv_head(FLV_FILE*f,void*data,int len)
@@ -516,7 +514,7 @@ FLV_FLOW_ITEM*flv_tcp_data_enqueue(FLV_FLOW_ITEM*flow)
 	return flow;
 }
 
-inline int FLV_FLOW_ITEM_COPY(FLV_FLOW_ITEM*dst,FLV_FLOW_ITEM*src) 
+int FLV_FLOW_ITEM_COPY(FLV_FLOW_ITEM*dst,FLV_FLOW_ITEM*src) 
 {
 	if(!dst||!src)return -1;
 	
@@ -532,7 +530,7 @@ inline int FLV_FLOW_ITEM_COPY(FLV_FLOW_ITEM*dst,FLV_FLOW_ITEM*src)
 	return 0;
 }
 
-inline int FLV_FLOW_ITEM_COPY_FOR_LAST(FLV_FLOW_ITEM*dst,FLV_FLOW_ITEM*src) 
+int FLV_FLOW_ITEM_COPY_FOR_LAST(FLV_FLOW_ITEM*dst,FLV_FLOW_ITEM*src) 
 {
 	if(!dst||!src)return -1;
 	// be carefull about pointer copy!
