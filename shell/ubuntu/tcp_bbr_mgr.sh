@@ -34,14 +34,28 @@ start_tcp_bbr()
 stop_tcp_bbr()
 {
 	disable_tcp_bbr
+	`sysctl net.ipv4.tcp_congestion_control=cubic >/dev/null`
+	`rmmod tcp_bbr >/dev/null`
 	sysctl -p
 }
 
+status_tcp_bbr()
+{
+	res=`lsmod|grep tcp_bbr`
+	if [ -z "$res"  ];then
+		echo "tcp_bbr stopped"
+	else
+		echo "tcp_bbr running"
+	fi
+}
 if [ $# -lt 1 ];then
 	echo "start tcp_bbr by default"
 	start_tcp_bbr
 else
 	case $1 in
+	status)
+		status_tcp_bbr
+		;;
 	start)
 		start_tcp_bbr
 		;;
