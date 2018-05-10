@@ -30,7 +30,6 @@ $(RING_TEST):ring_buffer_test.o ring_buffer.o
 
 $(SORT_TEST):sort_test.o
 	$(CPP) $(CPPFLAGS) $^ -o $@
-<<<<<<< HEAD
 $(LIBS_A):ring_buffer.o queue.o list.o dump_print.o
 	ar rcs $@ $^
 clean:

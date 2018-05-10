@@ -173,3 +173,35 @@ uint32_t ring_buffer_put(struct ring_buffer *ring_buf, void *buffer, uint32_t si
     pthread_mutex_unlock(ring_buf->f_lock);
     return ret;
 }
+
+//从缓冲区中尝试取数据
+inline static uint32_t __ring_buffer_try_get(struct ring_buffer *ring_buf, void * buffer, uint32_t size)
+{
+    assert(ring_buf || buffer);
+    uint32_t len = 0;
+	//note: ring_buf->in - ring_buf->out means vaild data buffer len
+    size  = min(size, ring_buf->in - ring_buf->out);
+    /* first get the data from fifo->out until the end of the buffer */
+    len = min(size, ring_buf->size - (ring_buf->out & (ring_buf->size - 1)));
+    memcpy(buffer, ring_buf->buffer + (ring_buf->out & (ring_buf->size - 1)), len);
+    /* then get the rest (if any) from the beginning of the buffer */
+    memcpy(buffer + len, ring_buf->buffer, size - len);
+    //ring_buf->out += size;
+    return size;
+}
+
+//从缓冲区中尝试取数据
+uint32_t ring_buffer_try_get(struct ring_buffer *ring_buf, void * buffer, uint32_t size)
+{
+    uint32_t ret = 0;
+    assert(ring_buf || buffer);
+    //assert(ring_buf->f_lock);
+    pthread_mutex_lock(ring_buf->f_lock);
+    ret = __ring_buffer_try_get(ring_buf, buffer, size);
+    //buffer中没有数据
+    if (ring_buf->in == ring_buf->out)
+        ring_buf->in = ring_buf->out = 0;
+    pthread_mutex_unlock(ring_buf->f_lock);
+    return ret;
+}
+
