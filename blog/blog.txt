@@ -3,3 +3,15 @@ https://www.cnblogs.com/yangyxd/p/5950007.html
 
 maven(一) maven到底是个啥玩意~
 https://www.cnblogs.com/whgk/p/7112560.html
+
+开源分布式版本控制工具 —— Git 之旅
+https://www.ibm.com/developerworks/cn/opensource/os-cn-tourofgit/
+
+2.4 Git 基础 - 撤消操作
+https://git-scm.com/book/zh/v2/Git-%E5%9F%BA%E7%A1%80-%E6%92%A4%E6%B6%88%E6%93%8D%E4%BD%9C
+
+数据库什么是字段应该设置索引
+https://wenda.so.com/q/1504793609216534
+
+DPDK收发包处理流程-----（一）网卡初始化
+http://www.cnblogs.com/MerlinJ/p/4108021.html
