@@ -9,9 +9,6 @@ class dir_print:
     def __init__(self, dir):
         self.dir = dir
         self.file_counter += 0
-   
-    def displayCount(self):
-        print "Total Employee %d" % Employee.empCount
  
     def print_dir_counter(self):
         print "DirName : ", self.dir,  ", fileCounter: ", self.file_counter
