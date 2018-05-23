@@ -1,6 +1,6 @@
 CC=gcc
 CFLAGS=-g -Wall
-LDFLAGS=-lssl
+LDFLAGS=-lssl -lcrypto
 TARGET = server client
 
 .PHONY:all clean
@@ -12,7 +12,7 @@ client:ssl-client.o
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 %.o:%.c
-	$(CC) $(CFLAGS) $< -o $@
+	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
 	rm -rf *.o $(TARGET)
