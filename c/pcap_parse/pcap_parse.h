@@ -1,16 +1,10 @@
 #ifndef _PCAP_PARSE_H
 #define _PCAP_PARSE_H
 
+#include "basic_data_type.h"
+
 #define BUFSIZE 10240
 #define STRSIZE 1024
-//typedef long bpf_int32;               // maybe 8 bytes in windows10 x64 system
-//typedef unsigned long bpf_u_int32;    // maybe 8 bytes in windows10 x64 system
-
-typedef int int32;
-typedef unsigned int u_int32;
-typedef unsigned short  u_short;
-typedef unsigned short u_int16;
-typedef unsigned char u_int8;
 
 //pacp文件头结构体
 struct pcap_file_header
@@ -163,5 +157,20 @@ rte_ipv4_frag_pkt_is_fragmented(const struct ipv4_hdr * hdr) {
                              (((uint32_t)(A) & 0x00ff0000) >> 8)  | \
                              (((uint32_t)(A) & 0x0000ff00) << 8)  | \
                              (((uint32_t)(A) & 0x000000ff) << 24) )
+
+
+typedef struct{
+	struct pcap_pkthdr *ph;
+	FramHeader_t*fh;
+	IPHeader_t*iph;
+	TCPHeader_t*tcph;
+	struct udphdr *udph;
+	char*tcp_data;
+#define DATA_ROOM_BUF (1518 + sizeof(struct pcap_pkthdr))
+	char data[DATA_ROOM_BUF];
+}ETH_DATA;
+
+
+
 
 #endif

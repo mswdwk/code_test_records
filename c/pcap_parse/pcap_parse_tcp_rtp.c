@@ -16,12 +16,12 @@
 #include "ring_buffer.h"
 #include "dump_print.h"
 #include "queue.h"
-#include "nids.h"
+//#include "nids.h"
 
 #define MAX_TCP_STREAM_NUM 128
 
 TCP_FLOW_HEADER tcp_stream_table[MAX_TCP_STREAM_NUM];
-
+static  int tcp_stream_num;
 
 int create_pkt_mempool(int pkt_num)
 {
@@ -84,6 +84,28 @@ static TCP_FLOW_ITEM*tcp_flow_data_enqueue(TCP_FLOW_ITEM*flow)
 	return flow;
 }
 
+static void tcp_flow_data_dequeue(TCP_FLOW_ITEM*flow)
+{
+	if(!flow)return;
+	int stream_id = flow->tcpflow.stream_id;
+	TCP_FLOW_HEADER*header = &tcp_stream_table[stream_id];
+	if(header->cache_num < 0 )return;
+	
+	if(header->tail == flow) header->tail = flow->prev;
+	if(header->head == flow) header->head = flow->next;
+	
+	// release this node
+	if(flow->prev){
+		flow->prev->next = flow->next;
+	}
+	if(flow->next)
+		flow->next->prev = flow->prev;
+	
+	//free(flow);
+	if(header->cache_num > 0)
+		header->cache_num--;
+}
+
 static int tcp_stream_recombine(TCP_FLOW_HEADER*h,TCP_FLOW_ITEM*item,TCP_FLOW_ITEM**result)
 {
 	int i = 0,counter = 0;
@@ -135,7 +157,7 @@ static int tcp_stream_recombine(TCP_FLOW_HEADER*h,TCP_FLOW_ITEM*item,TCP_FLOW_IT
 			result[counter++] = item;
 			TCP_FLOW_ITEM_COPY_FOR_LAST(h->last,item);
 			next_expect_tcp_seqno = item_seqno + item->tcpflow.data_len;
-			flv_tcp_data_dequeue(item);
+			tcp_flow_data_dequeue(item);
 		}
 		item = item->next;
 	}
@@ -148,13 +170,16 @@ void tcp_data_callback(TCP_FLOW_ITEM**res)
 	
 }
 
-#define ETH_DATA2ITEM(e,cur) do{\
-	\
-	}while(0)
-	
+static inline void ETH_DATA2ITEM(int pkt_id,ETH_DATA*e,TCP_FLOW_ITEM*cur)
+{
+	cur->pkt_id = pkt_id;
+	cur->tcpflow.tcph = e->tcph;
+	cur->tcpflow.data = e->tcp_data;
+}
+
 TCP_FLOW_HEADER*IS_TCP_STREAM(ETH_DATA*e)
 {
-
+	return NULL;
 }
 
 void INIT_TCP_STREAM(ETH_DATA*e)
@@ -167,7 +192,8 @@ void eth_callback(int pkt_id,ETH_DATA*e)
 	TCP_FLOW_ITEM*result[128];
 	TCP_FLOW_ITEM cur;
 	TCP_FLOW_HEADER*h;
-	ETH_DATA2ITEM(e,cur);
+	ETH_DATA2ITEM(pkt_id,e,&cur);
+	
 	if((h=IS_TCP_STREAM(e))){
 		tcp_stream_recombine(h,&cur,result);
 		tcp_data_callback(result);
@@ -267,7 +293,7 @@ int main(int argc,char *argv[])
 		src_port = ntohs(tcp_header->SrcPort);
 		dst_port = ntohs(tcp_header->DstPort);
 		tcp_flags = tcp_header->Flags;
-
+		ethdata.tcp_data = ((char*)tcp_header+tcp_header_len);
 		eth_callback(i,&ethdata);
 
 		 memset(&ethdata,0,sizeof(ethdata));

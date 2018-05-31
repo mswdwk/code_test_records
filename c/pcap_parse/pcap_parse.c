@@ -22,7 +22,7 @@
 
 //
 void match_http(FILE *fp, char *head_str, char *tail_str, char *buf, int total_len); //查找 http 信息函数
-inline int record_flv_data(FLV_FLOW_HEADER*h,FLV_TAG*tag,int data_size);
+int record_flv_data(FLV_FLOW_HEADER*h,FLV_TAG*tag,int data_size);
 void FLV_FLOW_FREE(void*);
 
 #define MAX_FLV_STREAM_NUM 128
@@ -203,7 +203,7 @@ int ip_flow_hash(IP_FLOW*flow)
 }
 
 // flag means is or not flv header
-inline int record_flv_data(FLV_FLOW_HEADER*h,FLV_TAG*tag,int data_size)
+int record_flv_data(FLV_FLOW_HEADER*h,FLV_TAG*tag,int data_size)
 {
 	if(!h||!tag || data_size < 0)return -1;
 	FILE*fp = h->fp;
@@ -565,7 +565,7 @@ FLV_FLOW_ITEM*flv_tcp_data_enqueue(FLV_FLOW_ITEM*flow)
 	return flow;
 }
 
-inline int FLV_FLOW_ITEM_COPY(FLV_FLOW_ITEM*dst,FLV_FLOW_ITEM*src) 
+int FLV_FLOW_ITEM_COPY(FLV_FLOW_ITEM*dst,FLV_FLOW_ITEM*src) 
 {
 	if(!dst||!src)return -1;
 	
@@ -581,7 +581,7 @@ inline int FLV_FLOW_ITEM_COPY(FLV_FLOW_ITEM*dst,FLV_FLOW_ITEM*src)
 	return 0;
 }
 
-inline int FLV_FLOW_ITEM_COPY_FOR_LAST(FLV_FLOW_ITEM*dst,FLV_FLOW_ITEM*src) 
+int FLV_FLOW_ITEM_COPY_FOR_LAST(FLV_FLOW_ITEM*dst,FLV_FLOW_ITEM*src) 
 {
 	if(!dst||!src)return -1;
 	// be carefull about pointer copy!
@@ -604,7 +604,7 @@ inline int FLV_FLOW_ITEM_COPY_FOR_LAST(FLV_FLOW_ITEM*dst,FLV_FLOW_ITEM*src)
 }
 
 
-int tcp_stream_recombine(FLV_FLOW_HEADER*h,FLV_FLOW_ITEM*item,FLV_FLOW_ITEM**result)
+static int tcp_stream_recombine(FLV_FLOW_HEADER*h,FLV_FLOW_ITEM*item,FLV_FLOW_ITEM**result)
 {
 	int i = 0,counter = 0;
 	if(!h || !item) return 0;
