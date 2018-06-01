@@ -1,6 +1,5 @@
 #ifndef _PCAP_PARSE_H
 #define _PCAP_PARSE_H
-
 #include "basic_data_type.h"
 
 #define BUFSIZE 10240
@@ -101,40 +100,7 @@ typedef struct ipv6_hdr {
 	uint8_t  dst_addr[16]; /**< IP address of destination host(s). */
 } __attribute__((__packed__))IPV6Header_t;
 
-#define IPV4_IHL_MULTIPLIER	(4)
 
-/* Fragment Offset * Flags. */
-#define	IPV4_HDR_DF_SHIFT	14
-#define	IPV4_HDR_MF_SHIFT	13
-#define	IPV4_HDR_FO_SHIFT	3
-
-#define	IPV4_HDR_DF_FLAG	(1 << IPV4_HDR_DF_SHIFT)
-#define	IPV4_HDR_MF_FLAG	(1 << IPV4_HDR_MF_SHIFT)
-
-#define	IPV4_HDR_OFFSET_MASK	((1 << IPV4_HDR_MF_SHIFT) - 1)
-
-#define	IPV4_HDR_OFFSET_UNITS	8
-
-
-/**
- * Check if the IPv4 packet is fragmented
- *
- * @param hdr
- *   IPv4 header of the packet
- * @return
- *   1 if fragmented, 0 if not fragmented
- */
- #define rte_be_to_cpu_16 ntohs
-static inline int
-rte_ipv4_frag_pkt_is_fragmented(const struct ipv4_hdr * hdr) {
-	uint16_t flag_offset, ip_flag, ip_ofs;
-
-	flag_offset = rte_be_to_cpu_16(hdr->fragment_offset);
-	ip_ofs = (uint16_t)(flag_offset & IPV4_HDR_OFFSET_MASK);
-	ip_flag = (uint16_t)(flag_offset & IPV4_HDR_MF_FLAG);
-
-	return ip_flag != 0 || ip_ofs  != 0;
-}
 
 /* TCP flags */
 
@@ -211,6 +177,9 @@ typedef struct{
 			low_port = (tcph)->DstPort;			\
 		}												\
 	}while(0)
+
+
+
 
 
 #endif

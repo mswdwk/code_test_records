@@ -15,6 +15,7 @@ typedef unsigned char u_int8;
 typedef   pthread_mutex_t LOCK_T;
 typedef unsigned char byte;
 typedef unsigned int uint;
+typedef unsigned int u_int;
 
 #endif
 

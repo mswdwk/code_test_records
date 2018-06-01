@@ -35,28 +35,6 @@ FLV_FLOW_HEADER flv_stream_table[MAX_FLV_STREAM_NUM];
 		tag_data_size += (ftagheader)->DataSize[1];\
 		tag_data_size<<=8;\
 		tag_data_size += (ftagheader)->DataSize[2];}while(0)
-		
-
-
- char *adres2(IP_FLOW *addr)
-{
-  static char buf[256];
-  memset(buf,0,sizeof(buf));
-#if 0
-  strcpy (buf, int_ntoa (addr.saddr));
-  int ret = sprintf (buf + strlen (buf), "-%d>", addr.source);
-  strcat (buf, int_ntoa (addr.daddr));
-  ret += sprintf (buf + strlen (buf), "-%d", addr.dest);
-  buf[ret] = 0;
-#else
-  struct in_addr ipaddr;
-  ipaddr.s_addr = (addr->high_ip);
-  int ret = sprintf (buf , "%s-%d-", inet_ntoa(ipaddr),ntohs(addr->high_port));
-  ipaddr.s_addr = addr->low_ip;
-  sprintf(buf+ret,"%s-%d",inet_ntoa(ipaddr),ntohs(addr->low_port));
-#endif
-  return buf;
-}
 
 void * consumer_proc(void *arg)
 {

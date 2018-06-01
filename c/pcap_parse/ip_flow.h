@@ -4,6 +4,13 @@
 //#include "basic_data_type.h"
 #include <stdio.h>
 #include <pthread.h>
+#include <stdlib.h>
+#include <netinet/in.h>
+#include <time.h>
+#include <errno.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+
 
 #define TCP_HASH_INDEX_INVAILD -1
 
@@ -92,6 +99,62 @@ static inline void TCP_FLOW_FREE(void*data)
 	//flow->refcnt--;
 	if(flow)free(flow);
 }
+
+#define IPV4_IHL_MULTIPLIER	(4)
+		
+		/* Fragment Offset * Flags. */
+#define	IPV4_HDR_DF_SHIFT	14
+#define	IPV4_HDR_MF_SHIFT	13
+#define	IPV4_HDR_FO_SHIFT	3
+		
+#define	IPV4_HDR_DF_FLAG	(1 << IPV4_HDR_DF_SHIFT)
+#define	IPV4_HDR_MF_FLAG	(1 << IPV4_HDR_MF_SHIFT)
+		
+#define	IPV4_HDR_OFFSET_MASK	((1 << IPV4_HDR_MF_SHIFT) - 1)
+		
+#define	IPV4_HDR_OFFSET_UNITS	8
+		
+		
+		/**
+		 * Check if the IPv4 packet is fragmented
+		 *
+		 * @param hdr
+		 *	 IPv4 header of the packet
+		 * @return
+		 *	 1 if fragmented, 0 if not fragmented
+		 */
+ #define rte_be_to_cpu_16 ntohs
+		static inline int
+		rte_ipv4_frag_pkt_is_fragmented(const struct ipv4_hdr * hdr) {
+			uint16_t flag_offset, ip_flag, ip_ofs;
+		
+			flag_offset = rte_be_to_cpu_16(hdr->fragment_offset);
+			ip_ofs = (uint16_t)(flag_offset & IPV4_HDR_OFFSET_MASK);
+			ip_flag = (uint16_t)(flag_offset & IPV4_HDR_MF_FLAG);
+		
+			return ip_flag != 0 || ip_ofs  != 0;
+		}
+
+
+		static inline char *adres2(IP_FLOW *addr)
+		{
+				  static char buf[256];
+				  memset(buf,0,sizeof(buf));
+#if 0
+				  strcpy (buf, int_ntoa (addr.saddr));
+				  int ret = sprintf (buf + strlen (buf), "-%d>", addr.source);
+				  strcat (buf, int_ntoa (addr.daddr));
+				  ret += sprintf (buf + strlen (buf), "-%d", addr.dest);
+				  buf[ret] = 0;
+#else
+				  struct in_addr ipaddr;
+				  ipaddr.s_addr = (addr->high_ip);
+				  int ret = sprintf (buf , "%s-%d-", inet_ntoa(ipaddr),ntohs(addr->high_port));
+				  ipaddr.s_addr = addr->low_ip;
+				  sprintf(buf+ret,"%s-%d",inet_ntoa(ipaddr),ntohs(addr->low_port));
+#endif
+				  return buf;
+		}
 
 
 #endif

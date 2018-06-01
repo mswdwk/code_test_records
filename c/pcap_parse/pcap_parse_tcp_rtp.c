@@ -16,7 +16,7 @@
 #include "ring_buffer.h"
 #include "dump_print.h"
 #include "queue.h"
-//#include "nids.h"
+#include "hash.h"
 
 #define MAX_TCP_STREAM_NUM 128
 
@@ -188,7 +188,7 @@ static inline void ETH_DATA2ITEM(int pkt_id,ETH_DATA*e,TCP_FLOW_ITEM*cur)
 
 static int tcp_stream_construct(int i,ETH_DATA*et)
 {
-	IP_FLOW *tcp,
+	IP_FLOW *tcp;
 	TCPHeader_t*tcph = et->tcph;
 	void*data = et->tcp_data;
 	int len = et->tcp_data_len;
@@ -249,7 +249,7 @@ static int tcp_stream_construct(int i,ETH_DATA*et)
 	int ret = sprintf(tcp_stream_recombine_file_name,"ring_%s-%u.log",adres2(&h->tcpflow),i);
 	tcp_stream_recombine_file_name[ret] = 0;
 	FILE* ring_log = fopen(tcp_stream_recombine_file_name,"w+");
-	fprintf(ring_log,"pkt %5u put %u \n",pkt_id,len - tcp_offset);
+	//fprintf(ring_log,"pkt %5u put %u \n",pkt_id,len - tcp_offset);
 	tcp_stream_table[i].ring_log = ring_log;
 	tcp_stream_table[i].stream_last_packet = 0;
 	//tcp_unlock(h->lock);
