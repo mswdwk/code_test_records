@@ -1,6 +1,8 @@
 #ifndef BASIC_DATA_TYPE_H
 #define BASIC_DATA_TYPE_H
 
+#include <pthread.h>
+
 //typedef long bpf_int32;               // maybe 8 bytes in windows10 x64 system
 //typedef unsigned long bpf_u_int32;    // maybe 8 bytes in windows10 x64 system
 
@@ -11,7 +13,8 @@ typedef unsigned short u_int16;
 typedef unsigned char u_int8;
 
 typedef   pthread_mutex_t LOCK_T;
-
+typedef unsigned char byte;
+typedef unsigned int uint;
 
 #endif
 

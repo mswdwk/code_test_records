@@ -166,11 +166,51 @@ typedef struct{
 	TCPHeader_t*tcph;
 	struct udphdr *udph;
 	char*tcp_data;
-#define DATA_ROOM_BUF (1518 + sizeof(struct pcap_pkthdr))
-	char data[DATA_ROOM_BUF];
+	int tcp_data_len;
+	int pkt_id:24;
+	int from_server:1;
+	int tcp_hash_index;
+#define DATA_ROOM_BUF_SIZE (1518 + sizeof(struct pcap_pkthdr))
+	char data[DATA_ROOM_BUF_SIZE];
 }ETH_DATA;
 
+#define IP_PORT_HEADER2FLV_HIGH_LOW(flv,iph,tcph)		\
+	do{													\
+		if( (iph)->DstIP > (iph)->SrcIP ) {				\
+			(flv).high_ip = (iph)->DstIP;				\
+			(flv).low_ip = (iph)->SrcIP;				\
+		}else{											\
+			(flv).high_ip = (iph)->SrcIP;				\
+			(flv).low_ip = (iph)->DstIP;				\
+		}												\
+		\
+		if( (tcph)->DstPort > (tcph)->SrcPort ){		\
+			(flv).high_port = (tcph)->DstPort;			\
+			(flv).low_port = (tcph)->SrcPort;			\
+		}else{											\
+			(flv).high_port = (tcph)->SrcPort;			\
+			(flv).low_port = (tcph)->DstPort;			\
+		} 												\
+	}while(0)
 
+#define IP_PORT_HEADER2TCP_HIGH_LOW(iph,tcph)		\
+	do{ 												\
+		if( (iph)->DstIP > (iph)->SrcIP ) { 			\
+			high_ip = (iph)->DstIP;				\
+			low_ip = (iph)->SrcIP;				\
+		}else{											\
+			high_ip = (iph)->SrcIP;				\
+			low_ip = (iph)->DstIP;				\
+		}												\
+		\
+		if( (tcph)->DstPort > (tcph)->SrcPort ){		\
+			high_port = (tcph)->DstPort;			\
+			low_port = (tcph)->SrcPort;			\
+		}else{											\
+			high_port = (tcph)->SrcPort;			\
+			low_port = (tcph)->DstPort;			\
+		}												\
+	}while(0)
 
 
 #endif

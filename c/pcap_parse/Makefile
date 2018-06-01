@@ -18,7 +18,7 @@ all:$(BIN) $(LIBS_A) $(BIN_TCP_RTP)
 
 test:$(RING_TEST) $(SORT_TEST)
 
-$(BIN): queue.o list.o pcap_parse.o  ring_buffer.o dump_print.o
+$(BIN): queue.o list.o pcap_parse.o  ring_buffer.o dump_print.o ip_flow.o
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 %.o:%.c
@@ -31,7 +31,7 @@ $(RING_TEST):ring_buffer_test.o ring_buffer.o
 
 $(SORT_TEST):sort_test.o
 	$(CPP) $(CPPFLAGS) $^ -o $@
-$(LIBS_A):ring_buffer.o queue.o list.o dump_print.o
+$(LIBS_A):ring_buffer.o queue.o list.o dump_print.o ip_flow.o
 	ar rcs $@ $^
 $(BIN_TCP_RTP): pcap_parse_tcp_rtp.o
 	$(CC) $(CFLAGS) $^ -o $@ $(LIBS_A) 

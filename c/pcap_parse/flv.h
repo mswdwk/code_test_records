@@ -3,13 +3,14 @@
 
 #include "list.h"
 #include "queue.h"
+#include "basic_data_type.h"
+
 //Important!
 #pragma pack(1)
 #define TAG_TYPE_SCRIPT 18
 #define TAG_TYPE_AUDIO  8
 #define TAG_TYPE_VIDEO  9
-typedef unsigned char byte;
-typedef unsigned int uint;
+
 typedef struct {
 	byte Signature[3];
 	byte Version;

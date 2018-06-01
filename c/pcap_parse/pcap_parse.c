@@ -36,24 +36,7 @@ FLV_FLOW_HEADER flv_stream_table[MAX_FLV_STREAM_NUM];
 		tag_data_size<<=8;\
 		tag_data_size += (ftagheader)->DataSize[2];}while(0)
 		
-#define IP_PORT_HEADER2FLV_HIGH_LOW(flv,iph,tcph)		\
-	do{													\
-		if( (iph)->DstIP > (iph)->SrcIP ) {				\
-			(flv).high_ip = (iph)->DstIP;				\
-			(flv).low_ip = (iph)->SrcIP;				\
-		}else{											\
-			(flv).high_ip = (iph)->SrcIP;				\
-			(flv).low_ip = (iph)->DstIP;				\
-		}												\
-		\
-		if( (tcph)->DstPort > (tcph)->SrcPort ){		\
-			(flv).high_port = (tcph)->DstPort;			\
-			(flv).low_port = (tcph)->SrcPort;			\
-		}else{											\
-			(flv).high_port = (tcph)->SrcPort;			\
-			(flv).low_port = (tcph)->DstPort;			\
-		} 												\
-	}while(0)
+
 
  char *adres2(IP_FLOW *addr)
 {
@@ -191,16 +174,6 @@ int find_flv_header(void*data,int len)
     return -1;
 }
 
-int ip_flow_hash(IP_FLOW*flow)
-{
-	int hash = 0;
-	if(!flow)
-		return -1;
-	int c = (flow->high_port<<16)|flow->low_port;
-	hash = rte_jhash_3words(flow->high_ip, flow->low_ip, c,hash);
-	flow->hash = hash;
-	return hash;
-}
 
 // flag means is or not flv header
 int record_flv_data(FLV_FLOW_HEADER*h,FLV_TAG*tag,int data_size)

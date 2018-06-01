@@ -73,7 +73,7 @@ uint32_t ring_buffer_put(struct ring_buffer *ring_buf, void *buffer, uint32_t si
 uint32_t ring_buffer_try_get(struct ring_buffer *ring_buf, void * buffer, uint32_t size);
 
 
-#define RING_BUFFER_SIZE  (16*1024*1024)
+#define RING_BUFFER_SIZE  (8*1024*1024)
 
 #endif
 

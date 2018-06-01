@@ -23,9 +23,18 @@
 TCP_FLOW_HEADER tcp_stream_table[MAX_TCP_STREAM_NUM];
 static  int tcp_stream_num;
 
+static void init_tcp_stream_table(void)
+{
+	int i;
+	memset(tcp_stream_table,0,sizeof(tcp_stream_table));
+	for(i = 0 ;i <MAX_TCP_STREAM_NUM ; ++i){
+		tcp_stream_table[i].tcpflow.hash = TCP_HASH_INDEX_INVAILD;
+	}
+}
+
 int create_pkt_mempool(int pkt_num)
 {
-	void *p = calloc(pkt_num,sizeof(ETH_DATA) + DATA_ROOM_BUF);
+	void *p = calloc(pkt_num,sizeof(ETH_DATA) + DATA_ROOM_BUF_SIZE);
 	return 0;
 }
 
@@ -49,7 +58,7 @@ int TCP_FLOW_ITEM_COPY_FOR_LAST(TCP_FLOW_ITEM*dst,TCP_FLOW_ITEM*src)
 {
 	if(!dst||!src)return -1;
 	// be carefull about pointer copy!
-	//memcpy(dst,src,sizeof(FLV_FLOW_ITEM));
+	//memcpy(dst,src,sizeof(TCP_FLOW_ITEM));
 	void *data = dst->tcpflow.data;
 	void*tcph = dst->tcpflow.tcph;
 	memcpy(dst,src,sizeof(TCP_FLOW_ITEM));
@@ -177,14 +186,136 @@ static inline void ETH_DATA2ITEM(int pkt_id,ETH_DATA*e,TCP_FLOW_ITEM*cur)
 	cur->tcpflow.data = e->tcp_data;
 }
 
+static int tcp_stream_construct(int i,ETH_DATA*et)
+{
+	IP_FLOW *tcp,
+	TCPHeader_t*tcph = et->tcph;
+	void*data = et->tcp_data;
+	int len = et->tcp_data_len;
+	int pkt_id = et->pkt_id;
+	TCP_FLOW_HEADER*h = &tcp_stream_table[i];
+	tcp_lock_init(&h->lock);
+	assert(h->lock);
+	//tcp_lock(h->lock);
+	memcpy(&tcp_stream_table[i].tcpflow,tcp,sizeof(IP_FLOW));
+	tcp_stream_table[i].tcpflow.tcph = calloc(1,sizeof(TCPHeader_t));
+	memcpy(tcp_stream_table[i].tcpflow.tcph,tcph,sizeof(TCPHeader_t));
+	tcp_stream_table[i].tcpflow.data = calloc(1,len);
+	memcpy(tcp_stream_table[i].tcpflow.data,data,len);
+	
+	char tcp_file_name[256];
+ 	sprintf(tcp_file_name,"%s_%d.tcp",adres2(&h->tcpflow),i);
+	tcp_stream_table[i].fp = fopen(tcp_file_name,"wb");
+	tcp_stream_table[i].tail = NULL;
+	tcp_stream_table[i].head = NULL;
+	printf("stream %d sport %d dport %d\n",i,ntohs(h->tcpflow.tcph->SrcPort),ntohs(h->tcpflow.tcph->DstPort));
+#if 1
+	tcp_stream_table[i].last = calloc(1,sizeof(TCP_FLOW_ITEM));
+	if(tcp_stream_table[i].last){
+		memcpy(&tcp_stream_table[i].last->tcpflow,tcp,sizeof(IP_FLOW) );
+		tcp_stream_table[i].last->tcpflow.tcph = calloc(1,sizeof(TCPHeader_t));
+		tcp_stream_table[i].last->tcpflow.data = calloc(1,DATA_ROOM_BUF_SIZE);
+		tcp_stream_table[i].last->pkt_id = pkt_id;
+		if(tcp_stream_table[i].last->tcpflow.tcph)
+			memcpy(tcp_stream_table[i].last->tcpflow.tcph,tcph,sizeof(TCPHeader_t) );
+	}
+#endif
+	char*ch = (void*)data;
+	tcp_stream_table[i].recv_data_len = len ;
+	tcp_stream_table[i].pkt_id = pkt_id;
+	tcp_stream_table[i].last_seqno = ntohl(tcph->SeqNO);
+	printf("tcp stream %2u pkt_id %6u seq %10u ack %10u len %4u flag 0x%02x cache_num %3u\n",
+		i,pkt_id,ntohl(tcph->SeqNO),ntohl(tcph->AckNO),len,tcph->Flags,tcp_stream_table[i].cache_num);
+	
+	struct ring_buffer *ring_buf = NULL;
+
+	void * buffer = (void *)malloc(RING_BUFFER_SIZE);
+	if (!buffer){
+		fprintf(stderr, "Failed to malloc memory.\n");
+		return -1;
+	}
+	ring_buf = ring_buffer_init(buffer, RING_BUFFER_SIZE);
+	if (!ring_buf){
+		fprintf(stderr, "Failed to init ring buffer.\n");
+		return -1;
+	}
+	tcp_stream_table[i].ring_buf = ring_buf;
+	
+	char tcp_stream_recombine_file_name[128]={0};
+	sprintf(tcp_stream_recombine_file_name,"tcp_stream_%u_recombine.log",i);
+	tcp_stream_table[i].tcp_log = fopen(tcp_stream_recombine_file_name,"w+");//////////maybe error
+
+	ring_buffer_put(ring_buf,et->tcp_data,et->tcp_data_len);
+	int ret = sprintf(tcp_stream_recombine_file_name,"ring_%s-%u.log",adres2(&h->tcpflow),i);
+	tcp_stream_recombine_file_name[ret] = 0;
+	FILE* ring_log = fopen(tcp_stream_recombine_file_name,"w+");
+	fprintf(ring_log,"pkt %5u put %u \n",pkt_id,len - tcp_offset);
+	tcp_stream_table[i].ring_log = ring_log;
+	tcp_stream_table[i].stream_last_packet = 0;
+	//tcp_unlock(h->lock);
+	return 0;
+}
+
+static int tcp_stream_destruct(int i)
+{
+	TCP_FLOW_HEADER*h = &tcp_stream_table[i];
+	//tcp_lock(h->lock);
+	if(h->tcpflow.tcph)free(h->tcpflow.tcph);
+
+	if(h->fp)fclose(h->fp);
+
+	if(h->last){
+		if(h->last->tcpflow.tcph)free(h->last->tcpflow.tcph);
+		//h->last->tcpflow.tcph = NULL;
+		if(h->last->tcpflow.data)free(h->last->tcpflow.data);
+		if(h->last )free(h->last);
+	}
+	
+	if (h->ring_buf){
+		ring_buffer_free(h->ring_buf);
+		h->ring_buf = NULL;
+	}
+
+	if(h->ring_log)fclose(h->ring_log);
+	if(h->tcp_log)fclose(h->tcp_log);
+	TCP_FLOW_ITEM*tmp = h->head;
+	while(tmp){
+		TCP_FLOW_FREE(tmp);
+		tmp = tmp->next;
+	}
+	//tcp_unlock(h->lock);
+	if(h->lock && h->thread_run)free(h->lock);
+	memset(h,0,sizeof(TCP_FLOW_HEADER));
+	h->stream_last_packet = 0;
+	return 0;
+}
+
+
 TCP_FLOW_HEADER*IS_TCP_STREAM(ETH_DATA*e)
 {
+	// search tcp stream table;
+	int i ;
+	for(i = 0; i < MAX_TCP_STREAM_NUM; ++i){
+		if ( e->tcp_hash_index != -1 && tcp_stream_table[i].tcpflow.hash == e->tcp_hash_index){
+			return &tcp_stream_table[i];
+		}
+	}
+	
 	return NULL;
 }
 
 void INIT_TCP_STREAM(ETH_DATA*e)
 {
-
+	pdg("init %d\n",e->tcp_data[0]);
+	int i;
+    for(i = 0; i < MAX_TCP_STREAM_NUM; ++i){
+		if ( e->tcp_hash_index != TCP_HASH_INDEX_INVAILD && tcp_stream_table[i].tcpflow.hash == TCP_HASH_INDEX_INVAILD){
+			tcp_stream_construct(i,e);
+			break;
+			//return &tcp_stream_table[i];
+		}
+	}
+    //return -1;
 }
 
 void eth_callback(int pkt_id,ETH_DATA*e)
@@ -194,8 +325,19 @@ void eth_callback(int pkt_id,ETH_DATA*e)
 	TCP_FLOW_HEADER*h;
 	ETH_DATA2ITEM(pkt_id,e,&cur);
 	
+	TCPHeader_t*tcph = e->tcph;
+	IPHeader_t*iph = e->iph;
+
+	int high_ip ,low_ip;
+	unsigned short high_port ,low_port;
+	IP_PORT_HEADER2TCP_HIGH_LOW(iph, tcph);
+	
+	int hash = -1;
+	e->tcp_hash_index = mkhash(high_ip,high_port,low_ip,low_port);
+	
 	if((h=IS_TCP_STREAM(e))){
-		tcp_stream_recombine(h,&cur,result);
+		int count = tcp_stream_recombine(h,&cur,result);
+		pdg("count = %d\n",count);
 		tcp_data_callback(result);
 	}
 	else
@@ -218,6 +360,8 @@ int main(int argc,char *argv[])
 	char* tcp_data_buf;
 	
 	//初始化
+	init_hash();
+	init_tcp_stream_table();
 	ETH_DATA ethdata;
 	pkt_header = ethdata.data;
 
@@ -294,6 +438,10 @@ int main(int argc,char *argv[])
 		dst_port = ntohs(tcp_header->DstPort);
 		tcp_flags = tcp_header->Flags;
 		ethdata.tcp_data = ((char*)tcp_header+tcp_header_len);
+		ethdata.tcph = tcp_header;
+		ethdata.iph = ip_header;
+		ethdata.tcp_data_len = ip_len - ip_header_len - tcp_header_len;
+		ethdata.pkt_id = i;
 		eth_callback(i,&ethdata);
 
 		 memset(&ethdata,0,sizeof(ethdata));

@@ -1,6 +1,11 @@
 #ifndef _IP_FLOW_H
 #define _IP_FLOW_H
 #include "pcap_parse.h"
+//#include "basic_data_type.h"
+#include <stdio.h>
+#include <pthread.h>
+
+#define TCP_HASH_INDEX_INVAILD -1
 
 typedef struct{
 	int high_ip,low_ip;
@@ -49,5 +54,44 @@ typedef struct TCP_FLOW_HEADER_S{
 	volatile char thread_finish:1;
 	struct ring_buffer *ring_buf; // store flv tag data buffer
 }TCP_FLOW_HEADER;
+
+int ip_flow_hash(IP_FLOW*flow);
+
+static inline void tcp_lock_init(LOCK_T**lock)
+{
+	if( lock && *lock == NULL){
+		*lock = (LOCK_T*)malloc(sizeof(LOCK_T));
+		pthread_mutex_init(*lock,NULL);
+	}
+}
+
+static inline void tcp_lock(LOCK_T*lock)
+{
+	pthread_mutex_lock(lock);
+}
+
+static inline void tcp_unlock(LOCK_T*lock)
+{
+	pthread_mutex_unlock(lock);
+}
+
+static inline void TCP_FLOW_FREE(void*data)
+{
+	if(!data)return;
+	TCP_FLOW_ITEM*flow = (TCP_FLOW_ITEM*)data;
+	
+	if(flow->tcpflow.data)free(flow->tcpflow.data);
+	if(flow->tcpflow.tcph)free(flow->tcpflow.tcph);
+	
+	// release this node
+	if(flow->prev){
+		flow->prev->next = flow->next;
+	}
+	if(flow->next)
+		flow->next->prev = flow->prev;
+	//flow->refcnt--;
+	if(flow)free(flow);
+}
+
 
 #endif

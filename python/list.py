@@ -3,3 +3,4 @@ length=len(list)
 print length
 for l in range(0,length/2):
     print list[2*l]+list[2*l+1]
+    print list[l]
