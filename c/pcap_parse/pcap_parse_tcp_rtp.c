@@ -123,14 +123,21 @@ static int tcp_stream_recombine(TCP_FLOW_HEADER*h,TCP_FLOW_ITEM*item,TCP_FLOW_IT
 	IP_FLOW*last_tcp = &h->last->tcpflow;
 	if(!last_tcp->tcph) return 0;
 	TCP_FLOW_ITEM*tmp = NULL;
-	
+	u_int32 first_seq_no  = ntohl(h->tcpflow.tcph->SeqNO);
+	//u_int32 first_ack_no = ntohl(h->tcpflow.tcph->AckNO);
+	//pdg("seq %u ack%u\n",first_seq_no,first_ack_no);
  	u_int32 last_seqno = ntohl(last_tcp->tcph->SeqNO);          //    last_seqno = h->last_seqno;
 	u_int32 last_ackno = ntohl(last_tcp->tcph->AckNO);
 	unsigned long long next_expect_tcp_seqno = last_seqno + last_tcp->data_len;
 	u_int32 item_seqno = ntohl(item->tcpflow.tcph->SeqNO);
 	u_int32 item_ackno = ntohl(item->tcpflow.tcph->AckNO);
+	#if 0
 	printf("last_pkt_id %5u next_expect_tcp_seqno %10u last_seqno %10u data_len %5u ,item pkt_id %5u item_seqno %10u cache_num %3u\n",
 		h->last->pkt_id,next_expect_tcp_seqno,last_seqno,last_tcp->data_len,item->pkt_id,item_seqno,h->cache_num);
+	#else
+	printf("last_pkt_id %5u next_expect_tcp_seqno %10u last_seqno %10u data_len %5u ,item pkt_id %5u item_seqno %10u cache_num %3u\n",
+		h->last->pkt_id,next_expect_tcp_seqno - first_seq_no,last_seqno -first_seq_no,last_tcp->data_len,item->pkt_id,item_seqno - first_seq_no,h->cache_num);
+	#endif
 	// as is client not send data back!
 	if(last_ackno != item_ackno) return 0;
 	
@@ -190,9 +197,7 @@ static inline void ETH_DATA2ITEM(int pkt_id,ETH_DATA*e,TCP_FLOW_ITEM*cur)
 
 static int tcp_stream_construct(int i,ETH_DATA*et)
 {
-	//IP_FLOW *tcp;
 	TCPHeader_t*tcph = et->tcph;
-	void*data = et->tcp_data;
 	int len = et->tcp_data_len;
 	int pkt_id = et->pkt_id;
 	TCP_FLOW_HEADER*h = &tcp_stream_table[i];
@@ -203,28 +208,30 @@ static int tcp_stream_construct(int i,ETH_DATA*et)
 	tcp_stream_table[i].tcpflow.hash = et->tcp_hash_index;
 	tcp_stream_table[i].tcpflow.stream_id = i;
 	tcp_stream_table[i].tcpflow.tcph = calloc(1,sizeof(TCPHeader_t));
+	tcp_stream_table[i].tcpflow.data_len = len;
 	memcpy(tcp_stream_table[i].tcpflow.tcph,tcph,sizeof(TCPHeader_t));
+#if 0	
 	tcp_stream_table[i].tcpflow.data = calloc(1,len);
 	memcpy(tcp_stream_table[i].tcpflow.data,data,len);
-	
 	char tcp_file_name[256];
  	sprintf(tcp_file_name,"%s_%d.tcp",adres2(&h->tcpflow),i);
 	tcp_stream_table[i].fp = fopen(tcp_file_name,"wb");
+#endif
 	tcp_stream_table[i].tail = NULL;
 	tcp_stream_table[i].head = NULL;
-	printf("stream %d sport %d dport %d\n",i,ntohs(h->tcpflow.tcph->SrcPort),ntohs(h->tcpflow.tcph->DstPort));
+	//printf("stream %d sport %d dport %d\n",i,ntohs(h->tcpflow.tcph->SrcPort),ntohs(h->tcpflow.tcph->DstPort));
 #if 1
 	tcp_stream_table[i].last = calloc(1,sizeof(TCP_FLOW_ITEM));
 	if(tcp_stream_table[i].last){
 		//memcpy(&tcp_stream_table[i].last->tcpflow,tcp,sizeof(IP_FLOW) );
 		tcp_stream_table[i].last->tcpflow.tcph = calloc(1,sizeof(TCPHeader_t));
 		tcp_stream_table[i].last->tcpflow.data = calloc(1,DATA_ROOM_BUF_SIZE);
+		tcp_stream_table[i].last->tcpflow.data_len = len;
 		tcp_stream_table[i].last->pkt_id = pkt_id;
 		if(tcp_stream_table[i].last->tcpflow.tcph)
 			memcpy(tcp_stream_table[i].last->tcpflow.tcph,tcph,sizeof(TCPHeader_t) );
 	}
 #endif
-	char*ch = (void*)data;
 	tcp_stream_table[i].recv_data_len = len ;
 	tcp_stream_table[i].pkt_id = pkt_id;
 	tcp_stream_table[i].last_seqno = ntohl(tcph->SeqNO);
@@ -232,7 +239,6 @@ static int tcp_stream_construct(int i,ETH_DATA*et)
 		i,pkt_id,ntohl(tcph->SeqNO),ntohl(tcph->AckNO),len,tcph->Flags,tcp_stream_table[i].cache_num);
 	
 	struct ring_buffer *ring_buf = NULL;
-
 	void * buffer = (void *)malloc(RING_BUFFER_SIZE);
 	if (!buffer){
 		fprintf(stderr, "Failed to malloc memory.\n");
@@ -244,17 +250,8 @@ static int tcp_stream_construct(int i,ETH_DATA*et)
 		return -1;
 	}
 	tcp_stream_table[i].ring_buf = ring_buf;
-	
-	char tcp_stream_recombine_file_name[128]={0};
-	sprintf(tcp_stream_recombine_file_name,"tcp_stream_%u_recombine.log",i);
-	tcp_stream_table[i].tcp_log = fopen(tcp_stream_recombine_file_name,"w+");//////////maybe error
-
 	ring_buffer_put(ring_buf,et->tcp_data,et->tcp_data_len);
-	int ret = sprintf(tcp_stream_recombine_file_name,"ring_%s-%u.log",adres2(&h->tcpflow),i);
-	tcp_stream_recombine_file_name[ret] = 0;
-	FILE* ring_log = fopen(tcp_stream_recombine_file_name,"w+");
-	//fprintf(ring_log,"pkt %5u put %u \n",pkt_id,len - tcp_offset);
-	tcp_stream_table[i].ring_log = ring_log;
+	
 	tcp_stream_table[i].stream_last_packet = 0;
 	//tcp_unlock(h->lock);
 	return 0;
@@ -313,7 +310,7 @@ void INIT_TCP_STREAM(ETH_DATA*e)
 	int i;
     for(i = 0; i < MAX_TCP_STREAM_NUM; ++i){
 		if ( e->tcp_hash_index != TCP_HASH_INDEX_INVAILD && tcp_stream_table[i].tcpflow.hash == TCP_HASH_INDEX_INVAILD){
-			pdg("init %d,data[0]%d\n",i,e->tcp_data[0]);
+			pdg("init tcp stream %d,data[0]%d\n",i,e->tcp_data[0]);
 			tcp_stream_construct(i,e);
 			break;
 			//return &tcp_stream_table[i];
@@ -347,8 +344,9 @@ void eth_callback(int pkt_id,ETH_DATA*e)
 	
 	if( (h = IS_TCP_STREAM(e) )){
 		cur.tcpflow.stream_id = h->tcpflow.stream_id;
+	
 		int count = tcp_stream_recombine(h,&cur,result);
-		pdg("count = %d\n",count);
+		//pdg("count = %d\n",count);
 		tcp_data_callback(result);
 	}
 	else
