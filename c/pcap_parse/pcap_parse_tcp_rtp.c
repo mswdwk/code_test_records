@@ -129,8 +129,8 @@ static int tcp_stream_recombine(TCP_FLOW_HEADER*h,TCP_FLOW_ITEM*item,TCP_FLOW_IT
 	unsigned long long next_expect_tcp_seqno = last_seqno + last_tcp->data_len;
 	u_int32 item_seqno = ntohl(item->tcpflow.tcph->SeqNO);
 	u_int32 item_ackno = ntohl(item->tcpflow.tcph->AckNO);
-	//printf("last_pkt_id %5u next_expect_tcp_seqno %10u last_seqno %10u data_len %5u ,item pkt_id %5u item_seqno %10u cache_num %3u\n",
-	//	h->last->pkt_id,next_expect_tcp_seqno,last_seqno,last_tcp->data_len,item->pkt_id,item_seqno,h->cache_num);
+	printf("last_pkt_id %5u next_expect_tcp_seqno %10u last_seqno %10u data_len %5u ,item pkt_id %5u item_seqno %10u cache_num %3u\n",
+		h->last->pkt_id,next_expect_tcp_seqno,last_seqno,last_tcp->data_len,item->pkt_id,item_seqno,h->cache_num);
 	// as is client not send data back!
 	if(last_ackno != item_ackno) return 0;
 	
@@ -184,11 +184,13 @@ static inline void ETH_DATA2ITEM(int pkt_id,ETH_DATA*e,TCP_FLOW_ITEM*cur)
 	cur->pkt_id = pkt_id;
 	cur->tcpflow.tcph = e->tcph;
 	cur->tcpflow.data = e->tcp_data;
+	cur->tcpflow.data_len = e->tcp_data_len;
+	cur->tcpflow.hash = e->tcp_hash_index;
 }
 
 static int tcp_stream_construct(int i,ETH_DATA*et)
 {
-	IP_FLOW *tcp;
+	//IP_FLOW *tcp;
 	TCPHeader_t*tcph = et->tcph;
 	void*data = et->tcp_data;
 	int len = et->tcp_data_len;
@@ -197,7 +199,9 @@ static int tcp_stream_construct(int i,ETH_DATA*et)
 	tcp_lock_init(&h->lock);
 	assert(h->lock);
 	//tcp_lock(h->lock);
-	memcpy(&tcp_stream_table[i].tcpflow,tcp,sizeof(IP_FLOW));
+	//memcpy(&tcp_stream_table[i].tcpflow,tcp,sizeof(IP_FLOW));
+	tcp_stream_table[i].tcpflow.hash = et->tcp_hash_index;
+	tcp_stream_table[i].tcpflow.stream_id = i;
 	tcp_stream_table[i].tcpflow.tcph = calloc(1,sizeof(TCPHeader_t));
 	memcpy(tcp_stream_table[i].tcpflow.tcph,tcph,sizeof(TCPHeader_t));
 	tcp_stream_table[i].tcpflow.data = calloc(1,len);
@@ -212,7 +216,7 @@ static int tcp_stream_construct(int i,ETH_DATA*et)
 #if 1
 	tcp_stream_table[i].last = calloc(1,sizeof(TCP_FLOW_ITEM));
 	if(tcp_stream_table[i].last){
-		memcpy(&tcp_stream_table[i].last->tcpflow,tcp,sizeof(IP_FLOW) );
+		//memcpy(&tcp_stream_table[i].last->tcpflow,tcp,sizeof(IP_FLOW) );
 		tcp_stream_table[i].last->tcpflow.tcph = calloc(1,sizeof(TCPHeader_t));
 		tcp_stream_table[i].last->tcpflow.data = calloc(1,DATA_ROOM_BUF_SIZE);
 		tcp_stream_table[i].last->pkt_id = pkt_id;
@@ -296,7 +300,7 @@ TCP_FLOW_HEADER*IS_TCP_STREAM(ETH_DATA*e)
 	// search tcp stream table;
 	int i ;
 	for(i = 0; i < MAX_TCP_STREAM_NUM; ++i){
-		if ( e->tcp_hash_index != -1 && tcp_stream_table[i].tcpflow.hash == e->tcp_hash_index){
+		if ( e->tcp_hash_index != TCP_HASH_INDEX_INVAILD && tcp_stream_table[i].tcpflow.hash == e->tcp_hash_index){
 			return &tcp_stream_table[i];
 		}
 	}
@@ -306,10 +310,10 @@ TCP_FLOW_HEADER*IS_TCP_STREAM(ETH_DATA*e)
 
 void INIT_TCP_STREAM(ETH_DATA*e)
 {
-	pdg("init %d\n",e->tcp_data[0]);
 	int i;
     for(i = 0; i < MAX_TCP_STREAM_NUM; ++i){
 		if ( e->tcp_hash_index != TCP_HASH_INDEX_INVAILD && tcp_stream_table[i].tcpflow.hash == TCP_HASH_INDEX_INVAILD){
+			pdg("init %d,data[0]%d\n",i,e->tcp_data[0]);
 			tcp_stream_construct(i,e);
 			break;
 			//return &tcp_stream_table[i];
@@ -323,7 +327,6 @@ void eth_callback(int pkt_id,ETH_DATA*e)
 	TCP_FLOW_ITEM*result[128];
 	TCP_FLOW_ITEM cur;
 	TCP_FLOW_HEADER*h;
-	ETH_DATA2ITEM(pkt_id,e,&cur);
 	
 	TCPHeader_t*tcph = e->tcph;
 	IPHeader_t*iph = e->iph;
@@ -331,11 +334,19 @@ void eth_callback(int pkt_id,ETH_DATA*e)
 	int high_ip ,low_ip;
 	unsigned short high_port ,low_port;
 	IP_PORT_HEADER2TCP_HIGH_LOW(iph, tcph);
-	
-	int hash = -1;
+
 	e->tcp_hash_index = mkhash(high_ip,high_port,low_ip,low_port);
+	ETH_DATA2ITEM(pkt_id,e,&cur);
+	//pdg("srcport %d\n",)
+	if(e->tcp_data_len == 0 || e->tcph->SrcPort != htons(30001)) {
+		e->from_server = 0;
+		return;
+	}
+	else 
+		e->from_server = 1;
 	
-	if((h=IS_TCP_STREAM(e))){
+	if( (h = IS_TCP_STREAM(e) )){
+		cur.tcpflow.stream_id = h->tcpflow.stream_id;
 		int count = tcp_stream_recombine(h,&cur,result);
 		pdg("count = %d\n",count);
 		tcp_data_callback(result);
@@ -370,6 +381,7 @@ int main(int argc,char *argv[])
 		printf("use %s pcapfilename\n",argv[0]);
 		return 0;
 	}
+	
 	char *pcapfilename = argv[1];
 	// file size must be smaller than unsigned long int,or integer will overflow
 	if ((fp = fopen(pcapfilename, "rb")) == NULL)
@@ -426,7 +438,7 @@ int main(int argc,char *argv[])
 		inet_ntop(AF_INET, (void *)&(ip_header->SrcIP), src_ip, 16);
 		inet_ntop(AF_INET, (void *)&(ip_header->DstIP), dst_ip, 16);
 		ip_proto = ip_header->Protocol;
-		ip_len = ip_header->TotalLen; //IP数据报总长度
+		ip_len = rte_be_to_cpu_16(ip_header->TotalLen); //IP数据报总长度
 		if (ip_proto != 0x06) continue; //判断是否是 TCP 协议
 		short unsigned int ip_header_len = ((ip_header->Ver_HLen & 0xf)<<2);
 		if(rte_ipv4_frag_pkt_is_fragmented((const struct ipv4_hdr*)ip_header))
@@ -437,11 +449,12 @@ int main(int argc,char *argv[])
 		src_port = ntohs(tcp_header->SrcPort);
 		dst_port = ntohs(tcp_header->DstPort);
 		tcp_flags = tcp_header->Flags;
-		ethdata.tcp_data = ((char*)tcp_header+tcp_header_len);
+		ethdata.tcp_data = (((char*)tcp_header)+tcp_header_len);
 		ethdata.tcph = tcp_header;
 		ethdata.iph = ip_header;
 		ethdata.tcp_data_len = ip_len - ip_header_len - tcp_header_len;
 		ethdata.pkt_id = i;
+		//pdg("cap_len %d iplen %d ip_header_len %d tcp_header_len %d tcp_data_len %d\n",pkt_header->caplen,ip_len,ip_header_len,tcp_header_len, ethdata.tcp_data_len);
 		eth_callback(i,&ethdata);
 
 		 memset(&ethdata,0,sizeof(ethdata));
