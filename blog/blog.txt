@@ -20,3 +20,9 @@ wiki.osdev.org
 This website provides information about the creation of
 operating systems and serves as a community for those
 people interested in OS creation with 600 wiki articles.
+
+数据分析实战
+http://www.datastudy.cc/
+
+开机时间排名——一个正态分布的应用的案例
+http://www.datastudy.cc/article/3d870616e0a90bf4f342deb693c0ee30
