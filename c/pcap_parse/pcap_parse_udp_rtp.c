@@ -23,7 +23,7 @@
 
 TCP_FLOW_HEADER tcp_stream_table[MAX_TCP_STREAM_NUM];
 static  int tcp_stream_num;
-
+static FILE*udpfp;
 static void init_tcp_stream_table(void)
 {
 	int i;
@@ -363,15 +363,37 @@ static void process_tcp(ETH_DATA*e)
 		INIT_TCP_STREAM(e);
 }
 
+void IS_SAME_UDP(ETH_DATA*e)
+{
+	
+}
+
+void INIT_UDP()
+{
+
+}
+
 static void process_udp(ETH_DATA*e)
 {
 	UDPHeader_t*udph = e->udph;
 	IPHeader_t*iph = e->iph;
 	RTPHeader_t*rtph = (RTPHeader_t*)e->l4_data;
-	int rtp_len = e->l4_data_len - sizeof(RTPHeader_t);
-	pdg("rtp payload len %d\n",rtp_len);
+	int rtp_payload_len = e->l4_data_len - sizeof(RTPHeader_t);
+	char*rtp_payload  = rtph->data;
+	pdg("rtp payload len %d\n",rtp_payload_len);
 	
+#if 0
+	if( (h = IS_SAME_UDP(e) )){
+		cur.tcpflow.stream_id = h->tcpflow.stream_id;
+		int count = tcp_stream_recombine(h,&cur,result);
+		//pdg("count = %d ring_data_len %u\n",count,ring_data_len(h->ring_buf));
+		tcp_data_callback(result,count);
+	}
+	else
+		INIT_UDP(e);
 	
+	#endif
+	fwrite(rtp_payload,rtp_payload_len,1,udpfp);
 	return ;
 }
 
@@ -391,15 +413,18 @@ static void eth_callback(ETH_DATA*e)
 	IP_PORT_HEADER2TCP_HIGH_LOW(iph, udph);
 	e->l4_data_len = ip_len - ip_header_len;
 	e->l4_hdr = ((char*)(e->iph)) + ip_header_len;
+	
 	e->tcp_hash_index = mkhash(high_ip,high_port,low_ip,low_port);
 	
 	switch(protocol)
 	{
 		case IP_PROTO_UDP:
+			e->l4_data = e->l4_hdr + sizeof(UDPHeader_t);
 			process_udp(e);
 			break;
 		
 		case IP_PROTO_TCP:
+			e->l4_data = e->l4_hdr + sizeof(TCPHeader_t);
 			process_tcp(e);
 			break;
 		
@@ -442,7 +467,7 @@ int main(int argc,char *argv[])
 	char buf[BUFSIZE], my_time[STRSIZE];
 	char src_ip[STRSIZE], dst_ip[STRSIZE];
 	//char* tcp_data_buf;
-	
+	udpfp = fopen("udp.bin","wb+");
 	//初始化
 	init_hash();
 	init_tcp_stream_table();
@@ -530,6 +555,7 @@ int main(int argc,char *argv[])
 
 	fclose(fp);
 	fclose(output);
+	fclose(udpfp);
 	return 0;
 }
 
