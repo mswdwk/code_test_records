@@ -187,26 +187,22 @@ void tcp_data_callback(TCP_FLOW_ITEM**res,int num)
 	if(!res || num <1)
 		return ;
 	int i = 0;
-	int stream_id = res[0]->tcpflow.stream_id ;
+	char buf[BUFSIZE] = {0};
+	int stream_id = res[0]->tcpflow.stream_id;
+	FILE*fp = tcp_stream_table[stream_id].fp;
 	struct ring_buffer *ring_buf = tcp_stream_table[stream_id].ring_buf;
 	for(i = 0 ; i < num ; ++i){
 		ring_buffer_put(ring_buf,res[i]->tcpflow.data,res[i]->tcpflow.data_len);
 	}
-}
-
-static inline void ETH_DATA2ITEM(int pkt_id,ETH_DATA*e,TCP_FLOW_ITEM*cur)
-{
-	cur->pkt_id = pkt_id;
-	cur->tcpflow.tcph = e->tcph;
-	cur->tcpflow.data = e->tcp_data;
-	cur->tcpflow.data_len = e->tcp_data_len;
-	cur->tcpflow.hash = e->tcp_hash_index;
+	int r_data_len = ring_data_len( ring_buf );
+	ring_buffer_get(ring_buf,buf,r_data_len);
+	fwrite(buf,r_data_len,1,fp);
 }
 
 static int tcp_stream_construct(int i,ETH_DATA*et)
 {
 	TCPHeader_t*tcph = et->tcph;
-	int len = et->tcp_data_len;
+	int len = et->l4_data_len;
 	int pkt_id = et->pkt_id;
 	TCP_FLOW_HEADER*h = &tcp_stream_table[i];
 	tcp_lock_init(&h->lock);
@@ -258,9 +254,12 @@ static int tcp_stream_construct(int i,ETH_DATA*et)
 		return -1;
 	}
 	tcp_stream_table[i].ring_buf = ring_buf;
-	ring_buffer_put(ring_buf,et->tcp_data,et->tcp_data_len);
+	ring_buffer_put(ring_buf,et->l4_data,et->l4_data_len);
 	
 	tcp_stream_table[i].stream_last_packet = 0;
+	char tmp_name[64];
+	sprintf(tmp_name,"%d_tcp_stream",i);
+	tcp_stream_table[i].fp = fopen(tmp_name,"wb+");
 	//tcp_unlock(h->lock);
 	return 0;
 }
@@ -318,7 +317,7 @@ void INIT_TCP_STREAM(ETH_DATA*e)
 	int i;
     for(i = 0; i < MAX_TCP_STREAM_NUM; ++i){
 		if ( e->tcp_hash_index != TCP_HASH_INDEX_INVAILD && tcp_stream_table[i].tcpflow.hash == TCP_HASH_INDEX_INVAILD){
-			pdg("init tcp stream %d,data[0]%d\n",i,e->tcp_data[0]);
+			pdg("init tcp stream %d,data[0]%d\n",i,e->l4_data[0]);
 			tcp_stream_construct(i,e);
 			break;
 			//return &tcp_stream_table[i];
@@ -341,9 +340,9 @@ void eth_callback(int pkt_id,ETH_DATA*e)
 	IP_PORT_HEADER2TCP_HIGH_LOW(iph, tcph);
 
 	e->tcp_hash_index = mkhash(high_ip,high_port,low_ip,low_port);
-	ETH_DATA2ITEM(pkt_id,e,&cur);
+	ETH_DATA2ITEM(e,&cur);
 
-	if(e->tcp_data_len == 0 || e->tcph->SrcPort != htons(30001)) {
+	if(e->l4_data_len == 0 || e->tcph->SrcPort != htons(30001)) {
 		e->from_server = 0;
 		return;
 	}
@@ -462,7 +461,7 @@ int main(int argc,char *argv[])
 		inet_ntop(AF_INET, (void *)&(ip_header->DstIP), dst_ip, 16);
 		ip_proto = ip_header->Protocol;
 		ip_len = rte_be_to_cpu_16(ip_header->TotalLen); //IP数据报总长度
-		if (ip_proto != 0x06) continue; //判断是否是 TCP 协议
+		if (ip_proto != IP_PROTO_TCP) continue; //判断是否是 TCP 协议
 		short unsigned int ip_header_len = ((ip_header->Ver_HLen & 0xf)<<2);
 		if(rte_ipv4_frag_pkt_is_fragmented((const struct ipv4_hdr*)ip_header))
 			printf("packet_id %d is fragment\n",i);
@@ -472,10 +471,11 @@ int main(int argc,char *argv[])
 		src_port = ntohs(tcp_header->SrcPort);
 		dst_port = ntohs(tcp_header->DstPort);
 		tcp_flags = tcp_header->Flags;
-		ethdata.tcp_data = (((char*)tcp_header)+tcp_header_len);
+		ethdata.l4_data = (((char*)tcp_header)+tcp_header_len);
 		ethdata.tcph = tcp_header;
+		ethdata.l4_hdr = tcp_header;
 		ethdata.iph = ip_header;
-		ethdata.tcp_data_len = ip_len - ip_header_len - tcp_header_len;
+		ethdata.l4_data_len = ip_len - ip_header_len - tcp_header_len;
 		ethdata.pkt_id = i;
 		//pdg("cap_len %d iplen %d ip_header_len %d tcp_header_len %d tcp_data_len %d\n",pkt_header->caplen,ip_len,ip_header_len,tcp_header_len, ethdata.tcp_data_len);
 		eth_callback(i,&ethdata);
@@ -486,7 +486,7 @@ int main(int argc,char *argv[])
 	struct ring_buffer *ring_buf = tcp_stream_table[0].ring_buf;
 	fwrite(ring_buf->buffer,ring_data_len(ring_buf),1,output);
 #endif	
-	record_tcp_stream_data();
+	//record_tcp_stream_data();
 
 	fclose(fp);
 	fclose(output);

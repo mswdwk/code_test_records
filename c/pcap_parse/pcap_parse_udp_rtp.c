@@ -17,6 +17,7 @@
 #include "dump_print.h"
 #include "queue.h"
 #include "hash.h"
+#include "rtp.h"
 
 #define MAX_TCP_STREAM_NUM 128
 
@@ -199,7 +200,7 @@ void tcp_data_callback(TCP_FLOW_ITEM**res,int num)
 static int tcp_stream_construct(int i,ETH_DATA*et)
 {
 	TCPHeader_t*tcph = et->tcph;
-	int len = et->tcp_data_len;
+	int len = et->l4_data_len;
 	int pkt_id = et->pkt_id;
 	TCP_FLOW_HEADER*h = &tcp_stream_table[i];
 	tcp_lock_init(&h->lock);
@@ -251,7 +252,7 @@ static int tcp_stream_construct(int i,ETH_DATA*et)
 		return -1;
 	}
 	tcp_stream_table[i].ring_buf = ring_buf;
-	ring_buffer_put(ring_buf,et->tcp_data,et->tcp_data_len);
+	ring_buffer_put(ring_buf,et->l4_data,et->l4_data_len);
 	
 	tcp_stream_table[i].stream_last_packet = 0;
 	//tcp_unlock(h->lock);
@@ -311,7 +312,7 @@ void INIT_TCP_STREAM(ETH_DATA*e)
 	int i;
     for(i = 0; i < MAX_TCP_STREAM_NUM; ++i){
 		if ( e->tcp_hash_index != TCP_HASH_INDEX_INVAILD && tcp_stream_table[i].tcpflow.hash == TCP_HASH_INDEX_INVAILD){
-			pdg("init tcp stream %d,data[0]%d\n",i,e->tcp_data[0]);
+			pdg("init tcp stream %d,data[0]%d\n",i,e->l4_data[0]);
 			tcp_stream_construct(i,e);
 			break;
 			//return &tcp_stream_table[i];
@@ -332,9 +333,10 @@ static void process_tcp(ETH_DATA*e)
 	//TCP头 20字节
 	u_int16 tcp_header_len = ((tcph->HeaderLen & 0xf0)>>2);
 	u_int16 ip_len = rte_be_to_cpu_16(iph->TotalLen); //IP数据报总长度
-	e.tcp_data = (((char*)tcph)+tcp_header_len);
-	e.tcph = tcph;
-	e.tcp_data_len = ip_len - ip_header_len - tcp_header_len;
+	e->l4_data = (((char*)tcph)+tcp_header_len);
+	e->tcph = tcph;
+	//e.l4_hdr = tcph;
+	e->l4_data_len = ip_len - ip_header_len - tcp_header_len;
 	//pdg("cap_len %d iplen %d ip_header_len %d tcp_header_len %d tcp_data_len %d\n",pkt_header->caplen,ip_len,ip_header_len,tcp_header_len, ethdata.tcp_data_len);
 
 	int high_ip ,low_ip;
@@ -344,7 +346,7 @@ static void process_tcp(ETH_DATA*e)
 	e->tcp_hash_index = mkhash(high_ip,high_port,low_ip,low_port);
 	ETH_DATA2ITEM(e,&cur);
 
-	if(e->tcp_data_len == 0 || e->tcph->SrcPort != htons(30001)) {
+	if(e->l4_data_len == 0 || e->tcph->SrcPort != htons(30001)) {
 		e->from_server = 0;
 		return;
 	}
@@ -365,6 +367,9 @@ static void process_udp(ETH_DATA*e)
 {
 	UDPHeader_t*udph = e->udph;
 	IPHeader_t*iph = e->iph;
+	RTPHeader_t*rtph = (RTPHeader_t*)e->l4_data;
+	int rtp_len = e->l4_data_len - sizeof(RTPHeader_t);
+	pdg("rtp payload len %d\n",rtp_len);
 	
 	
 	return ;
@@ -374,16 +379,18 @@ static void eth_callback(ETH_DATA*e)
 {
 	int protocol = e->iph->Protocol;
 	IPHeader_t*iph = e->iph;
+	int ip_len = ntohs(iph->TotalLen);
 	int ip_header_len = ((iph->Ver_HLen & 0xf)<<2);
 	int high_ip ,low_ip;
 	unsigned short high_port ,low_port;
 
-	e->udph = (struct udphdr*)(((char*)(e->iph))+ip_header_len);
-	e->tcph = (TCPHeader_t*)(((char*)(e->iph))+ip_header_len) ;
+	e->udph = (struct udphdr*)(((char*)(e->iph)) + ip_header_len);
+	e->tcph = (TCPHeader_t*)(((char*)(e->iph)) + ip_header_len) ;
 	UDPHeader_t*udph = e->udph;
 	
 	IP_PORT_HEADER2TCP_HIGH_LOW(iph, udph);
-	
+	e->l4_data_len = ip_len - ip_header_len;
+	e->l4_hdr = ((char*)(e->iph)) + ip_header_len;
 	e->tcp_hash_index = mkhash(high_ip,high_port,low_ip,low_port);
 	
 	switch(protocol)
@@ -393,11 +400,11 @@ static void eth_callback(ETH_DATA*e)
 			break;
 		
 		case IP_PROTO_TCP:
-			
 			process_tcp(e);
 			break;
 		
 		default:
+			pdg("proto %d data_len %d\n",protocol,e->l4_data_len);
 			return ;
 	}
 
@@ -505,7 +512,7 @@ int main(int argc,char *argv[])
 		inet_ntop(AF_INET, (void *)&(ip_header->DstIP), dst_ip, 16);
 		ip_proto = ip_header->Protocol;
 		ip_len = rte_be_to_cpu_16(ip_header->TotalLen); //IP数据报总长度
-		if (ip_proto != 0x06) continue; //判断是否是 TCP 协议
+		
 		short unsigned int ip_header_len = ((ip_header->Ver_HLen & 0xf)<<2);
 		if(rte_ipv4_frag_pkt_is_fragmented((const struct ipv4_hdr*)ip_header))
 			printf("packet_id %d is fragment\n",i);
@@ -513,8 +520,7 @@ int main(int argc,char *argv[])
 		ethdata.iph = ip_header;
 		ethdata.pkt_id = i;
 		eth_callback(&ethdata);
-
-		 memset(&ethdata,0,sizeof(ethdata));
+		memset(&ethdata,0,sizeof(ethdata));
 	}// end while
 #if 0
 	struct ring_buffer *ring_buf = tcp_stream_table[0].ring_buf;

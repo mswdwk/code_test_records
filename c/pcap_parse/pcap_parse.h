@@ -2,7 +2,7 @@
 #define _PCAP_PARSE_H
 #include "basic_data_type.h"
 
-#define BUFSIZE 10240
+#define BUFSIZE 16384 //(1024*16)
 #define STRSIZE 1024
 
 //pacp文件头结构体
@@ -22,6 +22,7 @@ struct time_val
 	u_int32 tv_sec;         /* seconds 含义同 time_t 对象的值 */
 	u_int32 tv_usec;        /* and microseconds */
 };
+
 //pcap数据包头结构体
 struct pcap_pkthdr
 {
@@ -29,6 +30,7 @@ struct pcap_pkthdr
 	u_int32 caplen; /* length of portion present */
 	u_int32 len;    /* length this packet (off wire) */
 };
+
 //数据帧头
 typedef struct FramHeader_t
 { //Pcap捕获的数据帧头
@@ -67,7 +69,6 @@ struct ipv4_hdr {
 	uint32_t dst_addr;		/**< destination address */
 } __attribute__((__packed__));
 
-
 //TCP数据报头
 typedef struct TCPHeader_t
 { //TCP数据报头
@@ -81,6 +82,13 @@ typedef struct TCPHeader_t
 	u_int16 Checksum; //校验和
 	u_int16 UrgentPointer;  //紧急指针
 }TCPHeader_t;
+
+typedef struct UDPHeader_s{
+	u_int16 SrcPort;
+	u_int16 DstPort;
+	u_int16 len;
+	u_int16 check;
+}__attribute__((aligned(4)))UDPHeader_t;
 
 typedef struct IP_PACKET{
 	IPHeader_t iph;
@@ -99,8 +107,6 @@ typedef struct ipv6_hdr {
 	uint8_t  src_addr[16]; /**< IP address of source host. */
 	uint8_t  dst_addr[16]; /**< IP address of destination host(s). */
 } __attribute__((__packed__))IPV6Header_t;
-
-
 
 /* TCP flags */
 
@@ -124,17 +130,18 @@ typedef struct ipv6_hdr {
                              (((uint32_t)(A) & 0x0000ff00) << 8)  | \
                              (((uint32_t)(A) & 0x000000ff) << 24) )
 
-
 typedef struct{
 	struct pcap_pkthdr *ph;
 	FramHeader_t*fh;
 	IPHeader_t*iph;
 	TCPHeader_t*tcph;
 	struct udphdr *udph;
-	char*tcp_data;
-	int tcp_data_len;
-	int pkt_id:24;
+	char*l4_hdr;
+	char*l4_data;
+	int l4_data_len;
+	int pkt_id:23;
 	int from_server:1;
+	int protocol:8;
 	int tcp_hash_index;
 #define DATA_ROOM_BUF_SIZE (1518 + sizeof(struct pcap_pkthdr))
 	char data[DATA_ROOM_BUF_SIZE];
@@ -177,9 +184,5 @@ typedef struct{
 			low_port = (tcph)->DstPort;			\
 		}												\
 	}while(0)
-
-
-
-
 
 #endif

@@ -1,7 +1,7 @@
 #ifndef _IP_FLOW_H
 #define _IP_FLOW_H
 #include "pcap_parse.h"
-//#include "basic_data_type.h"
+
 #include <stdio.h>
 #include <pthread.h>
 #include <stdlib.h>
@@ -10,7 +10,6 @@
 #include <errno.h>
 #include <arpa/inet.h>
 #include <unistd.h>
-
 
 #define TCP_HASH_INDEX_INVAILD -1
 
@@ -52,7 +51,7 @@ typedef struct TCP_FLOW_HEADER_S{
 	void(*process)(void*);
 	//Queue *flv_pkt_queue; // ordered pakcet queue which are used to prepared  for flv tag data analysis.
 	FILE*tcp_log; // record tcp_stream_recombine log 
-	FILE*fp; // record flv file data
+	FILE*fp; // record stream data
 	FILE*ring_log; 
 
 	pthread_t consumer_id ;
@@ -113,8 +112,6 @@ static inline void TCP_FLOW_FREE(void*data)
 #define	IPV4_HDR_OFFSET_MASK	((1 << IPV4_HDR_MF_SHIFT) - 1)
 		
 #define	IPV4_HDR_OFFSET_UNITS	8
-		
-		
 		/**
 		 * Check if the IPv4 packet is fragmented
 		 *
@@ -124,37 +121,53 @@ static inline void TCP_FLOW_FREE(void*data)
 		 *	 1 if fragmented, 0 if not fragmented
 		 */
  #define rte_be_to_cpu_16 ntohs
-		static inline int
-		rte_ipv4_frag_pkt_is_fragmented(const struct ipv4_hdr * hdr) {
-			uint16_t flag_offset, ip_flag, ip_ofs;
-		
-			flag_offset = rte_be_to_cpu_16(hdr->fragment_offset);
-			ip_ofs = (uint16_t)(flag_offset & IPV4_HDR_OFFSET_MASK);
-			ip_flag = (uint16_t)(flag_offset & IPV4_HDR_MF_FLAG);
-		
-			return ip_flag != 0 || ip_ofs  != 0;
-		}
+static inline int
+rte_ipv4_frag_pkt_is_fragmented(const struct ipv4_hdr * hdr) {
+	uint16_t flag_offset, ip_flag, ip_ofs;
 
+	flag_offset = rte_be_to_cpu_16(hdr->fragment_offset);
+	ip_ofs = (uint16_t)(flag_offset & IPV4_HDR_OFFSET_MASK);
+	ip_flag = (uint16_t)(flag_offset & IPV4_HDR_MF_FLAG);
 
-		static inline char *adres2(IP_FLOW *addr)
-		{
-				  static char buf[256];
-				  memset(buf,0,sizeof(buf));
+	return ip_flag != 0 || ip_ofs  != 0;
+}
+
+static inline char *adres2(IP_FLOW *addr)
+{
+		  static char buf[256];
+		  memset(buf,0,sizeof(buf));
 #if 0
-				  strcpy (buf, int_ntoa (addr.saddr));
-				  int ret = sprintf (buf + strlen (buf), "-%d>", addr.source);
-				  strcat (buf, int_ntoa (addr.daddr));
-				  ret += sprintf (buf + strlen (buf), "-%d", addr.dest);
-				  buf[ret] = 0;
+		  strcpy (buf, int_ntoa (addr.saddr));
+		  int ret = sprintf (buf + strlen (buf), "-%d>", addr.source);
+		  strcat (buf, int_ntoa (addr.daddr));
+		  ret += sprintf (buf + strlen (buf), "-%d", addr.dest);
+		  buf[ret] = 0;
 #else
-				  struct in_addr ipaddr;
-				  ipaddr.s_addr = (addr->high_ip);
-				  int ret = sprintf (buf , "%s-%d-", inet_ntoa(ipaddr),ntohs(addr->high_port));
-				  ipaddr.s_addr = addr->low_ip;
-				  sprintf(buf+ret,"%s-%d",inet_ntoa(ipaddr),ntohs(addr->low_port));
+		  struct in_addr ipaddr;
+		  ipaddr.s_addr = (addr->high_ip);
+		  int ret = sprintf (buf , "%s-%d-", inet_ntoa(ipaddr),ntohs(addr->high_port));
+		  ipaddr.s_addr = addr->low_ip;
+		  sprintf(buf+ret,"%s-%d",inet_ntoa(ipaddr),ntohs(addr->low_port));
 #endif
-				  return buf;
-		}
+		  return buf;
+}
+
+#ifndef IP_PROTO_UDP
+#define IP_PROTO_UDP 17
+#endif
+
+#ifndef IP_PROTO_TCP
+#define IP_PROTO_TCP 6
+#endif
+
+static inline void ETH_DATA2ITEM(ETH_DATA*e,TCP_FLOW_ITEM*cur)
+{
+	//cur->pkt_id = pkt_id;
+	cur->tcpflow.tcph = e->tcph;
+	cur->tcpflow.data = e->l4_data;
+	cur->tcpflow.data_len = e->l4_data_len;
+	cur->tcpflow.hash = e->tcp_hash_index;
+}
 
 
 #endif

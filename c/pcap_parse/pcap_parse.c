@@ -858,7 +858,7 @@ int main(int argc,char *argv[])
          #else
              if(src_port == 80 || dst_port == 80){
                 unsigned short int tcp_data_len = ntohs(ip_len) - ip_header_len - tcp_header_len;
-                //char tcp_data_buf[65536] = {0};//= calloc(1,tcp_data_len);
+
                 tcp_data_buf = (char*)tcp_header + tcp_header_len;
 				// ignore tcpheader options
 				if(tcp_header_len > 20 )fseek(fp, tcp_header_len - 20, SEEK_CUR);
