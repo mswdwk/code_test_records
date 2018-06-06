@@ -459,7 +459,7 @@ int main(int argc,char *argv[])
 	FramHeader_t *frameh;
 	IPHeader_t *ip_header;
 	TCPHeader_t *tcp_header;
-	
+	printf("RTPHeader_t size %zu\n",sizeof(RTPHeader_t));
 	FILE *fp, *output;
 	unsigned long int   pkt_offset ; int i = 0;
 	int ip_len,  ip_proto; //http_len,
@@ -473,7 +473,7 @@ int main(int argc,char *argv[])
 	init_tcp_stream_table();
 	ETH_DATA ethdata;
 	pkt_header = (struct pcap_pkthdr *)ethdata.data;
-
+	
 	memset(buf, 0, sizeof(buf));
 	if(argc < 2){
 		printf("use %s pcapfilename\n",argv[0]);
