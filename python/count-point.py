@@ -5,8 +5,8 @@ true=1
 false=0
 class Point:
     def __init__(self,longitude,latitude):
-        self.longitude = longitude
-        self.latitude = latitude
+        self.longitude = longitude #x
+        self.latitude = latitude   #y
 
 class Rectangle:
     leftup=Point(0,0)
@@ -44,10 +44,9 @@ class Rectangle:
                 y_ok = 1
             if x_ok and y_ok:
                 num+=1
-            else:
-                print "point (%f %f) is not in rect"%(a.longitude,a.latitude)
+            #else:
+                #print "point (%f %f) is not in rect"%(a.longitude,a.latitude)
         return num
-
 
 a=Point(-10,10)
 b=Point(10,-10)
@@ -70,3 +69,8 @@ for i in range(0,2*2):
     rects.append(tmp)
     #rects[i].in_rect(points)
     print i,len(rects),rects[i].left_up.longitude,rects[i].in_rect_list(points)
+    
+    
+if __name__ == "__main__":
+    print "main"
+    

@@ -370,7 +370,7 @@ void IS_SAME_UDP(ETH_DATA*e)
 
 void INIT_UDP()
 {
-
+	
 }
 
 static void process_udp(ETH_DATA*e)
@@ -391,8 +391,7 @@ static void process_udp(ETH_DATA*e)
 	}
 	else
 		INIT_UDP(e);
-	
-	#endif
+#endif
 	fwrite(rtp_payload,rtp_payload_len,1,udpfp);
 	return ;
 }
