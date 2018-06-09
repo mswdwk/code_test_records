@@ -1,6 +1,8 @@
 #coding=utf-8
 
-import math
+import math,os
+input_file="D:\work\task\lon-lat.txt"
+output_file="output.txt"
 true=1
 false=0
 class Point:
@@ -59,7 +61,7 @@ print rect.id
 print rect.left_up.longitude
 print rect.left_up.latitude
 print rect.in_rect(c)
-'''
+
 rects=[]
 points=[a,b,c]
 for i in range(0,2*2):
@@ -69,8 +71,18 @@ for i in range(0,2*2):
     rects.append(tmp)
     #rects[i].in_rect(points)
     print i,len(rects),rects[i].left_up.longitude,rects[i].in_rect_list(points)
-    
+'''
     
 if __name__ == "__main__":
     print "main"
+    #inputfd=open(input_file,"r")
+    outputfd=open(output_file,"w+")
+    line_num=0
+    with open(input_file) as f:
+        line = f.readline()
+        line_num+=1
+    print line_num
+    
+    #inputfd.close()
+    outputfd.close()
     
