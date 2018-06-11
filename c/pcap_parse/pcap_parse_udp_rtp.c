@@ -375,13 +375,19 @@ void INIT_UDP()
 
 static void process_udp(ETH_DATA*e)
 {
-	UDPHeader_t*udph = e->udph;
-	IPHeader_t*iph = e->iph;
-	RTPHeader_t*rtph = (RTPHeader_t*)e->l4_data;
+	static u_int16 last_seq = 0; u_int16 cur_seq = 0;
+	UDPHeader_t	*udph 	= e->udph;
+	IPHeader_t	*iph 	= e->iph;
+	RTPHeader_t	*rtph 	= (RTPHeader_t*)e->l4_data;
 	int rtp_payload_len = e->l4_data_len - sizeof(RTPHeader_t);
-	char*rtp_payload  = rtph->data;
-	pdg("rtp payload len %d\n",rtp_payload_len);
+	char *rtp_payload   = rtph->data;
+	pdg("rtp payload len %4d,ver %d marker %d pt %3d %02X%02X%02X%02X %02X%02X\n",rtp_payload_len,rtph->ver,
+		rtph->marker,rtph->pt,rtph->data[0]&0xff,rtph->data[1]&0xff,rtph->data[2]&0xff,rtph->data[3]&0xff,rtph->data[4]&0xff,rtph->data[5]&0xff);
+	//dump_print("rtpheader",12+6,rtph );
 	
+	cur_seq = ntohs(rtph->seq);
+	if (last_seq !=0 && cur_seq != last_seq + 1 )pdg("cur_seq %5d not equal last_seq+1 \n",cur_seq);
+	last_seq = cur_seq;
 #if 0
 	if( (h = IS_SAME_UDP(e) )){
 		cur.tcpflow.stream_id = h->tcpflow.stream_id;
