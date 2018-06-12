@@ -344,7 +344,7 @@ void eth_callback(int pkt_id,ETH_DATA*e)
 	e->tcp_hash_index = mkhash(high_ip,high_port,low_ip,low_port);
 	ETH_DATA2ITEM(e,&cur);
 
-	if(e->l4_data_len == 0 || e->tcph->SrcPort != htons(30001)) {
+	if(e->l4_data_len <= 0 || e->tcph->SrcPort != htons(30001)) {
 		e->from_server = 0;
 		return;
 	}
@@ -448,7 +448,7 @@ int main(int argc,char *argv[])
 			printf("localtime failed. tv_sec = %u. Error %s\n",pkt_header->ts.tv_sec,strerror(errno));																						// printf("%d: %s\n", i, my_time);
 																									//数据帧头 14字节
 		frameh = (FramHeader_t*)(pkt_header+1);
-		if(fread(frameh,pkt_header->caplen - 16,1,fp)!=1){
+		if(fread(frameh,pkt_header->caplen,1,fp)!=1){
 			printf("%d,read failed\n", i);
 			break;
 		}
