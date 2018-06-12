@@ -138,6 +138,8 @@ typedef struct{
 	struct udphdr *udph;
 	char*l4_hdr;
 	char*l4_data;
+	int caplen; // pcap 
+	int ip_len;
 	int l4_data_len;
 	int pkt_id:23;
 	int from_server:1;

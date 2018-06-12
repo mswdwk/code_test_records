@@ -1,6 +1,6 @@
 BIN_TCP_RTP=tcprtp
 BIN_UDP_RTP=udprtp
-BIN=pp
+BIN=ppflv
 CC=gcc
 SRCS:=$(wildcard *.c)
 CFLAGS= -g -Wall 
@@ -40,4 +40,4 @@ $(BIN_TCP_RTP): pcap_parse_tcp_rtp.o
 $(BIN_UDP_RTP): pcap_parse_udp_rtp.o 
 	$(CC) $(CFLAGS) $^ -o $@ $(LIBS_A) 
 clean:
-	rm -rf *.o $(TARGET) $(BIN) *.log *.flv $(LIBS_A)
+	rm -rf *.o $(TARGET) $(BIN) *.log *.flv $(LIBS_A) *.seq

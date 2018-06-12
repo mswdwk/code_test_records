@@ -123,7 +123,7 @@ static int tcp_stream_recombine(TCP_FLOW_HEADER*h,TCP_FLOW_ITEM*item,TCP_FLOW_IT
 	IP_FLOW*last_tcp = &h->last->tcpflow;
 	if(!last_tcp->tcph) return 0;
 	TCP_FLOW_ITEM*tmp = NULL;
-	u_int32 first_seq_no  = ntohl(h->tcpflow.tcph->SeqNO);
+	//u_int32 first_seq_no  = ntohl(h->tcpflow.tcph->SeqNO);
 	//u_int32 first_ack_no = ntohl(h->tcpflow.tcph->AckNO);
 	//pdg("seq %u ack%u\n",first_seq_no,first_ack_no);
  	u_int32 last_seqno = ntohl(last_tcp->tcph->SeqNO);          //    last_seqno = h->last_seqno;
@@ -261,6 +261,7 @@ static int tcp_stream_construct(int i,ETH_DATA*et)
 	sprintf(tmp_name,"%d_tcp_stream",i);
 	tcp_stream_table[i].fp = fopen(tmp_name,"wb+");
 	//tcp_unlock(h->lock);
+	tcp_stream_num++;
 	return 0;
 }
 
@@ -295,6 +296,7 @@ static int tcp_stream_destruct(int i)
 	if(h->lock && h->thread_run)free(h->lock);
 	memset(h,0,sizeof(TCP_FLOW_HEADER));
 	h->stream_last_packet = 0;
+	tcp_stream_num--;
 	return 0;
 }
 
@@ -387,7 +389,7 @@ int main(int argc,char *argv[])
 	FILE *fp, *output;
 	unsigned long int   pkt_offset ; int i = 0;
 	int ip_len,  ip_proto; //http_len,
-	int src_port, dst_port, tcp_flags;
+	//int src_port, dst_port, tcp_flags;
 	char buf[BUFSIZE], my_time[STRSIZE];
 	char src_ip[STRSIZE], dst_ip[STRSIZE];
 	//char* tcp_data_buf;
@@ -461,6 +463,12 @@ int main(int argc,char *argv[])
 		inet_ntop(AF_INET, (void *)&(ip_header->DstIP), dst_ip, 16);
 		ip_proto = ip_header->Protocol;
 		ip_len = rte_be_to_cpu_16(ip_header->TotalLen); //IP数据报总长度
+		ethdata.ph = pkt_header;
+		if(ip_len + sizeof(FramHeader_t) != ethdata.ph->caplen){
+			pdg("Attention ip_len %d pkt caplen %u ! %zu\n",ip_len,ethdata.ph->caplen,sizeof(FramHeader_t));
+			ip_len = ethdata.ph->caplen - sizeof(FramHeader_t);
+			ethdata.ip_len = ip_len;
+		}
 		if (ip_proto != IP_PROTO_TCP) continue; //判断是否是 TCP 协议
 		short unsigned int ip_header_len = ((ip_header->Ver_HLen & 0xf)<<2);
 		if(rte_ipv4_frag_pkt_is_fragmented((const struct ipv4_hdr*)ip_header))
@@ -468,12 +476,12 @@ int main(int argc,char *argv[])
 		//TCP头 20字节
 		tcp_header = (TCPHeader_t*)(((char*)ip_header) + ip_header_len);
 		short unsigned int tcp_header_len = ((tcp_header->HeaderLen & 0xf0)>>2);
-		src_port = ntohs(tcp_header->SrcPort);
-		dst_port = ntohs(tcp_header->DstPort);
-		tcp_flags = tcp_header->Flags;
+		//src_port = ntohs(tcp_header->SrcPort);
+		//dst_port = ntohs(tcp_header->DstPort);
+		//tcp_flags = tcp_header->Flags;
 		ethdata.l4_data = (((char*)tcp_header)+tcp_header_len);
 		ethdata.tcph = tcp_header;
-		ethdata.l4_hdr = tcp_header;
+		ethdata.l4_hdr = (char*)tcp_header;
 		ethdata.iph = ip_header;
 		ethdata.l4_data_len = ip_len - ip_header_len - tcp_header_len;
 		ethdata.pkt_id = i;
