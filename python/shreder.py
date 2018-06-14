@@ -6,17 +6,11 @@
 # function: shredding single file or directory
 #
 
-import glob
-import os
-import sys
-import stat
-import random
-import shutil
-import string
-import traceback
+import glob, os, sys, stat
+import random,shutil,string,traceback
 
 const_str=""
-line_len = 4096
+line_len = 4096*32
 def shreder_dir(directory, rewritecounts=1):
     global filepaths
     global dirpaths
@@ -162,7 +156,7 @@ def renamedir(dirpaths):
 def usage():
     print
     print "[*] Usage: python shreder.py [dirname or filename] [rewrite-counts]"
-    print "[*] Rewrite-counts: default -> 3, allow not to fill in"
+    print "[*] Rewrite-counts: default -> 1, allow not to fill in"
     print r"[*] Example: python shreder.py D:\tests"
     print r"             python shreder.py D:\tests\test.doc 5"
     print r"             python shreder.py suffix" # file suffix
@@ -211,13 +205,13 @@ if __name__ == "__main__":
             if str(sys.argv[2]).isdigit():
                 shreder_dir(sys.argv[1], int(sys.argv[2]))
             else:
-                print "[?] Warn: '%s' is not a legal digit, default use: 3" % sys.argv[2]
+                print "[?] Warn: '%s' is not a legal digit, default use: 1" % sys.argv[2]
                 shreder_dir(sys.argv[1])
         elif os.path.isfile(sys.argv[1]):
             if str(sys.argv[2]).isdigit():
                 shreder_file(sys.argv[1], int(sys.argv[2]))
             else:
-                print "[?] Warn: '%s' is not a legal digit, default use: 3" % sys.argv[2]
+                print "[?] Warn: '%s' is not a legal digit, default use: 1" % sys.argv[2]
                 shreder_file(sys.argv[1])
         else:
             print "[!] Error: %s is not a legal directory or file" % sys.argv[1]

@@ -185,9 +185,9 @@ static int tcp_stream_recombine(TCP_FLOW_HEADER*h,TCP_FLOW_ITEM*item,TCP_FLOW_IT
 
 void tcp_data_callback(TCP_FLOW_ITEM**res,int num)
 {
-	if(!res || num <1)
-		return ;
+	if(!res || num <1) return ;
 	int i = 0;
+	static int total_writen_len = 0;
 	char buf[BUFSIZE] = {0};
 	int stream_id = res[0]->tcpflow.stream_id;
 	FILE*fp = tcp_stream_table[stream_id].fp;
@@ -198,6 +198,11 @@ void tcp_data_callback(TCP_FLOW_ITEM**res,int num)
 	int r_data_len = ring_data_len( ring_buf );
 	ring_buffer_get(ring_buf,buf,r_data_len);
 	fwrite(buf,r_data_len,1,fp);
+	total_writen_len += r_data_len;
+	if(total_writen_len > 0x4AADC1 && total_writen_len < 0x4AADC1 + 1000){
+		pdg("pkt_id %5d l4_data_len %4d total write_len 0x%08X\n",res[0]->pkt_id,r_data_len,total_writen_len);
+		dump_print("l4_data", r_data_len, buf);
+	}
 }
 
 static int tcp_stream_construct(int i,ETH_DATA*et)
@@ -334,38 +339,52 @@ static void process_tcp(ETH_DATA*e)
 	TCP_FLOW_ITEM*result[128];
 	TCP_FLOW_ITEM cur;
 	TCP_FLOW_HEADER*h;
-	IPHeader_t*iph = e->iph;
-	int ip_header_len = ((iph->Ver_HLen & 0xf)<<2);
-	TCPHeader_t*tcph = (TCPHeader_t*)(((char*)iph) + ip_header_len);
+	TCPHeader_t*tcph = e->tcph ;
 	
 	//TCP头 20字节
-	u_int16 tcp_header_len = ((tcph->HeaderLen & 0xf0)>>2);
-	u_int16 ip_len = e->ip_len;//rte_be_to_cpu_16(iph->TotalLen); //IP数据报总长度
-	e->l4_data = (((char*)tcph) + tcp_header_len);
-	e->tcph = tcph;
-	//e.l4_hdr = tcph;
-	e->l4_data_len = ip_len - ip_header_len - tcp_header_len;
-	//pdg("cap_len %4d iplen %4d ip_header_len %2d tcp_header_len %2d l4_data_len %4d\n",e->ph->caplen,ip_len,ip_header_len,tcp_header_len, e->l4_data_len);
+	//u_int16 tcp_header_len = ((tcph->HeaderLen & 0xf0)>>2);
+	//u_int16 ip_len = e->ip_len;//rte_be_to_cpu_16(iph->TotalLen); //IP数据报总长度
+	//e->l4_data = (((char*)tcph) + tcp_header_len);
+	//e->l4_data_len = ip_len - ip_header_len - tcp_header_len;
+	//pdg("cap_len %4d iplen %4d ip_header_len %2d tcp_header_len %2d l4_data_len %4d\n",e->ph->caplen,e->ip_len,ip_header_len,tcp_header_len, e->l4_data_len);
 
 	int high_ip ,low_ip;
 	unsigned short high_port ,low_port;
-	IP_PORT_HEADER2TCP_HIGH_LOW(iph, tcph);
-
+	IP_PORT_HEADER2TCP_HIGH_LOW(e->iph, tcph);
 	e->tcp_hash_index = mkhash(high_ip,high_port,low_ip,low_port);
 	ETH_DATA2ITEM(e,&cur);
 
-	if(e->l4_data_len <= 0 || e->tcph->SrcPort != htons(30001)) {
+	if(tcph->Flags & TH_PUSH) e->tcp_flag_push = 1;
+	if(tcph->Flags & TH_FIN) e->tcp_flag_fin = 1;
+	if(tcph->Flags & TH_SYN) e->tcp_flag_syn = 1;
+	if(tcph->Flags & TH_ACK) e->tcp_flag_ack = 1;
+	if(tcph->Flags & TH_RST) e->tcp_flag_rst = 1;
+	if(tcph->Flags & TH_URG) e->tcp_flag_urg = 1;
+	
+	if(e->l4_data_len <= 0 || tcph->SrcPort != htons(30001)) {
 		e->from_server = 0;
 		return;
 	}
 	else 
 		e->from_server = 1;
 	
-	if( (h = IS_TCP_STREAM(e) )){
+	if( (h = IS_TCP_STREAM(e) ) && e->from_server ){
 		cur.tcpflow.stream_id = h->tcpflow.stream_id;
-		int count = tcp_stream_recombine(h,&cur,result);
-		//pdg("count = %d ring_data_len %u\n",count,ring_data_len(h->ring_buf));
-		tcp_data_callback(result,count);
+		if(e->caplen > MAX_TCP_SEGMENT_SIZE)pdg("Atttion: e->caplen %4d too long!\n",e->caplen);
+		
+		if(e->tcp_flag_ack){
+			int count = tcp_stream_recombine(h,&cur,result);
+			//pdg("count = %d ring_data_len %u\n",count,ring_data_len(h->ring_buf));
+			tcp_data_callback(result,count);
+		}
+		else if ( e->tcp_flag_fin ){
+			struct in_addr ipaddr,dst_ipaddr;
+			ipaddr.s_addr = e->iph->SrcIP;
+			dst_ipaddr.s_addr = e->iph->DstIP;
+			pdg("descruct tcp_stream %u srcip %s:%5u dstip %s:%5u\n",h->tcpflow.stream_id,inet_ntoa(ipaddr),ntohs(tcph->SrcPort),
+				inet_ntoa(dst_ipaddr),ntohs(tcph->DstPort));
+			tcp_stream_destruct(h->tcpflow.stream_id);
+		}
 	}
 	else
 		INIT_TCP_STREAM(e);
@@ -450,7 +469,7 @@ static void process_udp_rtp(ETH_DATA*e)
 static void process_udp(ETH_DATA*e)
 {
 	UDPHeader_t *udph	= (UDPHeader_t*)e->udph;
-	IPHeader_t	*iph	= e->iph;
+	//IPHeader_t	*iph	= e->iph;
 	RTPHeader_t *rtph	= (RTPHeader_t*)e->l4_data;
 	// only process port 30001
 	if(udph->SrcPort != htons(30001)) 
@@ -488,6 +507,7 @@ static void eth_callback(ETH_DATA*e)
 		case IP_PROTO_UDP:
 			e->l4_data_len = ip_len - ip_header_len - sizeof(UDPHeader_t);
 			e->l4_data = e->l4_hdr + sizeof(UDPHeader_t);
+			e->tcph = NULL;
 			process_udp(e);
 			break;
 		
@@ -495,11 +515,12 @@ static void eth_callback(ETH_DATA*e)
 			tcp_header_len = ((e->tcph->HeaderLen & 0xf0)>>2);
 			e->l4_data_len = ip_len - ip_header_len - tcp_header_len;
 			e->l4_data = e->l4_hdr + tcp_header_len;
+			e->udph = NULL;
 			process_tcp(e);
 			break;
 		
 		default:
-			pdg("proto %d data_len %d\n",protocol,e->l4_data_len);
+			pdg("proto %2d ip_len %4d data_len %4d\n",protocol,e->ip_len,e->l4_data_len);
 			return ;
 	}
 
@@ -535,12 +556,12 @@ int main(int argc,char *argv[])
 	//int src_port, dst_port, tcp_flags;
 	char buf[BUFSIZE], my_time[STRSIZE];
 	char src_ip[STRSIZE], dst_ip[STRSIZE];
-	//char* tcp_data_buf;
 	
 	//初始化
 	init_hash();
 	init_tcp_stream_table();
 	ETH_DATA ethdata;
+	memset(&ethdata,0,sizeof(ethdata));
 	pkt_header = (struct pcap_pkthdr *)ethdata.data;
 	
 	memset(buf, 0, sizeof(buf));

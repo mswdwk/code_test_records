@@ -4,7 +4,7 @@
 
 #define BUFSIZE 16384 //(1024*16)
 #define STRSIZE 1024
-
+#define MAX_TCP_SEGMENT_SIZE 4096  // 2048 must big than max tcp segment length
 //pacp文件头结构体
 struct pcap_file_header
 {
@@ -138,14 +138,21 @@ typedef struct{
 	struct udphdr *udph;
 	char*l4_hdr;
 	char*l4_data;
-	int caplen; // pcap 
-	int ip_len;
-	int l4_data_len;
+	u_int16 caplen; // pcap 
+	short int ip_len;
+	short int l4_data_len;
+	u_int8 tcp_state;
+	u_int8 tcp_flag_ack:1;
+	u_int8 tcp_flag_syn:1;
+	u_int8 tcp_flag_push:1;
+	u_int8 tcp_flag_rst:1;
+	u_int8 tcp_flag_fin:1;
+	u_int8 tcp_flag_urg:1;
 	int pkt_id:23;
 	int from_server:1;
 	int protocol:8;
 	int tcp_hash_index;
-#define DATA_ROOM_BUF_SIZE (1518 + sizeof(struct pcap_pkthdr))
+#define DATA_ROOM_BUF_SIZE (MAX_TCP_SEGMENT_SIZE + sizeof(struct pcap_pkthdr))
 	char data[DATA_ROOM_BUF_SIZE];
 }ETH_DATA;
 

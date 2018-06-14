@@ -162,7 +162,7 @@ static inline char *adres2(IP_FLOW *addr)
 
 static inline void ETH_DATA2ITEM(ETH_DATA*e,TCP_FLOW_ITEM*cur)
 {
-	//cur->pkt_id = pkt_id;
+	cur->pkt_id = e->pkt_id;
 	cur->tcpflow.tcph = e->tcph;
 	cur->tcpflow.data = e->l4_data;
 	cur->tcpflow.data_len = e->l4_data_len;
