@@ -466,16 +466,33 @@ static void process_udp_rtp(ETH_DATA*e)
 
 }
 
+void process_udp_sip(ETH_DATA*e)
+{
+	char *sip_data = e->l4_data;
+	sip_data[30] = 0;
+	
+	pdg("%s \n%d\n",sip_data,e->l4_data_len);
+}
+
 static void process_udp(ETH_DATA*e)
 {
 	UDPHeader_t *udph	= (UDPHeader_t*)e->udph;
-	//IPHeader_t	*iph	= e->iph;
+	
+	
+	if( udph->SrcPort == htons(5060) ){
+		e->from_server = 1;
+		process_udp_sip(e);
+	}
+	if( udph->DstPort == htons(5060) ){
+		e->from_server = 0;
+		process_udp_sip(e);
+	}
+	
 	RTPHeader_t *rtph	= (RTPHeader_t*)e->l4_data;
 	// only process port 30001
-	if(udph->SrcPort != htons(30001)) 
-		return;
-	if( e->l4_data_len >= sizeof(RTPHeader_t) && rtph->ver == 2 )
+	if( udph->SrcPort == htons(30001) && e->l4_data_len >= sizeof(RTPHeader_t) && rtph->ver == 2 )
 	 	process_udp_rtp(e);
+	
 	return ;
 }
 
