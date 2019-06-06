@@ -9,8 +9,8 @@ struct BitNode
     int data;
     char ch;
     BitNode *left, *right;
-    BitNode(int x) :data(x), left(0), right(0){}
-    BitNode(char x) :ch(x), left(0), right(0){}
+    BitNode(int x) :data(x), left(0), right(0){cout<<"create node "<<x<<endl;}
+    BitNode(char x) :ch(x), left(0), right(0){cout<<"create node ch="<<x<<endl;}
 };
 #if 0
 void Create(BitNode *&root)
@@ -143,10 +143,10 @@ int  main()
     cout<<"front treverse"<<endl;
     PreOrderTraversal(root);
     //深度优先遍历
-    cout << endl << "dfs" << endl;
+    cout << endl << "dfs treverse" << endl;
     DepthFirstSearch(root);
     //广度优先搜索
-    cout << endl << "bfs" << endl;
+    cout << endl << "bfs treverse" << endl;
     BreadthFirstSearch(root);
     cout << endl << "destroy tree by depth" << endl;
     destory_tree(root);
