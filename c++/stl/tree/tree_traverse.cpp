@@ -53,7 +53,13 @@ void Create(BitNode*&root)
 	
 	//c.left = 0;
 	c->right = f;
-	
+/*	
+	  a
+	 / \
+	b   c
+/ \    \
+d  e    f
+*/
 }
 #endif
 
@@ -135,6 +141,47 @@ void BreadthFirstSearch(BitNode *root)
     cout<<endl;
 }
 
+// print the most right node 
+void btree_print_end_node_at_each_level(BitNode *root) 
+{
+    queue<BitNode*> nodeQueue; // current level nodeQueue
+    queue<BitNode*> next_level_nodeQueue;
+    nodeQueue.push(root);
+    int level = 0;
+    while(!nodeQueue.empty() || !next_level_nodeQueue.empty()){
+    while(!nodeQueue.empty()) {
+        // BitNode *node = nodeQueue.pop_front();
+        BitNode *node = nodeQueue.front();
+        nodeQueue.pop();
+        if (nodeQueue.empty()) {
+            cout<<"level "<<level<<" end node is "<<node->ch<<" "<<endl;
+            level++;
+        }
+        if (node->left) {
+            next_level_nodeQueue.push(node->left);
+        }
+        if (node->right) {
+            next_level_nodeQueue.push(node->right);
+        }
+    }
+    while(!next_level_nodeQueue.empty()) {
+        // BitNode *node = nodeQueue.pop_front();
+        BitNode *node = next_level_nodeQueue.front();
+        next_level_nodeQueue.pop();
+        if (next_level_nodeQueue.empty()) {
+            cout<<"level "<<level<<" end node is "<<node->ch<<" "<<endl;
+            level++;
+        }
+        if (node->left) {
+            nodeQueue.push(node->left);
+        }
+        if (node->right) {
+            nodeQueue.push(node->right);
+        }
+    }
+	}
+}
+
 int  main()
 {
     BitNode *root = NULL;
@@ -148,6 +195,8 @@ int  main()
     //广度优先搜索
     cout << endl << "bfs treverse" << endl;
     BreadthFirstSearch(root);
+    cout << "pirnt the most right node at each level in btree"<<endl;
+    btree_print_end_node_at_each_level(root); 
     cout << endl << "destroy tree by depth" << endl;
     destory_tree(root);
     return 0;
