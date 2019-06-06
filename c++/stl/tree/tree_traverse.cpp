@@ -182,6 +182,33 @@ void btree_print_end_node_at_each_level(BitNode *root)
 	}
 }
 
+void btree_print_end_node_at_each_level_method_2(BitNode *root) 
+{
+    queue<BitNode*> nodeQueue; // current level nodeQueue
+    nodeQueue.push(root);
+    int level = 0;
+    int start = 0; // queue start positon at each level of btree
+    int end = 1;   // queue end positon at each level of btree
+    while(!nodeQueue.empty()) {
+        BitNode *node = nodeQueue.front();
+        nodeQueue.pop();
+        start++;
+        if (node->left) {
+            nodeQueue.push(node->left);
+        }
+        if (node->right) {
+            nodeQueue.push(node->right);
+        }
+        // if current level nodeQueue.empty()
+        if ( start == end ) {
+            cout<<"level "<<level<<" end node is "<<node->ch<<" "<<endl;
+            level++;
+            start = 0;
+            end = nodeQueue.size();
+        }
+    }
+}
+
 int  main()
 {
     BitNode *root = NULL;
@@ -197,6 +224,8 @@ int  main()
     BreadthFirstSearch(root);
     cout << "pirnt the most right node at each level in btree"<<endl;
     btree_print_end_node_at_each_level(root); 
+    cout << "pirnt the most right node at each level in btree method 2"<<endl;
+    btree_print_end_node_at_each_level_method_2(root); 
     cout << endl << "destroy tree by depth" << endl;
     destory_tree(root);
     return 0;
