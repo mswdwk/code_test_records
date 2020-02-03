@@ -1,0 +1,14 @@
+#include<string>
+#
+function testa:string(st)
+%{
+	use std::string;
+	string a="123";
+	snprintf(STAP_RETVALUE,MAXSTRINGLEN,"%s",a.c_str());
+%}
+probe process("./test").function("test").call {
+	str = testa(@cast($this->str1,"class basic_string","<string>"))
+	printf("process str=%s",str)
+	//str = user_string((char*) &$this->str1)
+	//printf("process str=%s",$this->str1)
+}
