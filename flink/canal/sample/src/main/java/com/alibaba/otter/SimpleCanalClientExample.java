@@ -2,18 +2,21 @@ package com.alibaba.otter;
 
 import java.net.InetSocketAddress;
 import java.util.List;
+import java.util.UUID;
+import java.util.ArrayList;
 
 import com.alibaba.otter.canal.client.CanalConnectors;
 import com.alibaba.otter.canal.client.CanalConnector;
 import com.alibaba.otter.canal.common.utils.AddressUtils;
 import com.alibaba.otter.canal.protocol.Message;
+import com.alibaba.otter.canal.protocol.CanalEntry;
 import com.alibaba.otter.canal.protocol.CanalEntry.Column;
 import com.alibaba.otter.canal.protocol.CanalEntry.Entry;
 import com.alibaba.otter.canal.protocol.CanalEntry.EntryType;
 import com.alibaba.otter.canal.protocol.CanalEntry.EventType;
 import com.alibaba.otter.canal.protocol.CanalEntry.RowChange;
 import com.alibaba.otter.canal.protocol.CanalEntry.RowData;
-
+import com.google.protobuf.InvalidProtocolBufferException;
 
 public class SimpleCanalClientExample {
 
@@ -43,7 +46,8 @@ public static void main(String args[]) {
             } else {
                 emptyCount = 0;
                 // System.out.printf("message[batchId=%s,size=%s] \n", batchId, size);
-                printEntry(message.getEntries());
+                //printEntry(message.getEntries());
+		Analysis(message.getEntries(),emptyCount);
             }
 
             connector.ack(batchId); // 提交确认
@@ -55,6 +59,60 @@ public static void main(String args[]) {
         connector.disconnect();
     }
 }
+
+	 //TODO 3：将解析出来的数据区分好：增 删 改 发送到kafka
+    public static void Analysis(List<CanalEntry.Entry> entries , int emptyCount){
+        for(CanalEntry.Entry entry : entries){
+            if(entry.getEntryType() == CanalEntry.EntryType.TRANSACTIONBEGIN || entry.getEntryType() == CanalEntry.EntryType.TRANSACTIONEND){
+                continue;
+            }
+ 
+            try {
+                final CanalEntry.RowChange rowChange = CanalEntry.RowChange.parseFrom(entry.getStoreValue());
+                final CanalEntry.EventType eventType = rowChange.getEventType();
+                final String logfileName = entry.getHeader().getLogfileName();
+                final long logfileOffset = entry.getHeader().getLogfileOffset();
+                final String dbname = entry.getHeader().getSchemaName();
+                final String tableName = entry.getHeader().getTableName();
+ 
+                for(CanalEntry.RowData rowData : rowChange.getRowDatasList()){
+                    //区分增删改操作，然后发送给kafka
+                    if(eventType == CanalEntry.EventType.DELETE){
+                        //删除操作
+                        System.out.println("=======删除操作=======");
+                        dataDetails(rowData.getAfterColumnsList() , logfileName , logfileOffset , dbname , tableName , emptyCount);
+                    }else if (eventType == CanalEntry.EventType.INSERT){
+                        //插入操作
+                        System.out.println("=======插入操作=======");
+                        dataDetails(rowData.getAfterColumnsList() , logfileName , logfileOffset , dbname , tableName , emptyCount);
+                    }else {
+                        //更改操作
+                        System.out.println("=======更改操作=======");
+                        dataDetails(rowData.getAfterColumnsList() , logfileName , logfileOffset , dbname , tableName , emptyCount);
+                    }
+                }
+            } catch (InvalidProtocolBufferException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+	public static void dataDetails(List<CanalEntry.Column> columns , String fileName , Long offset , String DBname , String tableName , int emptyCount){
+		List<Object> list = new ArrayList<Object>();
+		String sendkey = UUID.randomUUID().toString();
+		for(CanalEntry.Column column:columns){
+		    List<Object> ll = new ArrayList<Object>();
+		    //获取原值
+		    ll.add(column.getName());//字段名
+		    ll.add(column.getValue());//字段值
+		    //是否更改 true代表更改，false代表不更改
+		    ll.add(column.getUpdated());
+		    list.add(ll);
+		} 
+		System.out.println(fileName + "#CS#" + offset +"#CS#"+DBname+"#CS#"+tableName+"#CS#"+list+"#CS#"+ emptyCount); 
+		//将解析后的数据发送到kafka上 
+		MyKafkaProducer.sendMsg("canal" , sendkey , fileName + "#CS#" + offset +"#CS#"+DBname+"#CS#"+tableName+"#CS#"+list+"#CS#"+ emptyCount);
+	}
 
 private static void printEntry(List<Entry> entrys) {
     for (Entry entry : entrys) {
@@ -91,10 +149,10 @@ private static void printEntry(List<Entry> entrys) {
     }
 }
 
-private static void printColumn(List<Column> columns) {
-    for (Column column : columns) {
-        System.out.println(column.getName() + " : " + column.getValue() + "    update=" + column.getUpdated());
-    }
-}
+	private static void printColumn(List<Column> columns) {
+	    for (Column column : columns) {
+		System.out.println(column.getName() + " : " + column.getValue() + "    update=" + column.getUpdated());
+	    }
+	}
 
 }
