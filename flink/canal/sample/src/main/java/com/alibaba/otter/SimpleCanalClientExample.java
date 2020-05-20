@@ -148,7 +148,6 @@ private static void printEntry(List<Entry> entrys) {
         }
     }
 }
-
 	private static void printColumn(List<Column> columns) {
 	    for (Column column : columns) {
 		System.out.println(column.getName() + " : " + column.getValue() + "    update=" + column.getUpdated());

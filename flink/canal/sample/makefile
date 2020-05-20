@@ -2,10 +2,10 @@
 all:
 	CLASSPATH=${CLASSPATH}:/tmp/canal/lib mvn clean package -DskipTests
 clean:
-	mvn clean
+	mvn clean;rm -rf target/
 
 cleanall:
-	rm -rf src/ target/ 
+	rm -rf  target/ 
 
 create:
 	mvn archetype:generate -DgroupId=com.alibaba.otter -DartifactId=canal.sample

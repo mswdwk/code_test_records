@@ -19,8 +19,8 @@ public class MyKafkaProducer {
  
     public static Producer<Integer,String> createProducer(){
         Properties properties = new Properties();
-        properties.put("zookeeper.connect" , "hadoop01:2181");
-        properties.put("metadata.broker.list" , "hadoop01:9092");
+        properties.put("zookeeper.connect" , "localhost:2181");
+        properties.put("metadata.broker.list" , "localhost:9092");
         properties.put("serializer.class" , StringEncoder.class.getName());
         final ProducerConfig producerConfig = new ProducerConfig(properties);
         return new Producer<Integer,String>(producerConfig);

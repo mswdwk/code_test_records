@@ -1,0 +1,1 @@
+sysbench /usr/share/sysbench/oltp_read_write.lua --db-ps-mode=disable --mysql-host=127.0.0.1 --mysql-port=3306 --mysql-user=root --mysql-password=123 --mysql-db=test --tables=4 --table-size=1000 --report-interval=5 --time=30 --threads=4  run
