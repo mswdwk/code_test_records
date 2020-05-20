@@ -1,4 +1,4 @@
-.PHONY:all clean test 
+.PHONY:all clean test run
 
 all:
 	mvn clean package -Dmaven.test.skip=true
@@ -6,7 +6,7 @@ all:
 run:
 	mvn exec:java -Dexec.mainClass="TestGroupId.App"
 run2:
-	java -jar target/TestArtifactId-1.0-SNAPSHOT.jar
+	java -cp target/TestArtifactId-1.0-SNAPSHOT.jar TestGroupId.App
 test:
 	mvn clean test
 
