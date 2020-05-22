@@ -1,6 +1,7 @@
-package com.flink;
+//package com.flink;
+package spendreport;
  
-import com.flink.model.DeviceData;
+//import spendreport.DeviceData;
 import org.apache.commons.dbcp2.BasicDataSource;
 //import org.apache.commons.dbcp.BasicDataSource;
 import org.apache.flink.configuration.Configuration;
@@ -75,7 +76,7 @@ class HBaseWriter extends RichSinkFunction<DeviceData>{
         } catch (ParseException e) {
             e.printStackTrace();
         }
-        String RowKey = values.MachID + String.valueOf(unixTimestamp);
+        String RowKey = values.MatchID + String.valueOf(unixTimestamp);
         String Key = values.OperationValue;
         String Value = values.OperationData;
         System.out.println("Column Family=f1,  RowKey=" + RowKey + ", Key=" + Key + " ,Value=" + Value);

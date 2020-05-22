@@ -45,7 +45,7 @@ public class FraudDetectionJob {
 		 DataStream<String> stream = env
 		 	.addSource(new FlinkKafkaConsumer011<>("canal", new SimpleStringSchema(), properties));
 
-		stream.addSink(new HBaseWriter());
+		//stream.addSink(new HBaseWriter());
 /*
 		stream.filter(
 			new FilterFunction<String>(){
