@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+//option java_package = "test_group";
+option java_outer_classname = "Auth";
+
+message CRegister {
+     string userid = 1;
+     string passwd  = 2;
+}
+
+message CLogin {
+     string userid = 1;            // 用户账户id
+     string passwd = 2;             // 用户密码
+     string platform = 3;          // 客户端平台:android,ios,web
+     string app_version = 4;       //
+     string f5 = 5;
+     string f6 = 6;
+     string f7 = 7;
+     string f8 = 8;
+     string f9 = 9;
+     string f10 = 10;
+     string f11 = 11;
+     string f12 = 12;
+}
+
+/*
+code：
+200 -- ok
+404 -- error
+300 -- dumplicated registery
+*/
+message SResponse {
+     int32 code = 1;            //返回码
+     string desc = 2;           //描述
+}
