@@ -45,7 +45,7 @@ int main()
 		scanf("%s", sendbuf);
 		printf("\n");
 		send(clientSocket, sendbuf, strlen(sendbuf), 0);
-		printf("send %d bytes\n",strlen(sendbuf));
+		printf("send %ld bytes\n",strlen(sendbuf));
 		/*if(strcmp(sendbuf, "quit") == 0)
 		break;
 		printf("读取消息:");

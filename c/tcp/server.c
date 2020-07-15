@@ -83,16 +83,20 @@ int main()
 			}
 			buffer[iDataNum] = '\0';
 			if(strcmp(buffer, "quit") == 0)break;
-			if(strcmp(buffer, "shutdown0") == 0){
+			if(strcmp(buffer, "shutdown_rd") == 0){
 				shutdown(client,SHUT_RD);
 				break;
 			};
-			if(strcmp(buffer, "shutdown1") == 0){
+			if(strcmp(buffer, "shutdown_wr") == 0){
 				shutdown(client,SHUT_WR);
 				break;
 			};
-			if(strcmp(buffer, "shutdown2") == 0){
+			if(strcmp(buffer, "shutdown_rdwr") == 0){
 				shutdown(client,SHUT_RDWR);
+				break;
+			};
+			if(strcmp(buffer, "close") == 0){
+				close(client);
 				break;
 			};
 			printf("%s\n", buffer);
