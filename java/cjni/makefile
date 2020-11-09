@@ -20,5 +20,5 @@ clean:
 	rm -rf ${J2C_SO} *.o *.class *.so
 
 run:
-	@ #export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:.  && java J2C
-	java J2C
+	@ export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:.  && java J2C
+	#java J2C
