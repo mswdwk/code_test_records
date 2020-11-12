@@ -1,0 +1,5 @@
+1)request for member 'GetEnv' in something not a structure or union
+	clazz = (*env)->FindClass(env,kClassBoa); // right ,On C env
+    	//clazz = env->FindClass(env,kClassBoa); // wrong, On C env. Right on C++ env
+	
+https://blog.csdn.net/xdonx/article/details/8450427
