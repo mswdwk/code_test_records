@@ -3,3 +3,7 @@
     	//clazz = env->FindClass(env,kClassBoa); // wrong, On C env. Right on C++ env
 	
 https://blog.csdn.net/xdonx/article/details/8450427
+
+2) not set to big stack variable in java or C language
+this may cause stack manger failed,then due to a coredump!!!
+
