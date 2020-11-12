@@ -1,0 +1,50 @@
+我们还是使用CMake来构建项目。
+
+1. CMakeLists.txt的配置
+cmake_minimum_required(VERSION 2.8)
+project(Review)
+set(BUILD_USE_64BITS on)
+FIND_PACKAGE(JNI REQUIRED)
+include_directories(${JNI_INCLUDE_DIRS})
+ADD_EXECUTABLE(jvmLuncher main.cpp)
+target_link_libraries(jvmLuncher ${JAVA_JVM_LIBRARY})
+这里有几点要说明的地方：
+
+set(BUILD_USE_64BITS on)为的是编译64位版本
+FIND_PACKAGE(JNI REQUIRED)是让CMake自动去寻找Java相关的路径。
+这里可以自动找到的路径有：
+JNI_INCLUDE_DIRS      = the include dirs to use 
+ JNI_LIBRARIES         = the libraries to use 
+ JNI_FOUND             = TRUE if JNI headers and libraries were found. 
+ JAVA_AWT_LIBRARY      = the path to the jawt library 
+ JAVA_JVM_LIBRARY      = the path to the jvm library 
+ JAVA_INCLUDE_PATH     = the include path to jni.h 
+ JAVA_INCLUDE_PATH2    = the include path to jni_md.h 
+ JAVA_AWT_INCLUDE_PATH = the include path to jawt.h
+
+target_link_libraries(jvmLuncher ${JAVA_JVM_LIBRARY})用于指定在jvmLuncher链接时，使用JAVA_JVM_LIBRARY库
+
+这里JAVA_JVM_LIBRARY指向的是jvm.lib。
+
+link_directories 
+ Specify directories in which the linker will look for libraries. 
+ link_directories(directory1 directory2 …) 
+ Specify the paths in which the linker should search for libraries. The command will apply only to targets created after it is called. Relative paths given to this command are interpreted as relative to the current source directory, see CMP0015. 
+ Note that this command is rarely necessary. Library locations returned by find_package() and find_library() are absolute paths. Pass these absolute library file paths directly to the target_link_libraries() command. CMake will ensure the linker finds them.
+
+2.代码
+
+3. 构建过程
+mkdir build
+cd build
+cmake -G "Visual Studio 14 2015 Win64" ..
+cmake --build .
+运行
+
+cd Debug
+jvmLuncher.exe
+构建RELEASE
+
+cmake --build . -- /p:Configuration=Release
+
+https://www.javatt.com/p/101470
