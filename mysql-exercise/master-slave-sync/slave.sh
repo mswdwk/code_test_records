@@ -5,7 +5,7 @@ log_bin = mysql-bin          #开启日志
 max_binlog_size = 512M  　　　#单个日志文件最大
 expire_logs_days = 3          #日志有效期（天）
 replicate-do-db = test1,test2    #日志记录那些数据库
-replicate-ingore-db = mysql,performance_schema,information_schema
+replicate-ignore-db = mysql,performance_schema,information_schema
 
  #日志记录忽略那些数据库的
 
