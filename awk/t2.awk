@@ -3,8 +3,8 @@ PROCINFO["sorted_in"]="@val_num_desc"
 }
 {
 	
-	if($0 ~ /^this is (.+) .+/)
-		suma[$3]+=1;
+	if match($0,/this is (.+) .+/,a)
+		 suma[a[1]]+=1;
 	else if ($0 ~ /^hello (.+)/)
 		sumb[$2]+=1;
 }
