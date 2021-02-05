@@ -18,7 +18,7 @@ void *threadFun(void *arg)		//arg  传递线程标号（自己定义）
 	cpu_set_t mask;				//CPU核的集合  
 	cpu_set_t get;				//获取在集合中的CPU  
 	int *a = (int *) arg;
-	printf("the a is:%d\n", *a);	//显示是第几个线程  
+	printf("the arg is:%d\n", *a);	//显示是第几个线程  
 	CPU_ZERO(&mask);			//置空  
 	CPU_SET(*a, &mask);			//设置亲和力值  
 	if (sched_setaffinity(0, sizeof (mask), &mask) == -1)	//设置线程CPU亲和力  
@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
 	int i;
 	for (i = 0; i < num; i++) {
 		tid[i] = i;				//每个线程必须有个tid[i]  
-		pthread_create(&thread[0], NULL, threadFun, (void *) &tid[i]);
+		pthread_create(&thread[i], NULL, threadFun, (void *) &tid[i]);
 	}
 	for (i = 0; i < num; i++) {
 		pthread_join(thread[i], NULL);	//等待所有的线程结束，线程为死循环所以CTRL+C结束  
