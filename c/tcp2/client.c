@@ -85,6 +85,7 @@ void client_handle(int sock) {
 			// shutdown(sock,SHUT_WR);
             break;
         }
+		
         write(STDOUT_FILENO, recvbuf, n);
         gettimeofday(&end, NULL);
         printf("\ntime diff=%ld microseconds\n", ((end.tv_sec * 1000000 + end.tv_usec)- (start.tv_sec * 1000000 + start.tv_usec)));
@@ -92,21 +93,22 @@ void client_handle(int sock) {
     }
 
     // n = read(sock, recvbuf, MAXLEN);
-    printf("close clinet %d n %d\n",sock,n );
+    printf("set linger 1 0 ,socket = %d  \n",sock );
 	set_linger(sock,1,0);
+	// usleep(300);
 	int ret = shutdown(sock,SHUT_RDWR);
-    printf("shut wr sock %d ret %d errno %d shutdown_count %d :%s\n",sock,ret,errno,shutdown_count++,strerror(errno));
-    //close(sock);
+    printf("shut wr sock %d ret %d errno %d shutdown_count %d:%s\n",sock,ret,errno,shutdown_count++,strerror(errno));
+    // close(sock);
 
 	ret = shutdown(sock,SHUT_RDWR);
-    printf("shut wr sock %d ret %d errno %d shutdown_count %d :%s\n",sock,ret,errno,shutdown_count++,strerror(errno));
+    printf("shut wr sock %d ret %d errno %d shutdown_count %d:%s\n",sock,ret,errno,shutdown_count++,strerror(errno));
     ret = close(sock);
     printf("close wr sock %d ret %d errno %d shutdown_count %d\n",sock,ret,errno,shutdown_count++  );
-	ret = shutdown(sock,SHUT_RDWR);
-    printf("shut wr sock %d ret %d errno %d shutdown_count %d :%s\n",sock,ret,errno,shutdown_count++,strerror(errno));
+    n = read(sock, recvbuf, MAXLEN);
+    printf("after close socket %d ,then read %d bytes %d:%s\n",sock,n,errno,strerror(errno) );
+	/*ret = shutdown(sock,SHUT_RDWR);
+    printf("shut wr sock %d ret %d errno %d shutdown_count %d:%s\n",sock,ret,errno,shutdown_count++,strerror(errno));*/
 /*	shutdown(sock,SHUT_RDWR);
-
-
     printf("shut wr sock %d ret %d errno %d shutdown_count %d :%s\n",sock,ret,errno,shutdown_count++,strerror(errno));
 	shutdown(sock,SHUT_RDWR);
     ret = close(sock);

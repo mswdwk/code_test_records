@@ -18,21 +18,34 @@
 
 int set_linger(int sock, int l_onoff, int l_linger);
 int handle_conn(struct pollfd *nfds, char* buf);
-void run();
+int init_char(char ch[],int len,char init){
+	for(int i = 0; i < len; ++i){
+		ch[i]=init;
+	}
+	return len;
+}
 
+void run();
+void prepare_data(char buf3[],int length){
+			char buf1[1374]={0};
+			char buf2[71]={0};
+			//char buf3[1448]={0};
+
+			init_char(buf1,sizeof(buf1),'1');
+			init_char(buf2,sizeof(buf2),'2');
+			strcat(buf3,buf1);
+			strcat(buf3,buf2);
+			strcat(buf3,"end");
+}
 static void set_nonblock(int sock){
 	int flags = fcntl(sock, F_GETFL, 0); 
 	fcntl(sock, F_SETFL, flags | O_NONBLOCK); 
+	fprintf(stderr,"set sock noblock %d\n",sock);
 }
 int main(int _argc, char* _argv[]) {
     run();
 
     return 0;
-}
-void init_char(char ch[],int len,char init){
-for(int i = 0; i < len; ++i){
-	ch[i]=init;
-}
 }
 void run() {
     // bind socket
@@ -92,28 +105,17 @@ void run() {
                     exit(EXIT_FAILURE);
                 }
             }
-			char buf1[1374]={0};
-			char buf2[71]={0};
-			char buf3[1448]={0};
-
-			init_char(buf1,sizeof(buf1),'1');
-			init_char(buf2,sizeof(buf2),'2');
-			strcat(buf3,buf1);
-			strcat(buf3,buf2);
-			strcat(buf3,"end");
-
-			printf("prepare to send data %d bytes\n",sizeof(buf3));
-            int send_n = write(sock, buf3, sizeof(buf3));
+			char buf[1461] = {0};
+			prepare_data(buf,sizeof(buf));
+			printf("prepare to send data %d bytes\n",sizeof(buf));
+            int send_n = write(sock, buf, sizeof(buf));
 			printf("send data %d bytes\n",send_n );
-            // send_n = write(sock, buf2, sizeof(buf2));
-			// printf("send data %d bytes",send_n );
-			// close(sock);
 			ret = shutdown(sock,SHUT_RDWR);
 			// shutdown(sock,SHUT_WR);
-			//sleep(1);
-			fprintf(stderr,"shutdown ret %d errno %d %s\n",ret,errno,strerror(errno));
+			// sleep(1);
+			fprintf(stderr,"shutdown socket %d ret %d errno %d %s\n",sock,ret,errno,strerror(errno));
 			ret = close(sock);
-			fprintf(stderr,"ret %d errno %d %s\n",ret,errno,strerror(errno));
+			fprintf(stderr,"close %d ret %d errno %d %s\n",sock,ret,errno,strerror(errno));
 			//shutdown(sock,SHUT_RDWR);
         }
 
