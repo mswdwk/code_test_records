@@ -72,19 +72,19 @@ void run() {
 
         /* An event on one of the fds has occurred. */
         if (nfds[0].revents & POLLIN) {
-            int conn_sock = accept(listen_sock, (struct sockaddr *)&cliaddr, &cliaddr_len);
-            if (-1 == conn_sock) {
+            int sock = accept(listen_sock, (struct sockaddr *)&cliaddr, &cliaddr_len);
+            if (-1 == sock) {
                 perror("accept failure.");
                 exit(EXIT_FAILURE);
             }
             printf("accept from %s:%d\n", inet_ntop(AF_INET, &cliaddr.sin_addr, str, sizeof(str)), ntohs(cliaddr.sin_port));
 
-            // set_linger(conn_sock, 1, 0);    //设置SO_LINGER option值为0
+            // set_linger(sock, 1, 0);    //设置SO_LINGER option值为0
             for (int k=0;k<OPEN_MAX;++k){
                 if (nfds[k].fd < 0){
-                    nfds[k].fd = conn_sock;
+                    nfds[k].fd = sock;
                     nfds[k].events = POLLIN;
-					set_nonblock(conn_sock);
+					set_nonblock(sock);
                     break;
                 }
                 if (k == OPEN_MAX-1){
@@ -103,14 +103,18 @@ void run() {
 			strcat(buf3,"end");
 
 			printf("prepare to send data %d bytes\n",sizeof(buf3));
-            int send_n = write(conn_sock, buf3, sizeof(buf3));
+            int send_n = write(sock, buf3, sizeof(buf3));
 			printf("send data %d bytes\n",send_n );
-            // send_n = write(conn_sock, buf2, sizeof(buf2));
+            // send_n = write(sock, buf2, sizeof(buf2));
 			// printf("send data %d bytes",send_n );
-			// close(conn_sock);
-			// shutdown(conn_sock,SHUT_RD);
-			shutdown(conn_sock,SHUT_WR);
-			//shutdown(conn_sock,SHUT_RDWR);
+			// close(sock);
+			ret = shutdown(sock,SHUT_RDWR);
+			// shutdown(sock,SHUT_WR);
+			//sleep(1);
+			fprintf(stderr,"shutdown ret %d errno %d %s\n",ret,errno,strerror(errno));
+			ret = close(sock);
+			fprintf(stderr,"ret %d errno %d %s\n",ret,errno,strerror(errno));
+			//shutdown(sock,SHUT_RDWR);
         }
 
         //handle_conn(nfds, buf);
