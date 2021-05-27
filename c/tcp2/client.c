@@ -21,6 +21,7 @@ static void set_nonblock(int sock){
 	int flags = fcntl(sock, F_GETFL, 0); 
 	fcntl(sock, F_SETFL, flags | O_NONBLOCK); 
 }
+
 int main(int argc, char* argv[]) {
     for (int i = 1; i < argc; ++i) {
         printf("input args %d: %s\n", i, argv[i]);
@@ -65,7 +66,7 @@ void client_handle(int sock) {
         gettimeofday(&start, NULL);
         // write(sock, sendbuf, strlen(sendbuf));
         n = read(sock, recvbuf, 0);//MAXLEN);
-        printf("read bytes %d \n",n );
+        printf("\nsock %d read bytes %d \n",sock,n );
 		int ret =0; 
 		// sleep(1);
 		// ret = close(sock);
@@ -96,16 +97,16 @@ void client_handle(int sock) {
     printf("set linger 1 0 ,socket = %d  \n",sock );
 	set_linger(sock,1,0);
 	// usleep(300);
-	int ret = shutdown(sock,SHUT_RDWR);
-    printf("shut wr sock %d ret %d errno %d shutdown_count %d:%s\n",sock,ret,errno,shutdown_count++,strerror(errno));
+	int ret = shutdown(sock,SHUT_WR);
+    printf("shutdown wr sock %d ret %d errno %d shutdown_count %d:%s\n",sock,ret,errno,shutdown_count++,strerror(errno));
     // close(sock);
 
-	ret = shutdown(sock,SHUT_RDWR);
-    printf("shut wr sock %d ret %d errno %d shutdown_count %d:%s\n",sock,ret,errno,shutdown_count++,strerror(errno));
-    ret = close(sock);
-    printf("close wr sock %d ret %d errno %d shutdown_count %d\n",sock,ret,errno,shutdown_count++  );
+// 	ret = shutdown(sock,SHUT_RDWR);
+  //  printf("shut wr sock %d ret %d errno %d shutdown_count %d:%s\n",sock,ret,errno,shutdown_count++,strerror(errno));
+    // ret = close(sock);
+    // printf("close wr sock %d ret %d errno %d shutdown_count %d\n",sock,ret,errno,shutdown_count++  );
     n = read(sock, recvbuf, MAXLEN);
-    printf("after close socket %d ,then read %d bytes %d:%s\n",sock,n,errno,strerror(errno) );
+    printf("after shutdown wr socket %d ,then read %d bytes %d:%s\n",sock,n,errno,strerror(errno) );
 	/*ret = shutdown(sock,SHUT_RDWR);
     printf("shut wr sock %d ret %d errno %d shutdown_count %d:%s\n",sock,ret,errno,shutdown_count++,strerror(errno));*/
 /*	shutdown(sock,SHUT_RDWR);
