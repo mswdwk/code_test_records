@@ -9,7 +9,7 @@ void main(){
 	int ret;
 	int i ;
 	int a =0;
-	for(i=0;i<1000000;i++)
+	for(i=0;i<10000000;i++)
 		getrusage(RUSAGE_SELF, &rup);
 	a++;
 	long sec = rup.ru_utime.tv_sec + rup.ru_stime.tv_sec;
@@ -18,7 +18,7 @@ void main(){
 	usec %= 1000000;
 	printf("i=%d a=%d\n",i,a);
 	printf("cpu total cost %llu sec %llu usec\n",sec,usec);
-	printf("cpu system cost %llu sec\n",rup.ru_stime);
+	printf("cpu system cost %llu sec %llu usec\n",rup.ru_stime.tv_sec,rup.ru_stime.tv_usec);
 	printf("inblock %llu\n",rup.ru_inblock);
 	printf("outblock %llu\n",rup.ru_oublock);
 }
