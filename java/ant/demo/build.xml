@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- build.xml - a simple Ant buildfile -->
+<project name="Simple Buildfile" default="compile" basedir=".">
+	<property name="src.dir" value="src" />
+	<property name="build.dir" value="build" />
+	<property name="build.classes" value="${build.dir}/classes" />
+	<property name="build.lib" value="${build.dir}/lib" />
+	<property name="build.targetjar" value="antdemo.jar" />
+	<target name="prepare">
+		<mkdir dir="${build.dir}" />
+		<mkdir dir="${build.classes}" />
+		<mkdir dir="${build.lib}" />
+	</target>
+	<target name="clean" description="Removes all generated files.">
+		<delete dir="${build.dir}" />
+	</target>
+	<target name="compile" depends="prepare" description="Compiles all source code.">
+		<javac srcdir="${src.dir}" destdir="${build.classes}" includeantruntime="false" />
+	</target>
+	<target name="jar" depends="compile" description="Generates ${build.targetjar} in the 'dist' directory.">
+		<!-- Exclude unit tests from the final JAR file -->
+		<jar jarfile="${build.lib}/${build.targetjar}" basedir="${build.classes}" excludes="**/*Test.class" />
+	</target>
+	<target name="all" depends="clean,jar" description="Cleans, compiles, then builds the JAR file." />
+	<target name="run" description="run app">
+	<!--java -cp xxx.jar mainClass-->
+		<java classname="com.demo.antDemo">
+		  <classpath>
+			<pathelement location="${build.lib}/${build.targetjar}"/>
+			<pathelement path="${java.class.path}"/>
+		  </classpath>
+		</java>
+	</target>
+</project>
