@@ -44,7 +44,7 @@ public class Dbconnect {
         System.out.println("get connection factory "+connectionFactory);
         // Creating a Mono using Project Reactor
         // Mono<Connection> connectionMono = Mono.from(connectionFactory.create());
-        Mono.from(connectionFactory.create())
+        /*Mono.from(connectionFactory.create())
                 .flatMapMany(connection -> connection
                         .createStatement("SELECT user,host FROM mysql.user WHERE user = $1")
                         .bind("$1", "root")
@@ -57,8 +57,25 @@ public class Dbconnect {
                             log.debug("debug");
                             return host;
                         }))
-                .doOnNext(System.out::println)
-                .subscribe();
+                // .subscribe(i -> log.info("host is :"+i));
+                .subscribe( i -> System.err.println("i= " +i));
+        */
+        Mono.from(connectionFactory.create())
+                .flatMapMany(connection -> connection
+                        .createStatement("SELECT * FROM testdb.t1 WHERE c1 = 100")
+                        // .bind("$1", 100)
+                        .execute())
+                .flatMap(result -> result
+                        .map((row, rowMetadata) -> {
+                            Integer c1 = row.get("c1", Integer.class);
+                            System.err.println("c1 = " +c1);
+                            log.info("c1 : " + c1);
+                            log.debug("debug");
+                            return c1;
+                        }))
+                .subscribe( i -> System.err.println("i= " +i),
+                        error -> System.err.println("got error: " + error),
+                        () -> System.out.println("Done"));
 
         /*Uni.createFrom().publisher(connectionFactory.create())
                 .onItem().transformToMulti(connection -> connection
