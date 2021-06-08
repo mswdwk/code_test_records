@@ -105,7 +105,7 @@ public class Dbconnect {
 */
     }
 
-    public  void test1() {
+    public  void test_for_jdbc_login_timeout() {
         try {
             Class.forName("com.mysql.jdbc.Driver");
             System.out.println("数据库驱动加载成功");
@@ -128,6 +128,7 @@ public class Dbconnect {
             st.execute("select sleep(1)");
             long cost_ms = (System.nanoTime() - cur_ns) / 1000 / 1000;
             System.out.println("cost_ms= " + cost_ms);
+            st.close();
             con.close();
             System.out.println("数据库连接成功");
         } catch (SQLException e) {

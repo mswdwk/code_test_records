@@ -106,18 +106,22 @@ public class App
 
     public static void main( String[] args ) {
         // objToJsonString()
+        FluxDemo fluxDemo = new FluxDemo();
+        fluxDemo.test2();
 
         Scheduler s = Schedulers.newParallel("parallel-scheduler", 4);
 
         final Flux<String> flux = Flux
                 .range(1, 2)
                 .map(i -> 10 + i)
-                .subscribeOn(s)
+                .publishOn(s)
                 .map(i -> "value " + i);
         flux.subscribe(System.out::println);
 
         Dbconnect dbconnect = new Dbconnect();
         dbconnect.test_r2dbc_mysql();
+        // dbconnect.test_for_jdbc_login_timeout();
+
 //        try {
 //            high_level();
 //           // es();
