@@ -3,7 +3,7 @@ SRCS=$(wildcard *.c)
 SERVER=examp
 #BIN=$(SERVER) $(CLIENT)
 BIN=$(SERVER)
-#CFLAGS=-g
+CFLAGS=-g
 LDFLAGS=-lpthread
 #OBJS=$(patsubst %c,%o, $(SRCS))
 SER_OBJS=examp.o
@@ -16,4 +16,4 @@ $(SERVER):$(SER_OBJS)
 clean:
 	rm -rf *.o $(BIN)
 run:
-	valgrind --leak-check=yes ./$(SERVER) 
+	valgrind -s --leak-check=yes ./$(SERVER) 
