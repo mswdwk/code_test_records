@@ -1,13 +1,15 @@
 // test.cpp: 定义控制台应用程序的入口点。
 //
-
+#ifdef WIN
 #include "stdafx.h"
+#endif
 #include <stdio.h>  
 
 int n = 0;
 
 void swap(int *a, int *b)
 {
+	if(a==b) return;
 	int m;
 	m = *a;
 	*a = *b;
@@ -40,5 +42,3 @@ int main()
 	printf("total:%d\n", n);
 	return 0;
 }
-
-

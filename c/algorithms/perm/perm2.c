@@ -27,7 +27,7 @@ int howmany (int Nh,int Kh,int B0h,int B1h,int B2h,int B3h)
 //start 提示：自动阅卷起始唯一标识，请勿删除或增加。
 int main()
 {    
-    printf("%d",howmany(8,3,1,3,2,4));
+    printf("%d\n",howmany(8,6,1,3,2,4));
 }
 void perm(int offset)
 {
@@ -54,6 +54,7 @@ void countnum()
  
 void swap(int i, int offset)
 {
+	if(i==offset)return;
     int temp;
     temp = a[offset];
     a[offset] = a[i];
