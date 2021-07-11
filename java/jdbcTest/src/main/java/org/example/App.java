@@ -14,11 +14,16 @@ import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.script.mustache.SearchTemplateRequest;
 
 import java.sql.*;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import com.alibaba.fastjson.JSON;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 
 /**
  * Hello world!
@@ -100,9 +105,23 @@ public class App
     }
 
     public static void main( String[] args ) {
-        objToJsonString();
+        // objToJsonString()
+        FluxDemo fluxDemo = new FluxDemo();
+        fluxDemo.test2();
+
+        Scheduler s = Schedulers.newParallel("parallel-scheduler", 4);
+
+        final Flux<String> flux = Flux
+                .range(1, 2)
+                .map(i -> 10 + i)
+                .publishOn(s)
+                .map(i -> "value " + i);
+        flux.subscribe(System.out::println);
+
         Dbconnect dbconnect = new Dbconnect();
         dbconnect.test_r2dbc_mysql();
+        // dbconnect.test_for_jdbc_login_timeout();
+
 //        try {
 //            high_level();
 //           // es();

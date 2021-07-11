@@ -44,7 +44,7 @@ public class Dbconnect {
         System.out.println("get connection factory "+connectionFactory);
         // Creating a Mono using Project Reactor
         // Mono<Connection> connectionMono = Mono.from(connectionFactory.create());
-        Mono.from(connectionFactory.create())
+        /*Mono.from(connectionFactory.create())
                 .flatMapMany(connection -> connection
                         .createStatement("SELECT user,host FROM mysql.user WHERE user = $1")
                         .bind("$1", "root")
@@ -57,8 +57,25 @@ public class Dbconnect {
                             log.debug("debug");
                             return host;
                         }))
-                .doOnNext(System.out::println)
-                .subscribe();
+                // .subscribe(i -> log.info("host is :"+i));
+                .subscribe( i -> System.err.println("i= " +i));
+        */
+        Mono.from(connectionFactory.create())
+                .flatMapMany(connection -> connection
+                        .createStatement("SELECT * FROM testdb.t1 WHERE c1 = 100")
+                        // .bind("$1", 100)
+                        .execute())
+                .flatMap(result -> result
+                        .map((row, rowMetadata) -> {
+                            Integer c1 = row.get("c1", Integer.class);
+                            System.err.println("c1 = " +c1);
+                            log.info("c1 : " + c1);
+                            log.debug("debug");
+                            return c1;
+                        }))
+                .subscribe( i -> System.err.println("i= " +i),
+                        error -> System.err.println("got error: " + error),
+                        () -> System.out.println("Done"));
 
         /*Uni.createFrom().publisher(connectionFactory.create())
                 .onItem().transformToMulti(connection -> connection
@@ -88,7 +105,7 @@ public class Dbconnect {
 */
     }
 
-    public  void test1() {
+    public  void test_for_jdbc_login_timeout() {
         try {
             Class.forName("com.mysql.jdbc.Driver");
             System.out.println("数据库驱动加载成功");
@@ -111,6 +128,7 @@ public class Dbconnect {
             st.execute("select sleep(1)");
             long cost_ms = (System.nanoTime() - cur_ns) / 1000 / 1000;
             System.out.println("cost_ms= " + cost_ms);
+            st.close();
             con.close();
             System.out.println("数据库连接成功");
         } catch (SQLException e) {
