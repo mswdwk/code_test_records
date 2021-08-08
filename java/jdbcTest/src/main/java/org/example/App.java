@@ -106,7 +106,7 @@ public class App
 
     public static void main( String[] args ) {
         // objToJsonString()
-        FluxDemo fluxDemo = new FluxDemo();
+/*        FluxDemo fluxDemo = new FluxDemo();
         fluxDemo.test2();
 
         Scheduler s = Schedulers.newParallel("parallel-scheduler", 4);
@@ -117,10 +117,16 @@ public class App
                 .publishOn(s)
                 .map(i -> "value " + i);
         flux.subscribe(System.out::println);
-
+*/
         Dbconnect dbconnect = new Dbconnect();
-        dbconnect.test_r2dbc_mysql();
-        // dbconnect.test_for_jdbc_login_timeout();
+        // dbconnect.test_r2dbc_mysql_2();
+        dbconnect.test_for_jdbc_login_timeout();
+        Xatest xatest = new Xatest();
+        try {
+            xatest.test();
+        }catch (Exception e){
+            System.out.println("xatest test err:" + e.toString());
+        }
 
 //        try {
 //            high_level();

@@ -25,3 +25,10 @@ clean:
 	rm -rf *.o $(BIN)
 tcp:
 	tcpdump -tttt -nn -S -r tcp-ServerShutdownWr-ClientStillSendData.pcap 
+
+te:
+	@echo $$$$
+te2:
+	@echo $$
+te3:
+	@echo $$?

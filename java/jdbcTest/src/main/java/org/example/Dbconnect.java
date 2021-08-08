@@ -1,22 +1,20 @@
 package org.example;
 
-import io.r2dbc.spi.ConnectionFactories;
-import io.r2dbc.spi.ConnectionFactory;
-import io.r2dbc.spi.ConnectionFactoryOptions;
-import io.r2dbc.spi.Option;
+import io.r2dbc.spi.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.UnicastProcessor;
 import java.sql.*;
+import java.sql.Connection;
+import java.sql.Statement;
 import java.time.Duration;
 
 import static io.r2dbc.spi.ConnectionFactoryOptions.*;
 
 public class Dbconnect {
     private static Logger log = LoggerFactory.getLogger(Dbconnect.class);
-
-    public void test_r2dbc_mysql(){
+    public static ConnectionFactoryOptions create_option(){
         ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
                 .option(DRIVER, "mysql")
                 .option(HOST, "192.168.79.132")
@@ -40,26 +38,12 @@ public class Dbconnect {
                 .option(Option.valueOf("tcpNoDelay"), true) // optional, default false
                 .option(Option.valueOf("autodetectExtensions"), false) // optional, default false
                 */.build();
-            ConnectionFactory connectionFactory = ConnectionFactories.get(options);
+                return options;
+    }
+
+    public void test_r2dbc_mysql(){
+        ConnectionFactory connectionFactory = ConnectionFactories.get(create_option());
         System.out.println("get connection factory "+connectionFactory);
-        // Creating a Mono using Project Reactor
-        // Mono<Connection> connectionMono = Mono.from(connectionFactory.create());
-        /*Mono.from(connectionFactory.create())
-                .flatMapMany(connection -> connection
-                        .createStatement("SELECT user,host FROM mysql.user WHERE user = $1")
-                        .bind("$1", "root")
-                        .execute())
-                .flatMap(result -> result
-                        .map((row, rowMetadata) -> {
-                            String host = row.get("host", String.class);
-                            System.err.println("host = " +host);
-                            log.info("host : " + host);
-                            log.debug("debug");
-                            return host;
-                        }))
-                // .subscribe(i -> log.info("host is :"+i));
-                .subscribe( i -> System.err.println("i= " +i));
-        */
         Mono.from(connectionFactory.create())
                 .flatMapMany(connection -> connection
                         .createStatement("SELECT * FROM testdb.t1 WHERE c1 = 100")
@@ -88,6 +72,28 @@ public class Dbconnect {
         */
 
     }
+
+    public void test_r2dbc_mysql_2(){
+        // Creating a Mono using Project Reactor
+        ConnectionFactory connectionFactory = ConnectionFactories.get(create_option());
+        io.r2dbc.spi.Connection conn = Mono.from(connectionFactory.create()).block();
+
+        conn
+            .createStatement("SELECT user,host FROM mysql.user WHERE user = $1")
+            .bind("$1", "root")
+            .execute();
+           // .subscribe();
+//        result.map(
+//                    (row, rowMetadata) -> {
+//                        Integer c1 = row.get("c1", Integer.class);
+//                        System.err.println("c1 = " +c1);
+//                        log.info("c1 : " + c1);
+//                        log.debug("debug");
+//                        return c1;
+//                    );
+
+    }
+
     public void test_2(){
 
 
