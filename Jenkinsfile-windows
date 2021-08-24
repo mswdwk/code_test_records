@@ -1,5 +1,5 @@
 pipeline {
-    agent Rhel7.6-node2 
+    agent  master
     stages {
         stage('Build') {
             steps {

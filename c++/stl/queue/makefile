@@ -1,6 +1,6 @@
 Q=
 CXX=g++
-CXXFLAGS=-g -std=c++11 -Wall
+CXXFLAGS=-g -std=c++11 -Wall -fprofile-arcs -ftest-coverage -lgcov 
 CXXOBJS:=$(subst .cc,.o,$(wildcard *.cc))
 CXXOBJS+=$(subst .cpp,.o,$(wildcard *.cpp))
 BINS:=$(subst .cc,,$(wildcard *.cc))
@@ -37,4 +37,4 @@ run:
 	$(CXX) $(CXXFLAGS)  $< -o $@ 
 
 clean:
-	rm -rf *.o core* a.out $(BINS)
+	rm -rf *.o core* a.out $(BINS) *.gc* *.info cover_*
