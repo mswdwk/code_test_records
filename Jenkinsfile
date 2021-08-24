@@ -1,19 +1,17 @@
 pipeline {
-    agent Rhel7.6-node2 
+    agent { label 'node2' }
     stages {
         stage('Build') {
             steps {
-				bat 'echo build start'
-                bat 'date /T'
-				bat 'dir'
-				bat 'echo build ok'
+				echo 'build start'
+				echo `date`
+				echo 'build ok'
             }
         }
 		stage('test') {
             steps {
-				bat 'echo test start'
-                bat 'date /T'
-				bat 'echo test ok'
+				echo 'test start'
+				echo `date`
             }
         }
     }
