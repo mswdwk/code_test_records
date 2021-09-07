@@ -11,6 +11,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 #define SERVER_PORT 6666
+#include "test_func.h"
+extern void test_inet();
+
 /*
 监听后，一直处于accept阻塞状态，
 直到有客户端连接，
@@ -18,6 +21,7 @@
 */
 int main()
 {
+	test_inet();
 	//调用socket函数返回的文件描述符
 	int serverSocket;
 	//声明两个套接字sockaddr_in结构体变量，分别表示客户端和服务器
