@@ -5,6 +5,10 @@
 void handler(int signo)
 {
 	printf("sig=%d\n",signo);
+	if(signo == SIGTRAP)
+    	printf("caught sigtrap \n");
+	if(signo == SIGSTOP)
+    	printf("caught sigstop\n");
 }
  
 int main(void)
