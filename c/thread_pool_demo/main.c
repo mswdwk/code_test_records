@@ -3,7 +3,7 @@
 void* work(void* arg)
 {
     char *p = (char*) arg;
-    printf("threadpool callback fuction : %s.\n", p);
+    printf("threadpool callback fuction : arg is %s.\n", p);
     sleep(1);
     return NULL;
 }

@@ -32,7 +32,12 @@ int set_keepalive(int s,int idleTime,int intvlTime,int probes)
 */
 int main(int argc,char*argv[])
 {
-	const char*host="0.0.0.0";//argv[1];
+	if(argc < 2){
+		printf("Usage: %s hostip port\n",argv[0]);
+		return 0;
+	}
+	const char*host = argv[1];
+	
 	//客户端只需要一个套接字文件描述符，用于和服务器通信
 	int clientSocket;
 	//描述服务器的socket

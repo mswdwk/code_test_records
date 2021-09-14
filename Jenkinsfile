@@ -1,6 +1,8 @@
 pipeline {
     agent { 
- 		docker { image 'docker.io/yjjy0921/redhat7.2:latest' } 
+ 		docker { image 'docker.io/yjjy0921/redhat7.2:latest' 
+				label 'node2'
+				} 
 	}
 
     stages {
