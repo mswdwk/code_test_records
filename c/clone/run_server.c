@@ -9,17 +9,23 @@
 
 #define STACK_SIZE      65536*1024*4
 //static char*args[]={"mysqld","--defaults-file=/home/user/MySQL5.7_1/etc/my.cnf","--basedir=/home/user/MySQL5.7_1","--data-dir=/home/user/MySQL5.7_1/data","--character-set-server=utf8","--pid-file=/home/user/MySQL5.7_1/mysqld1.pid","--lc-messages-dir=/home/user/MySQL5.7_1/share/charsets",NULL};
-static char*args[]={"mysqld","--defaults-file=/home/user/MySQL5.7_1/etc/my.cnf","--character-set-server=utf8","--pid-file=/home/user/MySQL5.7_1/mysqld1.pid","--lc-messages-dir=/home/user/MySQL5.7_1/share/charsets",NULL};
+//static char*args[]={"mysqld","--defaults-file=/home/user/MySQL5.7_1/etc/my.cnf","--character-set-server=utf8","--pid-file=/home/user/MySQL5.7_1/mysqld1.pid","--lc-messages-dir=/home/user/MySQL5.7_1/share/charsets",NULL};
+static char*args[]={"mysqld","--defaults-file=/home/user/MySQL5.7_1/etc/my.cnf","--character-set-server=utf8","--pid-file=/home/user/MySQL5.7_1/mysqld1.pid","--lc-messages-dir=/home/user/MySQL5.7_1/share/english",NULL};
 
 static char*args2[]={"ls","-l",NULL};
 static char* mysqld_path="/home/user/MySQL5.7_1/bin/mysqld";
-static int clone_flags=(CLONE_FS | SIGCHLD);
+//static int clone_flags=(CLONE_FS | SIGCHLD);
+//static int clone_flags=(CLONE_FS | SIGCHLD|CLONE_NEWNET);
+//static int clone_flags=(CLONE_FS | SIGCHLD|CLONE_NEWPID|CLONE_NEWUTS|CLONE_NEWIPC|CLONE_NEWNET|CLONE_NEWNS);
+static int clone_flags=( SIGCHLD|CLONE_NEWPID|CLONE_NEWUTS|CLONE_NEWIPC|CLONE_NEWNET|CLONE_NEWNS);
 static int child_func(void *arg)
 {
-     printf("Child:Current Working Directory:%s\n",
-                     get_current_dir_name());
-     chdir("/opt");
+     printf("Child:Current Working Directory:%s,uid %lu gid %zu\n",
+                     get_current_dir_name(),getuid(),getgid());
+     chdir("/tmp");
 	 //execl(mysqld_path,args);
+	 setuid(1000);
+	 setgid(1000);
 	 execv(mysqld_path,args);
      printf("Child:Current Working Directory:%s\n",
                      get_current_dir_name());
