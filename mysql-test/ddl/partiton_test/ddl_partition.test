@@ -1,0 +1,7 @@
+
+
+--disable_warnings
+
+use testdb;
+alter table testdb.tp add partition (partition p4 values less than(400));
+alter table testdb.tp drop partition p4 ;

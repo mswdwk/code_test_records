@@ -1,0 +1,9 @@
+DBNAME=testdb
+BASE=/home/user/MySQL5.7_1
+MYSQL_TEST=$BASE/mysql-test
+SUITE_BASE=$MYSQL_TEST
+TEST_CASE=ddl_partition
+SUITE_CASE=funcs_1
+USER=root
+PASSWORD=123
+MYSQLTEST=$BASE/bin/mysqltest
