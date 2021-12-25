@@ -1,0 +1,1 @@
+pcs resource create vip ocf:heartbeat:IPaddr2 ip=192.168.79.123 op monitor interval=15s

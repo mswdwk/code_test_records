@@ -1,0 +1,30 @@
+node1,node2 is the server name
+1) on node1,node2 start pcs server
+systemctl enable --now pcsd
+2) on node1,node2 create pcs cluster user
+echo 123|sudo passwd hacluster
+3) on node1 or node2 create auth,enter  user and password created by step 1,2
+pcs cluster auth node1 node2
+
+4) at the same node on step 3,config corosync
+pcs cluster setup --name mycluster node1 node2
+
+5) start cluster
+pcs cluster start --all
+
+6) enable cluster on system boot
+pcs cluster enable --all
+
+7) pcs status
+pcs cluster status
+
+8) watch cluster communication is ok or not
+corosync-cfgtool -s
+
+9) watch node status
+pcs status corosync
+
+10)使用pcs status查看集群状态会看到一个警告，用crm_verify -L -V会看到报错，这是为了保护数据安全默认会开启stonith这个属性，代表fence的总开关，在配置fence之前要将这个开关打开，暂时不配置fence时先关闭这个开关
+
+pcs property set stonith-enabled=false
+
