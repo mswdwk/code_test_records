@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+
+	"example.com/greetings"
 )
 
 func fibonacci(n int, c chan int) {
@@ -14,6 +16,8 @@ func fibonacci(n int, c chan int) {
 }
 
 func main() {
+	msg := greetings.Hello("abc")
+	fmt.Println(msg)
 	c := make(chan int, 10)
 	go fibonacci(cap(c), c)
 	// range 函数遍历每个从通道接收到的数据，因为 c 在发送完 10 个
@@ -26,4 +30,5 @@ func main() {
 		id += 1
 	}
 	fmt.Println("finish")
+
 }
