@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 
 	"example.com/greetings"
 )
@@ -16,7 +17,14 @@ func fibonacci(n int, c chan int) {
 }
 
 func main() {
-	msg := greetings.Hello("abc")
+	log.SetPrefix("greetings:")
+	log.SetFlags(0)
+	msg, err := greetings.Hello("")
+	if err != nil {
+		fmt.Println("error")
+		log.Fatal(err)
+	}
+
 	fmt.Println(msg)
 	c := make(chan int, 10)
 	go fibonacci(cap(c), c)
