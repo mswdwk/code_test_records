@@ -17,6 +17,8 @@ func fibonacci(n int, c chan int) {
 }
 
 func main() {
+	dirname := "C:\\Users\\lenovo\\Desktop\\"
+	greetings.ListFiles(dirname, 0)
 	log.SetPrefix("greetings:")
 	log.SetFlags(0)
 	msg, err := greetings.Hello("")
