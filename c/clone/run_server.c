@@ -17,7 +17,7 @@ static char* mysqld_path="/home/user/MySQL5.7_1/bin/mysqld";
 //static int clone_flags=(CLONE_FS | SIGCHLD);
 //static int clone_flags=(CLONE_FS | SIGCHLD|CLONE_NEWNET);
 //static int clone_flags=(CLONE_FS | SIGCHLD|CLONE_NEWPID|CLONE_NEWUTS|CLONE_NEWIPC|CLONE_NEWNET|CLONE_NEWNS);
-static int clone_flags=( SIGCHLD|CLONE_NEWPID|CLONE_NEWUTS|CLONE_NEWIPC|CLONE_NEWNET|CLONE_NEWNS);
+static int clone_flags=( SIGCHLD|CLONE_NEWPID|CLONE_NEWUTS|CLONE_NEWIPC|CLONE_NEWNS);
 static int child_func(void *arg)
 {
      printf("Child:Current Working Directory:%s,uid %lu gid %zu\n",

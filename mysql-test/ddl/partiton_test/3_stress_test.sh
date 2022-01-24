@@ -9,7 +9,7 @@ time perl mysql-stress-test.pl \
 --suite=$SUITE_CASE \
 --stress-basedir=/tmp/qa/test \
 --server-logs-dir=/tmp/qa/logs \
---test-count=100 \
+--test-count=1 \
 --threads=1 \
 --mysqltest=$MYSQLTEST \
 --stress-init-file=./suite/stress-init.txt \
