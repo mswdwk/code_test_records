@@ -1,0 +1,109 @@
+# https://hub.docker.com/r/ibmcom/db2
+IBM® Db2® is a multi-workload database designed to help you quickly develop, test and build applications for your business. Designed for operational and analytic workloads.
+
+Community Edition is automatically enabled and has the following limitations, which are automatically enforced:
+
+Memory limit: 16GB
+Core limit: 4 cores
+Stand up a Db2 environment in minutes, which is pre-installed with a created database, ready to accept queries. This containerized environment is not for production use. For production use cases, please use Db2 on OpenShift as described below.
+
+IBM Db2 on OpenShift
+In order to deploy Db2 on OpenShift, Db2U (Db2 Universal Container) is required. Db2U is an ecosystem of containers for the Db2 family, designed based on a microservices architecture, optimized and certified for OpenShift.
+
+The instructions for deploying Db2U on OpenShift can be found at: Db2 Knowledge Center
+
+Available tags
+latest, 11.5.7.0
+11.5.6.0a
+11.5.6.0a -- Fix for port mapping
+11.5.6.0
+11.5.5.1
+11.5.4.0
+11.5.1.0-CN1 -- OpenShift-only deployment, amd64 only
+11.5.0.0a
+11.5.0.0
+Quick Reference
+Where to get help:
+Db2 Community, Db2 LUW Twitter, Db2 Discord Channel
+Architectures:
+amd64, ppc64le, s390x
+Changelog:
+December 16th 2021 - 11.5.7.0 - Fix for log4j vulnerability
+December 8th 2021 - 11.5.7.0
+September 29, 2021 - 11.5.6.0a - Fix for port mapping
+June 25, 2021 - 11.5.6.0
+March 30, 2021 - 11.5.5.1
+December 1, 2020 - 11.5.5.0
+June 30, 2020 - 11.5.4.0
+June 27, 2019 - 11.5.0.0
+July 12, 2019 - 11.5.0.0a - Speed up start up time and add 90-day trial license to be optionally applied
+November 22, 2019 - 11.5.1.0 - OpenShift-only deployment
+Prerequisites:
+Docker engine
+Persistent storage
+Storagedriver: devicemapper
+Limitations:
+Only one database can be active at any time within a single deployment.
+Only one Db2 deployment (i.e. the Db2 engine container/pod) can be running on a single host.
+Not for production use.
+Quick Start
+docker run -itd --name mydb2 --privileged=true -p 50000:50000 -e LICENSE=accept -e DB2INST1_PASSWORD=<choose an instance password> -e DBNAME=testdb -v <db storage dir>:/database ibmcom/db2
+Where
+
+After the docker run command is executed, it will take a couple of minutes for the container to finish setting up. You may run docker logs -f <your_container_name> to tail the docker entry point script. To confirm Db2 container is ready, in the logs we will see the message Setup has completed.
+
+Log on to the container:
+
+docker exec -ti mydb2 bash -c "su - ${DB2INSTANCE}"
+where ${DB2INSTANCE} is either db2inst1 or the name chosen via the DB2INSTANCE variable.
+Advanced Configuration Options
+The following are additional environment variables that could be toggled to customize your deployment. You can either include them in your docker run command via the -e switch or you can add them to a file and then refer to the file in your docker run command with the --env-file switch.
+
+DB2INSTANCE (default: db2inst1) is to specify the Db2 Instance name
+DB2INST1_PASSWORD (default: auto generated 12 character) is to specify the respective Db2 Instance Password
+DBNAME creates an initial database with the name provided or leave empty if no database is needed
+BLU can be set to true to enable BLU Acceleration for instance
+ENABLE_ORACLE_COMPATIBILITY can be set to true to enable Oracle Compatibility on the instance
+SAMPLEDB can be set to true to create a sample (pre-populated) database
+PERSISTENT_HOME is true by default, only specify to false if you are running Docker for Windows.
+HADR_ENABLED if set to true, Db2 HADR will be configured. The following three env variables depend on HADR_ENABLED to be true
+ETCD_ENDPOINT is for specifying your own provided ETCD key-value store. Enter your endpoints with a comma as the delimiter and without a space. This env variable is needed if HADR_ENABLED is set to true
+ETCD_USERNAME specify the username credential for ETCD. If empty, it will use your Db2 instance
+ETCD_PASSWORD specify the password credential for ETCD. If empty, it will use your Db2 instance password
+TEXT_SEARCH (default: false) Specify true to enable and configure text search
+ARCHIVE_LOGS (default: true) Specify false to not configure log archiving (reduces start up time)
+AUTOCONFIG (default: true) Specify false to not run auto configuration on the instance and database (reduces start up time)
+Running Db2 HADR
+High availability disaster recovery (HADR) provides a high availability solution for both partial and complete site failures. HADR protects against data loss by replicating data changes from a source database, called the primary database, to the target databases, called the standby databases.
+
+Requirements:
+
+Two container instances
+An additional shared volume mount -v
+Needs --ipc=host
+A comma separated list of one or more ETCD endpoints. You can stand up your own or use the IBM Cloud service. If ETCD endpoints are not provided, automatic failover will not happen, and manual takeover will need to be performed from within the container.
+HADR example
+Start on primary host:
+docker run --name node1 --privileged --ipc=host -p 50000 -p 55000 -e LICENSE=accept -e DB2INST1_PASSWORD=<password> -e HADR_ENABLED=true -e ETCD_ENDPOINT=IP1:PORT1,IP2:PORT2,IP3:PORT3 -v /home/db2server_fs/database:/database -v /nfs/shared:/hadr ibmcom/db2
+
+Start on standby host:
+docker run --name node2 --privileged --ipc=host -p 50000 -p 55000 -e LICENSE=accept -e DB2INST1_PASSWORD=<password> -e HADR_ENABLED=true -e ETCD_ENDPOINT=IP1:PORT1,IP2:PORT2,IP3:PORT3 -v /home/db2server_fs/database:/database -v /nfs/shared:/hadr ibmcom/db2
+
+You can follow the logs of each of the containers to view the progress. Once the container setup is complete, the two containers will be set up in PEER mode. In the event we lose the primary container, providing the ETCD_ENDPOINT ensures that the takeover will happen automatically, and the standby container will pick up the workload. If ETCD_EMDPOINT is not provided, manual db2 takeover hadr on standby command will need to be executed on the standby node.
+
+If we loose one of the containers, the user must manually start back up the container so the two Db2 containers can HADR connect once again.
+
+For more information refer to https://www.ibm.com/support/knowledgecenter/en/SSEPGG_11.1.0/com.ibm.db2.luw.admin.ha.doc/doc/c0011267.html
+
+Build Your Own
+You can use the Db2 container as a base to build your own custom container. Customizations may include additional setup scripts to execute after Db2 setup has completed, different license activation keys, additional OS packages installed, etc.
+
+To build your own, create a new Dockerfile and specify the desired Db2 base in the FROM line in the Dockerfile. The following example builds a simple container with Db2 as a base and copy a custom script into the /var/custom directory. Any script copied into the /var/custom will be automatically executed after main Db2 setup has completed.
+
+FROM ibmcom/db2
+
+RUN mkdir /var/custom
+COPY createschema.sh /var/custom
+RUN chmod a+x /var/custom/createschema.sh
+License (Terms and Conditions)
+By pulling this container image, you are agreeing to the terms and conditions as described here
