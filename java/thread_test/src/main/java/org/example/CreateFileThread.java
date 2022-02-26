@@ -1,5 +1,6 @@
 package org.example;
 import java.io.File;
+import java.io.FileWriter;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -22,9 +23,13 @@ public class CreateFileThread implements Runnable {
             for(int i = 0;i<loop_count; i++) {
                 filename = "filename_"+String.valueOf(i);	
                 File file =  new File(filename);
-				files.add(file);
             	if(file.createNewFile()){
                 	System.out.printf("文件创建成功！%s\r",filename);
+						FileWriter writer = new FileWriter(file);
+						// 向文件写入内容
+						writer.write("this is "+i+"\n");
+						writer.flush();
+					files.add(file);
             	}else{
                 	System.out.println("create file failed:"+filename);
 					break;

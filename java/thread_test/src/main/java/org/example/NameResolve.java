@@ -17,15 +17,17 @@ public class NameResolve implements Runnable {
 		int i =0;
         try {
             for(;i< loop_count; i++) {
-                System.out.printf("Thread: " + domainName + " , " + i);
 			    InetAddress[] addrs = java.net.Inet4Address.getAllByName(domainName);
-            	System.out.println(" domain [" + domainName + "] ip addr num: " + addrs.length+" loop_id "+i);
+				if(addrs.length == 0){
+                	System.out.printf("Thread: " + domainName + " , " + i);
+            		System.out.println(" domain [" + domainName + "] ip addr num: " + addrs.length+" loop_id "+i);
+				}
             	for(InetAddress addr: addrs) {
                 	//System.out.println("addr:" + addr);
                 	// System.out.println("addr1:"+addr.length());
                 }
                 // 让线程睡眠一会
-                Thread.sleep(10);
+                Thread.sleep(1);
             }
         }catch (Exception e) {
             System.out.println("Thread " +  domainName + " interrupted. loop_id "+i+", error: "+e.toString());

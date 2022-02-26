@@ -17,10 +17,10 @@ public class App
         thdemo R2 = new thdemo( "Thread-2");
         R2.start();
 		
-        NameResolve R3 = new NameResolve( "Name.Resolve",2000);
+        NameResolve R3 = new NameResolve( "Name.Resolve",50000);
         R3.start();
 
-        CreateFileThread R4 = new CreateFileThread("CreateFileThread",2000);
+        CreateFileThread R4 = new CreateFileThread("CreateFileThread",50010);
         R4.start();
 
 		String hostfile = GetPropertyAction.privilegedGetProperty("jdk.net.hosts.file");
