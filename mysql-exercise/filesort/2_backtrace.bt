@@ -1,0 +1,32 @@
+#0  test_if_skip_sort_order (tab=0x7fe3a49bb278, order=0x7fe3a4006dc0, select_limit=18446744073709551615, no_changes=false, map=0x7fe3a499bf48, clause_type=0x1fe8922 "ORDER BY")
+#    at /home/user/Repos/mysql-server/sql/sql_optimizer.cc:1824
+#    #1  0x00000000015194c3 in JOIN::test_skip_sort (this=0x7fe3a49bae90) at /home/user/Repos/mysql-server/sql/sql_optimizer.cc:1368
+#    #2  0x0000000001516f3f in JOIN::optimize (this=0x7fe3a49bae90) at /home/user/Repos/mysql-server/sql/sql_optimizer.cc:658
+#    #3  0x000000000158e096 in st_select_lex::optimize (this=0x7fe3a4005910, thd=0x7fe3a4000b70) at /home/user/Repos/mysql-server/sql/sql_select.cc:1009
+#    #4  0x000000000158c7f2 in handle_query (thd=0x7fe3a4000b70, lex=0x7fe3a4002e88, result=0x7fe3a4007828, added_options=0, removed_options=0) at /home/user/Repos/mysql-server/sql/sql_select.cc:164
+#    #5  0x0000000001541fc8 in execute_sqlcom_select (thd=0x7fe3a4000b70, all_tables=0x7fe3a4006f10) at /home/user/Repos/mysql-server/sql/sql_parse.cc:5141
+#    #6  0x000000000153b934 in mysql_execute_command (thd=0x7fe3a4000b70, first_level=true) at /home/user/Repos/mysql-server/sql/sql_parse.cc:2792
+#    #7  0x0000000001543026 in mysql_parse (thd=0x7fe3a4000b70, parser_state=0x7fe43a82e690) at /home/user/Repos/mysql-server/sql/sql_parse.cc:5582
+#    #8  0x0000000001538733 in dispatch_command (thd=0x7fe3a4000b70, com_data=0x7fe43a82edf0, command=COM_QUERY) at /home/user/Repos/mysql-server/sql/sql_parse.cc:1458
+#    #9  0x000000000153759c in do_command (thd=0x7fe3a4000b70) at /home/user/Repos/mysql-server/sql/sql_parse.cc:999
+#    #10 0x0000000001668bbc in handle_connection (arg=0xa09c050) at /home/user/Repos/mysql-server/sql/conn_handler/connection_handler_per_thread.cc:300
+#    #11 0x0000000001ced500 in pfs_spawn_thread (arg=0xa078210) at /home/user/Repos/mysql-server/storage/perfschema/pfs.cc:2190
+#    #12 0x00007fe4d5beadd5 in start_thread () from /lib64/libpthread.so.0
+#    #13 0x00007fe4d4ab0ead in clone () from /lib64/libc.so.6
+
+
+#0  JOIN::add_sorting_to_table (this=0x7fe3a49bae90, idx=0, sort_order=0x7fe43a82cf30) at /home/user/Repos/mysql-server/sql/sql_select.cc:3945
+#1  0x0000000001596314 in JOIN::make_tmp_tables_info (this=0x7fe3a49bae90) at /home/user/Repos/mysql-server/sql/sql_select.cc:3882
+#2  0x0000000001516fda in JOIN::optimize (this=0x7fe3a49bae90) at /home/user/Repos/mysql-server/sql/sql_optimizer.cc:667
+#3  0x000000000158e096 in st_select_lex::optimize (this=0x7fe3a4005910, thd=0x7fe3a4000b70) at /home/user/Repos/mysql-server/sql/sql_select.cc:1009
+#4  0x000000000158c7f2 in handle_query (thd=0x7fe3a4000b70, lex=0x7fe3a4002e88, result=0x7fe3a4007828, added_options=0, removed_options=0) at /home/user/Repos/mysql-server/sql/sql_select.cc:164
+#5  0x0000000001541fc8 in execute_sqlcom_select (thd=0x7fe3a4000b70, all_tables=0x7fe3a4006f10) at /home/user/Repos/mysql-server/sql/sql_parse.cc:5141
+#6  0x000000000153b934 in mysql_execute_command (thd=0x7fe3a4000b70, first_level=true) at /home/user/Repos/mysql-server/sql/sql_parse.cc:2792
+#7  0x0000000001543026 in mysql_parse (thd=0x7fe3a4000b70, parser_state=0x7fe43a82e690) at /home/user/Repos/mysql-server/sql/sql_parse.cc:5582
+#8  0x0000000001538733 in dispatch_command (thd=0x7fe3a4000b70, com_data=0x7fe43a82edf0, command=COM_QUERY) at /home/user/Repos/mysql-server/sql/sql_parse.cc:1458
+#9  0x000000000153759c in do_command (thd=0x7fe3a4000b70) at /home/user/Repos/mysql-server/sql/sql_parse.cc:999
+#10 0x0000000001668bbc in handle_connection (arg=0xa09c050) at /home/user/Repos/mysql-server/sql/conn_handler/connection_handler_per_thread.cc:300
+#11 0x0000000001ced500 in pfs_spawn_thread (arg=0xa078210) at /home/user/Repos/mysql-server/storage/perfschema/pfs.cc:2190
+#12 0x00007fe4d5beadd5 in start_thread () from /lib64/libpthread.so.0
+#13 0x00007fe4d4ab0ead in clone () from /lib64/libc.so.6
+
