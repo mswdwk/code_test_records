@@ -15,7 +15,7 @@ public class C3P0 {
                 cpds = new ComboPooledDataSource();
             }
             // cpds.setDriverClass("org.postgresql.Driver"); //loads the jdbc driver
-            //cpds.setJdbcUrl("jdbc:postgresql://192.168.79.133:5432/testdb");
+            // cpds.setJdbcUrl("jdbc:postgresql://192.168.79.133:5432/testdb");
             cpds.setDriverClass("com.mysql.jdbc.Driver"); //loads the jdbc driver
             cpds.setJdbcUrl("jdbc:mysql://192.168.79.133:3310/testdb");
             cpds.setUser("root");
@@ -27,13 +27,16 @@ public class C3P0 {
             cpds.setMaxPoolSize(10);
             cpds.setMaxStatements( 180 );
             cpds.setIdleConnectionTestPeriod(5);
+            cpds.setMaxIdleTime(10);
+            cpds.setMaxConnectionAge(30);
             cpds.setPreferredTestQuery("select 1234567890");
 
             Connection conn = cpds.getConnection();
             Statement stmt = conn.createStatement();
             ResultSet res = stmt.executeQuery("select now()");
             if(res.next()) {
-                System.out.println("result: "+res.getString(1)+" next: "+res.next());
+                int columns = res.getMetaData().getColumnCount();
+                System.out.println("result: "+res.getString(1)+" next: "+res.next()+" columns= "+columns);
             }
             stmt.close();
             conn.close();
@@ -42,6 +45,9 @@ public class C3P0 {
             System.err.println("init c3p0 error:"+e.toString());
             e.printStackTrace();
         }
+    }
+    public static Connection getRawConnection(Connection con) {
+        return con;
     }
     public static void close(){
         if(cpds != null) {

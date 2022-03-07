@@ -32,11 +32,11 @@
           <stringProp name="connectionAge">5000</stringProp>
           <stringProp name="connectionProperties"></stringProp>
           <stringProp name="dataSource">mysql</stringProp>
-          <stringProp name="dbUrl">jdbc:mysql://192.168.79.133:3310/testdb</stringProp>
+          <stringProp name="dbUrl">jdbc:mysql://192.168.79.133:3380/testdb</stringProp>
           <stringProp name="driver">com.mysql.jdbc.Driver</stringProp>
           <stringProp name="initQuery">select now();</stringProp>
           <boolProp name="keepAlive">true</boolProp>
-          <stringProp name="password"></stringProp>
+          <stringProp name="password">123</stringProp>
           <stringProp name="poolMax">100</stringProp>
           <boolProp name="preinit">false</boolProp>
           <stringProp name="timeout">3000</stringProp>

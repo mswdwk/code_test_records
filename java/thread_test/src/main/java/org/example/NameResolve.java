@@ -1,6 +1,15 @@
 package org.example;
 import java.net.InetAddress;
-
+/*
+* java.net.Inet4AddressImpl 这个jar包
+https://www.cnblogs.com/549294286/p/9117124.html
+JNIEXPORT jobjectArray JNICALL
+Java_java_net_Inet4AddressImpl_lookupAllHostAddr(JNIEnv *env, jobject this, host)
+// create the impl
+impl = InetAddressImplFactory.create();
+// create name service
+nameService = createNameService();
+* */
 public class NameResolve implements Runnable {
     private Thread t;
     private String domainName;

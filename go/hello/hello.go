@@ -45,6 +45,14 @@ func test_mysql() {
 		return
 	}
 	fmt.Println("insert succ", id)
+
+	//查询最后一天用户ID，判断是否插入成功
+	affected_rows, err := r.RowsAffected()
+	if err != nil {
+		fmt.Println("exec failed,", err)
+		return
+	}
+	fmt.Println("insert succ", affected_rows)
 }
 
 func list_dir() {

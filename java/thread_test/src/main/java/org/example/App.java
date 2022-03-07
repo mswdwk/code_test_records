@@ -26,5 +26,7 @@ public class App
 		String hostfile = GetPropertyAction.privilegedGetProperty("jdk.net.hosts.file");
         System.out.println("hostfile: "+hostfile);
         System.out.println("negative.ttl "+GetPropertyAction.privilegedGetProperty("networkaddress.cache.negative.ttl"));
+        String pref = GetPropertyAction.privilegedGetProperty("impl.prefix");
+        System.out.println("prefix: "+pref);
     }
 }
