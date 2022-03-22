@@ -5,6 +5,7 @@ package org.example;
  *
  */
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 public class App 
 {
@@ -55,11 +56,19 @@ public class App
                 () -> System.out.println("Done"),
                 sub -> sub.request(10));
     }
+    private static void testFlux6()
+    {
+        System.out.println( "testFlux 6" );
+        SampleSubscriber<Integer> ss = new SampleSubscriber<Integer>();
+        Flux<Integer> ints = Flux.range(1, 4);
+        ints.subscribe(ss);
+    }
     private static void testMono(){
         System.out.println( "testMono" );
-        Flux<Integer> ints;
-        ints = Flux.range(1, 3);
-        ints.subscribe(i -> System.out.println(i));
+        Mono<String> noData = Mono.empty();
+
+        Mono<String> data = Mono.just("foo");
+        data.subscribe(d ->System.out.println("mono:"+d) );
     }
 
     public static void main( String[] args )
@@ -70,6 +79,7 @@ public class App
         testFlux3();
         testFlux4();
         testFlux5();
+        testFlux6();
         testMono();
     }
 }
