@@ -19,16 +19,16 @@ import java.sql.SQLException;
 
 public class Xatest {
     public static void test() throws SQLException {
-        final String passwd ="Roo123.";
+        final String passwd ="123";
         //true表示打印XA语句,，用于调试
         boolean logXaCommands = true;
         // 获得资源管理器操作接口实例 RM1
-        Connection conn1 = DriverManager.getConnection("jdbc:mysql://192.168.79.132:3310/testdb", "root", passwd);
+        Connection conn1 = DriverManager.getConnection("jdbc:mysql://192.168.79.133:3310/testdb", "root", passwd);
         XAConnection xaConn1 = new MysqlXAConnection((ConnectionImpl) conn1, logXaCommands);
         XAResource rm1 = xaConn1.getXAResource();
 
         // 获得资源管理器操作接口实例 RM2
-        Connection conn2 = DriverManager.getConnection("jdbc:mysql://192.168.79.132:3310/testdb", "root", passwd);
+        Connection conn2 = DriverManager.getConnection("jdbc:mysql://192.168.79.133:3310/testdb", "root", passwd);
         XAConnection xaConn2 = new MysqlXAConnection((ConnectionImpl) conn2, logXaCommands);
         XAResource rm2 = xaConn2.getXAResource();
         // AP请求TM执行一个分布式事务，TM生成全局事务id
@@ -43,8 +43,8 @@ public class Xatest {
             // 执行rm1上的事务分支 One of TMNOFLAGS, TMJOIN, or TMRESUME.
             rm1.start(xid1, XAResource.TMNOFLAGS);
             // 业务1：插入user表
-//            PreparedStatement ps1 = conn1.prepareStatement("INSERT into t1 VALUES (102,102,1)");
-//            ps1.execute();
+            PreparedStatement ps1 = conn1.prepareStatement("INSERT into t1 VALUES (102,102,'1','content 2')");
+            ps1.execute();
             rm1.end(xid1, XAResource.TMSUCCESS);
             System.out.println("xid1: "+xid1.toString());
             // TM生成rm2上的事务分支id
@@ -53,7 +53,7 @@ public class Xatest {
             // 执行rm2上的事务分支
             rm2.start(xid2, XAResource.TMNOFLAGS);
             // 业务2：插入user_msg表
-            PreparedStatement ps2 = conn2.prepareStatement("INSERT into t1 VALUES (104,104,1)");
+            PreparedStatement ps2 = conn2.prepareStatement("INSERT into t1 VALUES (104,104,'3','content 3')");
             ps2.execute();
             rm2.end(xid2, XAResource.TMSUCCESS);
             System.out.println("xid2: "+xid2.toString());
@@ -70,7 +70,7 @@ public class Xatest {
                 //所有事务分支都prepare成功，提交所有事务分支
                 rm1.commit(xid1, onePhase);
                 rm2.commit(xid2, onePhase);
-                System.out.println("commit! ");
+                System.out.println("all xa commit! ");
             } else {
                 //如果有事务分支没有成功，则回滚
                 rm1.rollback(xid1);

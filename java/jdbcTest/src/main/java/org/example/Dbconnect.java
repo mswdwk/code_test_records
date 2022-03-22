@@ -17,10 +17,10 @@ public class Dbconnect {
     public static ConnectionFactoryOptions create_option(){
         ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
                 .option(DRIVER, "mysql")
-                .option(HOST, "192.168.79.132")
+                .option(HOST, "192.168.79.133")
                 .option(USER, "root")
                 .option(PORT, 3310)  // optional, default 3306
-                .option(PASSWORD, "Roo123.") // optional, default null, null means has no password
+                .option(PASSWORD, "123") // optional, default null, null means has no password
                 .option(DATABASE, "testdb") // optional, default null, null means not specifying the database
                 .option(CONNECT_TIMEOUT, Duration.ofSeconds(3)) // optional, default null, null means no timeout
                 /*.option(SSL, true) // optional, default sslMode is "preferred", it will be ignore if sslMode is set

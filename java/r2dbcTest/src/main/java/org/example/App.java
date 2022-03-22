@@ -25,6 +25,8 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
+import static org.example.jsonTest.objToJsonString;
+
 /**
  * Hello world!
  *
@@ -77,40 +79,22 @@ public class App
         System.out.println("query= "+request.getScriptParams());
     }
 
-    public static void objToJsonString(){
-        HashMap<String,Object> job = new HashMap<>();
-        HashMap<String ,Object> job2= new HashMap<>();
-        job.put("key1",1);
-        job.put("key2","12");
-        job.put("key3","_abc123");
-        job2.put("key",1);
-        job2.put("key2",1.0);
-        job2.put("key3","key3");
-        job.put("key4",job2);
-
-        List<Object> job3 = new ArrayList<>();
-        job3.add("123");
-        job3.add("bac_");
-        job3.add(123.00);
-        job.put("job3",job3);
-
-        //复杂java类转json字符串
-
-        String userGroupJson = JSON.toJSONString(job);
-        System.out.println("json="+userGroupJson);
-
-        String jsonStr1 = "{'password':'123456','username':'dmego'}";
-        // User user = JSON.parseObject(jsonStr1, User.class);
-        // System.out.println("json字符串转简单java对象:"+user.toString());
-    }
-
     public static void main( String[] args ) {
-        // objToJsonString()
+        objToJsonString();
+        FluxDemo.test1();
+        FluxDemo.test2();
         Dbconnect dbconnect = new Dbconnect();
-        //dbconnect.test_r2dbc_mysql();
+        dbconnect.test_r2dbc_mysql();
         dbconnect.test_r2dbc_connect();
         // dbconnect.test_for_jdbc_login_timeout();
-        dbconnect.test_r2dbc_mysql();
-        dbconnect.test_for_jdbc_login_timeout();
+
+        // TODO,wait r2dbc thread finish its job!
+        try {
+            // at least 200 millisecods to wait the finish of async r2dbc thread to start/run/finish.
+            Xatest.test();
+            Thread.sleep(1000);
+        } catch (Exception e){
+            System.out.println("error:"+e.toString());
+        }
     }
 }

@@ -61,16 +61,16 @@ public class Dbconnect {
         Mono<? extends io.r2dbc.spi.Connection> conn = Mono.from(connectionFactory.create());
         System.out.println("start map conn:"+conn.toString());
         conn.flatMapMany(connection -> {
-            System.out.println("get connection:"+connection);
-            Publisher<? extends Result> res = connection
-                    .createStatement("SELECT * FROM mysql.user ")
-                    .execute();
-            return res;
-        })
-        .flatMap(result -> result
-                .map((row, rowMetadata) -> row.get("user", String.class)))
-        .doOnNext(System.out::println)
-        .subscribe(i-> System.out.println("this is:"+i));
+                    System.out.println("get connection:" + connection);
+                    Publisher<? extends Result> res = connection
+                            .createStatement("SELECT * FROM mysql.user ")
+                            .execute();
+                    return res;
+                })
+                .flatMap(result -> result
+                        .map((row, rowMetadata) -> row.get("user", String.class)))
+                .doOnNext(System.out::println)
+                .subscribe(i -> System.out.println("this is:" + i));
     }
     public void test_r2dbc_mysql(){
         ConnectionFactory connectionFactory = ConnectionFactories.get(create_option());
@@ -82,14 +82,17 @@ public class Dbconnect {
                         .execute())
                 .flatMap(result -> result
                         .map((row, rowMetadata) -> {
-                            Integer c1 = row.get("id",Integer.class);
+                            //Integer c1 = row.get("id",Integer.class);
+                            Long c1 =  (Long)row.get("id");
                             System.err.println("id = " +c1);
                             log.info("id : " + c1.intValue());
                             log.debug("debug");
                             return c1;
                         }))
                 .subscribe( i -> System.err.println("i= " +i.intValue()),
-                        error -> System.err.println("got error: " + error),
+                        error -> {
+                                System.err.println("got error: " + error);
+                                error.printStackTrace();},
                         () -> System.out.println("Done"));
 
         /*Uni.createFrom().publisher(connectionFactory.create())
