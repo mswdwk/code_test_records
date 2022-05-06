@@ -1,7 +1,6 @@
 use anyhow::{anyhow, Result};
 use futures::stream::StreamExt;
-use std::{borrow::Cow, path::{Path, PathBuf}, thread};
-use std::thread::Thread;
+use std::{borrow::Cow, fs, path::{Path, PathBuf}, thread};
 use std::time::Duration;
 use structopt::StructOpt;
 use tokio::io::AsyncBufReadExt;
@@ -26,6 +25,8 @@ struct Opt {
     /// Activate debug mode
     #[structopt(short, long)]
     debug: bool,
+    #[structopt(short,long,parse(from_os_str))]
+    savedir: PathBuf
 }
 
 #[tokio::main]
@@ -33,19 +34,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let opt = Opt::from_args();
     let inputfile = opt.input;
     let debug = opt.debug;
+    let save_dir = opt.savedir.as_path();
     println!("begin to download file {:?} ...", inputfile);
-    let paths: Vec<String> = read_lines(inputfile).await?;
-    let length = paths.len();
-    let fetches = futures::stream::iter(paths.into_iter().enumerate().map(
+    let urls: Vec<String> = read_lines(inputfile).await?;
+    let length = urls.len();
+    let fetches = futures::stream::iter(urls.into_iter().enumerate().map(
         |(index, url)| async move {
             // limit concurrent
-            thread::sleep(Duration::from_millis(50));
+            // thread::sleep(Duration::from_millis(150));
             let mut response = get(&url).await?;
             let filename = basename(&url, '/');
-            //if debug {
+            if debug {
                 println!("[{:6}/{}] {}", index, length, filename);
-           // }
-            save(filename.as_ref(), &mut response).await?;
+            }
+            save(save_dir,filename.as_ref(), &mut response,debug).await?;
             Ok::<(), Box<dyn std::error::Error>>(())
         },
     ))
@@ -63,6 +65,7 @@ async fn read_lines<P: AsRef<Path>>(path: P) -> std::io::Result<Vec<String>> {
     let mut res = Vec::new();
     while let Some(line) = lines.next_line().await? {
         if let Ok((base_url, suffix, count)) = split_line(line) {
+            println!("base_url:{},suffix:{},count:{}",base_url,suffix,count);
             res.extend(create_urls(&base_url, &suffix, count).unwrap());
         }
     }
@@ -85,13 +88,21 @@ async fn get(url: &str) -> Result<reqwest::Response> {
         .map_err(|e| anyhow!("Request url {} error: {}", url, e))
 }
 
-async fn save(filename: &str, response: &mut reqwest::Response) -> Result<()> {
+async fn save(save_dir: &Path,filename: &str, response: &mut reqwest::Response,debug: bool) -> Result<()> {
+    // if dir not exist, then create it
+    if ! save_dir.exists(){
+        fs::create_dir_all(save_dir)?;
+        if debug {
+            println!("Create dir {:?} Ok",save_dir);
+        }
+    }
+    let path_filename = save_dir.join(filename);
     let mut options = OpenOptions::new();
     let mut file = options
         .append(true)
         .create(true)
         .read(true)
-        .open(filename)
+        .open(path_filename)
         .await?;
 
     while let Some(chunk) = &response.chunk().await.expect("Failed") {
@@ -141,5 +152,5 @@ fn t_split_line(){
     let _ = async
     let inputfile = PathBuf::new(r".\src\urls.txt");
     println!("begin to download file {:?} ...", inputfile);
-    let paths: Vec<String> = read_lines(inputfile).await?;
+    let urls: Vec<String> = read_lines(inputfile).await?;
 }*/
