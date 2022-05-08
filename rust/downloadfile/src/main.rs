@@ -1,7 +1,13 @@
+//#[macro_use]
+
+mod logini;
+
 use anyhow::{anyhow, Result};
 use futures::stream::StreamExt;
 use std::{borrow::Cow, fs, path::{Path, PathBuf}, thread};
 use std::time::Duration;
+
+use log::{debug, info, warn};
 use structopt::StructOpt;
 use tokio::io::AsyncBufReadExt;
 use tokio::io::BufReader;
@@ -25,23 +31,25 @@ struct Opt {
     /// Activate debug mode
     #[structopt(short, long)]
     debug: bool,
-    #[structopt(short,long,parse(from_os_str))]
+    #[structopt(short,long,parse(from_os_str),default_value = ".")]
     savedir: PathBuf
 }
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    logini::init();
     let opt = Opt::from_args();
     let inputfile = opt.input;
     let debug = opt.debug;
     let save_dir = opt.savedir.as_path();
-    println!("begin to download file {:?} ...", inputfile);
+    info!("begin to download file by urls in {:?} ...", inputfile);
+    debug!("test debug");
     let urls: Vec<String> = read_lines(inputfile).await?;
     let length = urls.len();
     let fetches = futures::stream::iter(urls.into_iter().enumerate().map(
         |(index, url)| async move {
-            // limit concurrent
-            // thread::sleep(Duration::from_millis(150));
+            // limit concurrent ?
+            thread::sleep(Duration::from_millis(50));
             let mut response = get(&url).await?;
             let filename = basename(&url, '/');
             if debug {
@@ -64,22 +72,22 @@ async fn read_lines<P: AsRef<Path>>(path: P) -> std::io::Result<Vec<String>> {
     let mut lines = reader.lines();
     let mut res = Vec::new();
     while let Some(line) = lines.next_line().await? {
-        if let Ok((base_url, suffix, count)) = split_line(line) {
-            println!("base_url:{},suffix:{},count:{}",base_url,suffix,count);
-            res.extend(create_urls(&base_url, &suffix, count).unwrap());
+        if let Ok((base_url, suffix, start,end)) = split_one_line(line) {
+            println!("base_url:{},suffix:{} ,start:{} ,end:{}",base_url,suffix,start,end);
+            res.extend(create_urls(&base_url, &suffix, start,end).unwrap());
         }
     }
     Ok(res)
 }
 
-fn split_line(url:String) -> Result<(String,String,u32)>{
+fn split_one_line(url:String) -> Result<(String,String,u32,u32)>{
     let  res  = url.split(",").collect::<Vec<&str>>();
-    println!("line spilt {} fields",res.len());
-    if res.len() < 3 {
+    debug!("line spilt {} fields",res.len());
+    if res.len() < 4 {
         return Err(anyhow!("spilt failed"));
     }
 
-    Ok((res[0].to_string(),res[1].to_string(),str::parse::<u32>(res[2]).unwrap()))
+    Ok((res[0].to_string(),res[1].to_string(),str::parse::<u32>(res[2]).unwrap(),str::parse::<u32>(res[3]).unwrap()))
 }
 
 async fn get(url: &str) -> Result<reqwest::Response> {
@@ -97,6 +105,11 @@ async fn save(save_dir: &Path,filename: &str, response: &mut reqwest::Response,d
         }
     }
     let path_filename = save_dir.join(filename);
+    if path_filename.exists(){
+        let err_msg = format!("file {:?} already exists!",path_filename);
+        warn!("{}",err_msg);
+        return Err(anyhow!(err_msg));
+    }
     let mut options = OpenOptions::new();
     let mut file = options
         .append(true)
@@ -111,16 +124,20 @@ async fn save(save_dir: &Path,filename: &str, response: &mut reqwest::Response,d
             Err(e) => return Err(anyhow!("File {} save error: {}", filename, e)),
         }
     }
-    println!("save file ok: {}",filename);
+    info!("save file {} Ok",filename);
     Ok(())
 }
 
-fn create_urls(url: &str, file_suffix: &str, count: u32) -> Result<Vec<String>> {
+fn create_urls(url: &str, file_suffix: &str, start: u32,end: u32) -> Result<Vec<String>> {
     let mut res = Vec::new();
-    let mut i = 1;
-    while i <= count {
-        let url_ = format!("{}{:03}{}", url, i, file_suffix);
-        //println!("this is {:?}", url_);
+    let mut i = start;
+    while i <= end {
+        let url_ = if i == 0 {
+            format!("{}{}{}", url, i, file_suffix)
+        } else {
+            format!("{}{:03}{}", url, i, file_suffix)
+        };
+        debug!("this url is {:?}", url_);
         i += 1;
         res.push(url_)
     }
@@ -129,7 +146,7 @@ fn create_urls(url: &str, file_suffix: &str, count: u32) -> Result<Vec<String>> 
 
 #[test]
 fn basic_create_urls() {
-    let res = create_urls("url", ".suf", 2).unwrap();
+    let res = create_urls("url", ".suf", 1,2).unwrap();
     let nres = vec!["url001.suf", "url002.suf"];
     assert_eq!(res, nres)
 }
@@ -143,8 +160,8 @@ fn format_int() {
 
 #[test]
 fn t_split_line(){
-    let res = split_line("http://a.com/b/,.suf,2".to_string()).unwrap();
-    assert_eq!(res,("http://a.com/b/".to_string(),".suf".to_string(),2))
+    let res = split_one_line("http://a.com/b/,.suf,1,2".to_string()).unwrap();
+    assert_eq!(res,("http://a.com/b/".to_string(),".suf".to_string(),1,2))
 }
 
 /*#[test]
