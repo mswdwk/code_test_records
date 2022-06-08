@@ -1,6 +1,7 @@
 //#[macro_use]
 
 mod logini;
+mod yaml_conf;
 
 use anyhow::{anyhow, Result};
 use futures::stream::StreamExt;
@@ -12,6 +13,7 @@ use structopt::StructOpt;
 use tokio::io::AsyncBufReadExt;
 use tokio::io::BufReader;
 use tokio::{fs::OpenOptions, io::AsyncWriteExt};
+use yaml_conf::AResourceConfig;
 
 fn basename(path: &str, sep: char) -> Cow<str> {
     let mut pieces = path.rsplit(sep);
@@ -31,25 +33,41 @@ struct Opt {
     /// Activate debug mode
     #[structopt(short, long)]
     debug: bool,
-    #[structopt(short,long,parse(from_os_str),default_value = ".")]
-    savedir: PathBuf
+    // #[structopt(short,long,parse(from_os_str),default_value = ".")]
+    // savedir: PathBuf
 }
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     logini::init();
+
     let opt = Opt::from_args();
     let inputfile = opt.input;
     let debug = opt.debug;
-    let save_dir = opt.savedir.as_path();
-    info!("begin to download file by urls in {:?} ...", inputfile);
+
+
+    // 使用相对路径读取 app.yaml 内容为字符串
+    // let yaml_str = include_str!(input_file_str.as_str());
+    let yaml_str = fs::read_to_string(&inputfile)?;
+
+    info!("yaml_str  {}",yaml_str);
+    // let yaml_str = include_str!(yaml_str);
+    // serde_yaml 解析字符串为 AResourceConfig 对象
+    let a_res: AResourceConfig = serde_yaml::from_str(&yaml_str)
+        .expect(&format!("resource yaml file: {} resolve failed! ",yaml_str));
+    let save_dir = a_res.save_dir.as_path();
+    let sleep_ms = a_res.sleep_ms;
+    info!("xxxx save_dir {:?}",a_res.save_dir.as_path());
+    info!("begin to download file by urls in path {:?} sleep_ms {} ", inputfile,sleep_ms);
     debug!("test debug");
-    let urls: Vec<String> = read_lines(inputfile).await?;
+    // return   Ok(());
+    // let urls: Vec<String> = read_lines(inputfile).await?;
+    let urls = create_urls(&a_res.base_url, &a_res.save_file_suffix, a_res.id_start,a_res.id_stop)?;
     let length = urls.len();
     let fetches = futures::stream::iter(urls.into_iter().enumerate().map(
         |(index, url)| async move {
             // limit concurrent ?
-            thread::sleep(Duration::from_millis(50));
+            thread::sleep(Duration::from_millis(sleep_ms as u64));
             let mut response = get(&url).await?;
             let filename = basename(&url, '/');
             if debug {
@@ -59,7 +77,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Ok::<(), Box<dyn std::error::Error>>(())
         },
     ))
-    .buffered(10)
+    .buffered(15)
     .collect::<Vec<_>>();
     fetches.await;
 

@@ -1,0 +1,6 @@
+base_url: xx.yy.zz
+save_file_suffix: .abc
+id_start: 0
+id_end: 5
+save_dir: "D:\data\1"
+sleep_ms: 90000

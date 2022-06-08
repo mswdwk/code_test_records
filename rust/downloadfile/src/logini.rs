@@ -16,6 +16,6 @@ pub fn init(){
                      record.args()
             )
         })
-        //.filter(None, LevelFilter::Info)
+        .filter(None, LevelFilter::Info)
         .init();
 }
