@@ -1,5 +1,5 @@
 //#[macro_use]
-
+#![feature(async_closure)]
 mod logini;
 mod yaml_conf;
 
@@ -64,6 +64,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // let urls: Vec<String> = read_lines(inputfile).await?;
     let urls = create_urls(&a_res.base_url, &a_res.save_file_suffix, a_res.id_start,a_res.id_stop)?;
     let length = urls.len();
+    // let http_header = new reqwest::header;
     let fetches = futures::stream::iter(urls.into_iter().enumerate().map(
         |(index, url)| async move {
             // limit concurrent ?
@@ -77,7 +78,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Ok::<(), Box<dyn std::error::Error>>(())
         },
     ))
-    .buffered(15)
+    .buffered(7)
     .collect::<Vec<_>>();
     fetches.await;
 
@@ -128,18 +129,28 @@ async fn save(save_dir: &Path,filename: &str, response: &mut reqwest::Response,d
         warn!("{}",err_msg);
         return Err(anyhow!(err_msg));
     }
+    debug!("start save file {:?}",path_filename.as_path());
     let mut options = OpenOptions::new();
     let mut file = options
         .append(true)
         .create(true)
-        .read(true)
-        .open(path_filename)
+        .write(true)
+        .open(path_filename.as_path())
         .await?;
-
+    info!("create file {:?} ok",path_filename.as_path());
     while let Some(chunk) = &response.chunk().await.expect("Failed") {
+        debug!("chunk size({})  ",chunk.len());
+        if chunk.len() < 1 {
+            warn!("chunk size({}) is too small ! ",chunk.len());
+            return Ok(());
+        }
         match file.write_all(&chunk).await {
             Ok(_) => {}
-            Err(e) => return Err(anyhow!("File {} save error: {}", filename, e)),
+            Err(e) => {
+                let err_msg = format!("File {} save error: {}", filename, e);
+                warn!("{}",err_msg);
+                return Err(anyhow!(err_msg));
+            }
         }
     }
     info!("save file {} Ok",filename);
@@ -189,3 +200,22 @@ fn t_split_line(){
     println!("begin to download file {:?} ...", inputfile);
     let urls: Vec<String> = read_lines(inputfile).await?;
 }*/
+
+
+
+#[test]
+fn t_create_file() {
+    let c = async ||->Result<()> {
+        let path_filename = Path::new("E:/x/y.cc");
+        let mut options = OpenOptions::new();
+        let file = options
+            .append(true)
+            .create(true)
+            .write(true)
+            .open(path_filename).await?;
+            println!("create file {:?}", file);
+            Ok(())
+        };
+    c();
+    thread::sleep(Duration::from_secs(1));
+}
