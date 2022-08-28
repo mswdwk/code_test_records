@@ -1,0 +1,16 @@
+https://github.com/electrum/tpch-dbgen.git
+
+# 1 ,create table
+mysql>source 1_tpch_table_def.sql
+
+# 2, create data
+./dbgen -s 10 -f     #以当前目录下的dbgen来生成10G的数据
+
+# 3, load data
+mysql> source 2_loaddata.sql
+
+# 4, run sql
+mysql> source d1.sql;
+mysql> source d2.sql;
+...
+mysql> source d22.sql;
