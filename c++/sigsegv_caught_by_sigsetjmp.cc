@@ -2,7 +2,7 @@
 #include<setjmp.h>
 #include<signal.h>
 using namespace std;
-jmp_buf env;
+sigjmp_buf env;
 
 void do_sig(int sig)
 {
@@ -13,7 +13,8 @@ void do_sig(int sig)
 int main()
 {
 	char *p = NULL;
-	signal(SIGSEGV, do_sig);
+    signal(SIGSEGV, do_sig);
+	//signal(SIGINT, do_sig);
 	if (sigsetjmp(env, 0) == 0)	//siglongjmp会在这里返回
 	{
 		cout << "enter logic 1" << endl;
