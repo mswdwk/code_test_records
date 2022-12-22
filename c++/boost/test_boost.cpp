@@ -39,8 +39,8 @@ void func1()
     static int cnt1 = 0;
     while(isRuning)
     {
-	int core_id = get_cpu_affinity();
-	cout<<__func__<<" "<<cnt1++<<" cpu id "<<core_id<<endl;
+	    int core_id = get_cpu_affinity();
+	    cout<<__func__<<" "<<cnt1++<<" cpu id "<<core_id<<endl;
         sleep(1);
     }
 }
@@ -50,9 +50,9 @@ void func2()
     static int cnt2 = 0;
     while(isRuning)
     {
-	int core_id = get_cpu_affinity();
-	cout<<__func__<<" "<<cnt2++<<" cpu id "<<core_id<<endl;
-        sleep(2);
+	    int core_id = get_cpu_affinity();
+	    cout<<__func__<<" "<<cnt2++<<" cpu id "<<core_id<<endl;
+        sleep(1);
     }
 }
 
