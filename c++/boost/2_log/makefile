@@ -1,6 +1,9 @@
 Q=@
 CXX=g++
-CXXFLAGS=-g -std=c++11 -Wall -fprofile-arcs -ftest-coverage -lgcov 
+CXXFLAGS=-g -std=c++11 -Wall -fprofile-arcs -ftest-coverage -lgcov \
+ -DBOOST_LOG_DYN_LINK
+
+LDFLAGS:=-lboost_log_setup -lboost_log -lpthread -lboost_thread 
 CXXOBJS:=$(subst .cc,.o,$(wildcard *.cc))
 CXXOBJS+=$(subst .cpp,.o,$(wildcard *.cpp))
 BINS:=$(subst .cc,,$(wildcard *.cc))
@@ -32,10 +35,10 @@ run:
 	echo "failed_cases=$${failed_cases[*]}"; \
 
 %.o:%.cc
-	$(CXX) $(CXXFLAGS)  $< -o $@ 
+	$(CXX) $(CXXFLAGS)  $< -o $@ $(LDFLAGS)
 
 %.o:%.cpp
-	$(CXX) $(CXXFLAGS)  $< -o $@ 
+	$(CXX) $(CXXFLAGS)  $< -o $@ $(LDFLAGS)
 
 clean:
-	rm -rf *.o core* a.out $(BINS) *.gc* *.info cover_*
+	rm -rf *.o core* a.out $(BINS) *.gc* *.info cover_* *.log
