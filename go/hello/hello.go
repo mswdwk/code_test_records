@@ -28,8 +28,8 @@ func test_mysql() {
 		fmt.Println("open mysql success")
 	}
 
-    fmt.Println("db:",db);
-	r,err := db.Exec( "create database if not exists testdb ");
+	fmt.Println("db:", db)
+	r, err := db.Exec("create database if not exists testdb ")
 	if err != nil {
 		fmt.Println("create database testdb failed: ", err)
 		return
@@ -37,12 +37,12 @@ func test_mysql() {
 		fmt.Println("create database testdb success")
 	}
 
-	r1, err := db.Exec( "create table if not exists user(username varchar(32),sex char(16),email char(32));");
+	r1, err := db.Exec("create table if not exists user(username varchar(32),sex char(16),email char(32));")
 	if err != nil {
 		fmt.Println("create table user failed: ", err)
 		return
 	} else {
-		fmt.Println("create table user success:",r1)
+		fmt.Println("create table user success:", r1)
 	}
 
 	sql := "insert into user(username,sex, email)values (?,?,?)"
@@ -54,7 +54,7 @@ func test_mysql() {
 		fmt.Println("exec failed,", err)
 		return
 	}
-	fmt.Println("affect rows:",r2)
+	fmt.Println("affect rows:", r2)
 
 	//查询最后一天用户ID，判断是否插入成功
 	id, err := r.LastInsertId()
@@ -80,18 +80,33 @@ func list_dir() {
 
 func main() {
 
-	greetings.This_user()
-	test_mysql()
+	// greetings.This_user()
+	// test_mysql()
 
 	log.SetPrefix("greetings:")
 	log.SetFlags(0)
-	msg, err := greetings.Hello("")
+	// log.Fatal("this is log test")
+	msg, err := greetings.Hello("myname")
 	if err != nil {
 		fmt.Println("----------error-----------")
 		log.Fatal(err)
+		return
 	}
 
 	fmt.Println(msg)
+
+	// A slice of names.
+	names := []string{"Gladys", "Samantha", "Darrin"}
+
+	// Request greeting messages for the names.
+	messages, err := greetings.Hellos(names)
+	if err != nil {
+		log.Fatal(err)
+	}
+	// If no error was returned, print the returned map of
+	// messages to the console.
+	fmt.Println(messages)
+
 	c := make(chan int, 10)
 	go fibonacci(cap(c), c)
 	// range 函数遍历每个从通道接收到的数据，因为 c 在发送完 10 个
