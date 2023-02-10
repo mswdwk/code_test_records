@@ -17,4 +17,7 @@ func main() {
 		fmt.Println("connect DB2 OK！")
 	}
 	db.Close()
+	exam2_main()
+	exam3_main()
+	exam4_main()
 }
