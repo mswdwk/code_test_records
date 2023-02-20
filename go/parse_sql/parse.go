@@ -35,10 +35,10 @@ func ReadFile2(path string) error {
 		if err == io.EOF {
 			break
 		}
-
-		if false == parse_one_sql(string(line)) {
+		err = parse_one_sql(string(line))
+		if nil != err {
 			error_count++
-			record_error_sql(line)
+			record_error_sql(line, err)
 		}
 		fmt.Printf("count %04d error_count %04d\r", count, error_count)
 	}
@@ -46,27 +46,34 @@ func ReadFile2(path string) error {
 	return nil
 }
 
-func record_error_sql(sql []byte) error {
+func record_error_sql(sql []byte, sql_err error) error {
+	if len(sql) < 1 {
+		return nil
+	}
 	var err error = nil
 	if nil == error_fp {
 		error_fp, err = os.OpenFile(error_sql_filename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
+		fmt.Printf("first open file %s\n", error_sql_filename)
 	}
 	if nil != err {
 		fmt.Printf("open error record file failed %s\n", error_sql_filename)
 		return err
 	}
+
 	error_fp.Write(append(sql, '\n'))
+	error_fp.WriteString(sql_err.Error())
+	error_fp.WriteString("\n")
 	return nil
 }
 
-func parse_one_sql(sql string) bool {
+func parse_one_sql(sql string) error {
 	p := parser.New()
 	_, _, err := p.Parse(sql, "", "")
-	if nil != err {
-		// fmt.Println("sql error: ", sql)
-		return false
-	}
-	return true
+	// if nil != err {
+	// 	// fmt.Println("sql error: ", sql)
+	// 	return err
+	// }
+	return err
 }
 
 func main() {
