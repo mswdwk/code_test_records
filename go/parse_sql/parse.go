@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/pingcap/tidb/parser"
 
@@ -15,6 +16,7 @@ var (
 	error_sql_filename string   = "error.sql"
 	error_count        int      = 0
 	error_fp           *os.File = nil
+	ignore_count       int      = 0
 )
 
 func ReadFile2(path string) error {
@@ -35,12 +37,17 @@ func ReadFile2(path string) error {
 		if err == io.EOF {
 			break
 		}
+		var str = strings.TrimLeft(string(line), " \t\n")
+		if 0 == strings.Index(str, "---") {
+			ignore_count++
+			continue
+		}
 		err = parse_one_sql(string(line))
 		if nil != err {
 			error_count++
 			record_error_sql(line, err)
 		}
-		fmt.Printf("count %04d error_count %04d\r", count, error_count)
+		fmt.Printf("count %04d error_count %04d ignore_count %04d\r", count, error_count, ignore_count)
 	}
 	fmt.Printf("\nend of the file \n")
 	return nil
@@ -52,7 +59,7 @@ func record_error_sql(sql []byte, sql_err error) error {
 	}
 	var err error = nil
 	if nil == error_fp {
-		error_fp, err = os.OpenFile(error_sql_filename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
+		error_fp, err = os.OpenFile(error_sql_filename, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
 		fmt.Printf("first open file %s\n", error_sql_filename)
 	}
 	if nil != err {
@@ -68,6 +75,11 @@ func record_error_sql(sql []byte, sql_err error) error {
 
 func parse_one_sql(sql string) error {
 	p := parser.New()
+	p.EnableWindowFunc(true)
+	// p.SetSQLMode()
+	// p.SetParserConfig()
+	// p.SetStrictDoubleTypeCheck()
+	// p.ParseSQL()
 	_, _, err := p.Parse(sql, "", "")
 	// if nil != err {
 	// 	// fmt.Println("sql error: ", sql)
