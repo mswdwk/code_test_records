@@ -1,6 +1,6 @@
 PORT=3310
 dbname=test
-tbname=$dbname.tbname
+tbname=dbname.tbname
 create_table_sql="drop table if exists $tbname;create table $tbname (c1 int unsigned not null, c2 char(128) not null,c3 varchar(128) not null,c4 text not null, c5 int not null,c6 char(128) not null,c7 varchar(128) not null,c8 text not null, c9 int not null,c10 char(128) not null, c11 varchar(128) not null, c12 text not null,primary key(c1,c2),unique key (c3,c5) );"
 
 output_file="insert-multi-fileds.sql"

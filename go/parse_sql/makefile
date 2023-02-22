@@ -19,11 +19,16 @@ run:
 	$Dgo run .
 
 clean:
-	rm -rf hello  test_mysql go.*
+	rm -rf go.* error.sql*
 
 replace:
 	go mod edit -replace example.com/greetings=../greetings
 
-
 test:
 	go test -cover
+
+statistics:
+	rm -rf error.sql* success.sql*
+	sh parseAllSqls.sh
+	sort error.sql.normal|uniq -c|sort -n -k 1 -r > e.normal
+	sort success.sql.normal|uniq -c|sort -n -k 1 -r > s.normal

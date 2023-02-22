@@ -13,7 +13,7 @@ run:
 	$Dgo run .
 
 clean:
-	rm -rf hello  test_mysql go.mod go.sum *.exe
+	rm -rf hello  test_mysql go.mod go.sum *.exe db2test
 
 replace:
 	go mod edit -replace example.com/greetings=../greetings

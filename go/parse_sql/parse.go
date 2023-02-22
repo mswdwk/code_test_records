@@ -13,11 +13,54 @@ import (
 )
 
 var (
-	error_sql_filename string   = "error.sql"
-	error_count        int      = 0
-	error_fp           *os.File = nil
-	ignore_count       int      = 0
+	success_sql_filename          string   = "success.sql"
+	success_sql_normal_filename   string   = ""
+	error_sql_filename            string   = "error.sql"
+	error_sql_reason_filename     string   = ""
+	error_sql_normalized_filename string   = ""
+	error_sql_digest_filename     string   = ""
+	success_count                 int      = 0
+	error_count                   int      = 0
+	success_sql_fp                *os.File = nil
+	success_sql_normal_fp         *os.File = nil
+	error_sql_fp                  *os.File = nil
+	error_sql_reason_fp           *os.File = nil
+	error_sql_normal_fp           *os.File = nil
+	error_sql_digest_fp           *os.File = nil
+	ignore_count                  int      = 0
+	filenames                              = []string{}
+	fps                                    = []**os.File{}
 )
+
+func init1() error {
+	var err error = nil
+	success_sql_normal_filename = success_sql_filename + ".normal"
+	error_sql_reason_filename = error_sql_filename + ".reason"
+	error_sql_normalized_filename = error_sql_filename + ".normal"
+	error_sql_digest_filename = error_sql_filename + ".digest"
+	filenames = []string{success_sql_filename, success_sql_normal_filename, error_sql_filename, error_sql_reason_filename, error_sql_normalized_filename, error_sql_digest_filename}
+	fps = append(fps, &success_sql_fp, &success_sql_normal_fp, &error_sql_fp, &error_sql_reason_fp, &error_sql_normal_fp, &error_sql_digest_fp)
+
+	for id, filename := range filenames {
+		if nil == *fps[id] {
+			*fps[id], err = os.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
+			fmt.Printf("first open file %s\n", filename)
+			if nil != err || nil == fps[id] {
+				fmt.Printf("open error record file failed %s fp= %p\n", filename, fps[id])
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func finish() {
+	for _, fp := range fps {
+		if nil != *fp {
+			(*fp).Close()
+		}
+	}
+}
 
 func ReadFile2(path string) error {
 	fileHanle, err := os.OpenFile(path, os.O_RDONLY, 0666)
@@ -29,51 +72,52 @@ func ReadFile2(path string) error {
 
 	reader := bufio.NewReader(fileHanle)
 
-	var count = 0
+	var sql_count = 0
 	// 按行处理txt
 	for {
-		count += 1
 		line, _, err := reader.ReadLine()
 		if err == io.EOF {
 			break
 		}
-		var str = strings.TrimLeft(string(line), " \t\n")
-		if 0 == strings.Index(str, "---") {
+
+		var sql_str = strings.TrimLeft(string(line), " \t\n")
+		if len(sql_str) < 3 {
+			continue
+		}
+		// fmt.Println("str is ", sql_str, ",index is ", strings.Index(sql_str, "--"))
+		if 0 == strings.Index(sql_str, "--") {
 			ignore_count++
 			continue
 		}
-		err = parse_one_sql(string(line))
-		if nil != err {
-			error_count++
-			record_error_sql(line, err)
-		}
-		fmt.Printf("count %04d error_count %04d ignore_count %04d\r", count, error_count, ignore_count)
+		sql_count += 1
+		normalized, digest, err := parse_one_sql(sql_str)
+		record_one_sql(sql_str, normalized, digest, err)
 	}
-	fmt.Printf("\nend of the file \n")
+	fmt.Printf("End of file. Total sql count %04d success_count %04d error_count %04d ignore_count %04d\n", sql_count, success_count, error_count, ignore_count)
 	return nil
 }
 
-func record_error_sql(sql []byte, sql_err error) error {
-	if len(sql) < 1 {
+func record_one_sql(sql string, normalized string, digest string, sql_err error) error {
+	if len(sql) < 2 {
 		return nil
 	}
-	var err error = nil
-	if nil == error_fp {
-		error_fp, err = os.OpenFile(error_sql_filename, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
-		fmt.Printf("first open file %s\n", error_sql_filename)
-	}
-	if nil != err {
-		fmt.Printf("open error record file failed %s\n", error_sql_filename)
-		return err
+	// TODO: record into database
+	if nil != sql_err {
+		error_count++
+		error_sql_fp.WriteString(sql + "\n")
+		error_sql_reason_fp.WriteString(sql_err.Error() + "\n")
+		error_sql_normal_fp.WriteString(normalized + "\n")
+		error_sql_digest_fp.WriteString(digest + "\n")
+	} else {
+		success_count++
+		success_sql_fp.WriteString(sql + "\n")
+		success_sql_normal_fp.WriteString(normalized + "\n")
 	}
 
-	error_fp.Write(append(sql, '\n'))
-	error_fp.WriteString(sql_err.Error())
-	error_fp.WriteString("\n")
 	return nil
 }
 
-func parse_one_sql(sql string) error {
+func parse_one_sql(sql string) (string, string, error) {
 	p := parser.New()
 	p.EnableWindowFunc(true)
 	// p.SetSQLMode()
@@ -81,11 +125,12 @@ func parse_one_sql(sql string) error {
 	// p.SetStrictDoubleTypeCheck()
 	// p.ParseSQL()
 	_, _, err := p.Parse(sql, "", "")
+
 	// if nil != err {
-	// 	// fmt.Println("sql error: ", sql)
-	// 	return err
+	// 	return "", "", err
 	// }
-	return err
+	normalized, digest := parser.NormalizeDigest(sql)
+	return normalized, digest.String(), err
 }
 
 func main() {
@@ -93,17 +138,22 @@ func main() {
 	var args = os.Args
 
 	if len(args) < 2 {
-		fmt.Println("Usage: program input_sql_file")
+		fmt.Println("Usage: program input_sql_file [error_sql_filename]")
 		return
 	}
 	if len(args) > 2 {
 		error_sql_filename = args[2]
 	}
+
+	if err := init1(); nil != err {
+		fmt.Println("init failed")
+		return
+	}
+
 	fmt.Println(args)
 	var filename string = args[1]
-	fmt.Println("input file name is ", filename)
+	fmt.Println("input sql file name is ", filename)
 	ReadFile2(filename)
-	if error_count > 0 {
 
-	}
+	finish()
 }
