@@ -47,7 +47,7 @@ func init1() error {
 		if nil == *fps[id] {
 			*fps[id], err = os.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
 			fmt.Printf("first open file %s\n", filename)
-			if nil != err || nil == fps[id] {
+			if nil != err || nil == *fps[id] {
 				fmt.Printf("open error record file failed %s fp= %p\n", filename, fps[id])
 				return err
 			}
@@ -155,6 +155,7 @@ func parse_one_sql(ch_sql chan string, s chan SqlParseResult) {
 func main() {
 	// TODO: USE FUNC ARGUMENT. ReadFile2(,parse_one_sql)
 	var args = os.Args
+
 	if len(args) < 2 {
 		fmt.Println("Usage: program input_sql_file [error_sql_filename]")
 		return
