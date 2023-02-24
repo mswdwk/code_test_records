@@ -1,5 +1,5 @@
 sqlfile_dir=~/sqldatas/sqls
-find $sqlfile_dir -type f -name "*.sql" -exec ./mysql {} \;
+find $sqlfile_dir -type f -name "*.sql" -exec ./parsesql {} \;
 exit 0
 count=0
 # pay attention to space

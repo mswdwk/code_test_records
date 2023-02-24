@@ -6,7 +6,7 @@ build:go.mod go.sum
 cover:
 	go build -cover   .
 go.mod: 
-	go mod init example.com/mysql
+	go mod init example.com/parsesql
 go.sum:
 	go mod tidy
 help:
@@ -19,7 +19,7 @@ run:
 	$Dgo run .
 
 clean:
-	rm -rf go.* error.sql*
+	rm -rf go.* error.sql* success.sql* u.* e.* s.*
 
 replace:
 	go mod edit -replace example.com/greetings=../greetings

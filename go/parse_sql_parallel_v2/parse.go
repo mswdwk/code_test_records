@@ -119,7 +119,7 @@ func record_one_sql(s chan SqlParseResult) {
 		}
 	}
 	fmt.Printf("Finish record parse sql result: success_count %04d error_count %04d\n", success_count, error_count)
-	close(s)
+	// close(s)
 	defer waitGroup.Done()
 }
 

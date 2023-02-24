@@ -82,6 +82,7 @@ func ReadFile2(path string) error {
 
 		var sql_str = strings.TrimLeft(string(line), " \t\n")
 		if len(sql_str) < 3 {
+			ignore_count++
 			continue
 		}
 		// fmt.Println("str is ", sql_str, ",index is ", strings.Index(sql_str, "--"))
