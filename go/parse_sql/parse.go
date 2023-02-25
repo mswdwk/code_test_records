@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime"
 	"strings"
 
 	"github.com/pingcap/tidb/parser"
@@ -81,12 +82,9 @@ func ReadFile2(path string) error {
 		}
 
 		var sql_str = strings.TrimLeft(string(line), " \t\n")
-		if len(sql_str) < 3 {
-			ignore_count++
-			continue
-		}
 		// fmt.Println("str is ", sql_str, ",index is ", strings.Index(sql_str, "--"))
-		if 0 == strings.Index(sql_str, "--") {
+
+		if len(sql_str) < 3 || 0 == strings.Index(sql_str, "--") {
 			ignore_count++
 			continue
 		}
@@ -135,6 +133,8 @@ func parse_one_sql(sql string) (string, string, error) {
 }
 
 func main() {
+	fmt.Printf("GOMAXPROCS:%d\n", runtime.GOMAXPROCS(0))
+	// return
 	// TODO: USE FUNC ARGUMENT. ReadFile2(,parse_one_sql)
 	var args = os.Args
 

@@ -2,11 +2,13 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"io"
 	"os"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	"github.com/pingcap/tidb/parser"
 
@@ -14,24 +16,26 @@ import (
 )
 
 var (
-	success_sql_filename          string   = "success.sql"
-	success_sql_normal_filename   string   = ""
-	error_sql_filename            string   = "error.sql"
-	error_sql_reason_filename     string   = ""
-	error_sql_normalized_filename string   = ""
-	error_sql_digest_filename     string   = ""
-	success_count                 int      = 0
-	error_count                   int      = 0
-	success_sql_fp                *os.File = nil
-	success_sql_normal_fp         *os.File = nil
-	error_sql_fp                  *os.File = nil
-	error_sql_reason_fp           *os.File = nil
-	error_sql_normal_fp           *os.File = nil
-	error_sql_digest_fp           *os.File = nil
-	ignore_count                  int      = 0
-	filenames                              = []string{}
-	fps                                    = []**os.File{}
-	waitGroup                     sync.WaitGroup
+	success_sql_filename             string   = "success.sql"
+	success_sql_normal_filename      string   = ""
+	error_sql_filename               string   = "error.sql"
+	error_sql_reason_filename        string   = ""
+	error_sql_normalized_filename    string   = ""
+	error_sql_digest_filename        string   = ""
+	success_count                    int      = 0
+	error_count                      int      = 0
+	parse_sql_rountine_number        *int     = nil
+	finish_pasrse_sql_rountine_count int32    = 0
+	success_sql_fp                   *os.File = nil
+	success_sql_normal_fp            *os.File = nil
+	error_sql_fp                     *os.File = nil
+	error_sql_reason_fp              *os.File = nil
+	error_sql_normal_fp              *os.File = nil
+	error_sql_digest_fp              *os.File = nil
+	ignore_count                     int      = 0
+	filenames                                 = []string{}
+	fps                                       = []**os.File{}
+	waitGroup                        sync.WaitGroup
 )
 
 func init1() error {
@@ -66,12 +70,15 @@ func finish() {
 }
 
 func ReadFile(path string, ch_sql chan string) {
-	waitGroup.Add(1)
+	defer close(ch_sql)
+	// waitGroup.Add(1)
+	// defer waitGroup.Done()
 	fileHanle, err := os.OpenFile(path, os.O_RDONLY, 0666)
 	if err != nil {
 		fmt.Printf("open file %s failed\n", path)
 		return
 	}
+
 	defer fileHanle.Close()
 	reader := bufio.NewReader(fileHanle)
 
@@ -93,13 +100,12 @@ func ReadFile(path string, ch_sql chan string) {
 		ch_sql <- sql_str
 	}
 	fmt.Printf("Finish read file. Total sql count %04d ignore_count %04d\n", sql_count, ignore_count)
-	close(ch_sql)
-	defer waitGroup.Done()
+
 }
 
-func record_one_sql(s chan SqlParseResult) {
-	waitGroup.Add(1)
-
+func record_one_sql(s <-chan SqlParseResult) {
+	// waitGroup.Add(1)
+	// defer waitGroup.Done()
 	for r := range s {
 		if len(r.sql) < 2 {
 			continue
@@ -119,8 +125,6 @@ func record_one_sql(s chan SqlParseResult) {
 		}
 	}
 	fmt.Printf("Finish record parse sql result: success_count %04d error_count %04d\n", success_count, error_count)
-	// close(s)
-	defer waitGroup.Done()
 }
 
 type SqlParseResult struct {
@@ -130,9 +134,9 @@ type SqlParseResult struct {
 	err        error
 }
 
-func parse_one_sql(ch_sql chan string, s chan SqlParseResult) {
-
-	waitGroup.Add(1)
+func parse_one_sql(ch_sql <-chan string, s chan<- SqlParseResult) {
+	// waitGroup.Add(1)
+	// defer waitGroup.Done()
 	p := parser.New()
 	p.EnableWindowFunc(true)
 	for sql := range ch_sql {
@@ -142,42 +146,48 @@ func parse_one_sql(ch_sql chan string, s chan SqlParseResult) {
 		// p.ParseSQL()
 		_, _, err := p.Parse(sql, "", "")
 		// stms[0]
-
 		normalized, digest := parser.NormalizeDigest(sql)
 		r := SqlParseResult{sql, normalized, digest.String(), err}
 		s <- r
 	}
-	fmt.Printf("Finish parse sql\n")
-	close(s)
-	defer waitGroup.Done()
+	atomic.AddInt32(&finish_pasrse_sql_rountine_count, 1)
+	// if all gorountine finish ,then finish
+	if atomic.LoadInt32(&finish_pasrse_sql_rountine_count) == int32(*parse_sql_rountine_number) {
+		fmt.Printf("This Rountine Finish parse sql\n")
+		close(s)
+	}
 }
 
 func main() {
 	// TODO: USE FUNC ARGUMENT. ReadFile2(,parse_one_sql)
 	var args = os.Args
+	parse_sql_rountine_number = flag.Int("r", 10, "parse sql rountine number")
+	input_filename_p := flag.String("i", "input.sql", "input sql file name")
+	error_filename_p := flag.String("e", "error.sql", "error sql file name")
 
 	if len(args) < 2 {
-		fmt.Println("Usage: program input_sql_file [error_sql_filename]")
+		fmt.Println("Usage: program -i input_sql_file [ -e error.sql ] [-r parse_rountine_numver] ")
 		return
 	}
-	if len(args) > 2 {
-		error_sql_filename = args[2]
-	}
+
+	flag.Parse()
+	fmt.Println("input sql file name is ", *input_filename_p)
+	error_sql_filename = *error_filename_p
 
 	if err := init1(); nil != err {
 		fmt.Println("init failed")
 		return
 	}
+	fmt.Println("parse_sql_rountine_number ", *parse_sql_rountine_number)
+	chSqlRes := make(chan SqlParseResult, *parse_sql_rountine_number)
+	chSqlStr := make(chan string, *parse_sql_rountine_number)
+	go ReadFile(*input_filename_p, chSqlStr)
 
-	fmt.Println(args)
-	var filename string = args[1]
-	fmt.Println("input sql file name is ", filename)
-	chSqlRes := make(chan SqlParseResult, 10)
-	chSqlStr := make(chan string, 10)
-	go ReadFile(filename, chSqlStr)
-	go parse_one_sql(chSqlStr, chSqlRes)
+	for i := 0; i < *parse_sql_rountine_number; i++ {
+		go parse_one_sql(chSqlStr, chSqlRes)
+	}
 	record_one_sql(chSqlRes)
-	waitGroup.Wait()
+	// waitGroup.Wait()
 	// time.Sleep(5 * time.Second)
 	finish()
 }
