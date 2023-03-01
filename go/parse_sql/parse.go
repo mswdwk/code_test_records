@@ -7,6 +7,7 @@ import (
 	"os"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/pingcap/tidb/parser"
 
@@ -74,6 +75,8 @@ func ReadFile2(path string) error {
 	reader := bufio.NewReader(fileHanle)
 
 	var sql_count = 0
+	var elapsed time.Duration
+	var total_sql_len uint64 = 0
 	// 按行处理txt
 	for {
 		line, _, err := reader.ReadLine()
@@ -89,10 +92,19 @@ func ReadFile2(path string) error {
 			continue
 		}
 		sql_count += 1
+		start := time.Now() // 获取当前时间
 		normalized, digest, err := parse_one_sql(sql_str)
+		elapsed += time.Now().Sub(start)
+		total_sql_len += uint64(len(sql_str))
 		record_one_sql(sql_str, normalized, digest, err)
 	}
 	fmt.Printf("End of file. Total sql count %04d success_count %04d error_count %04d ignore_count %04d\n", sql_count, success_count, error_count, ignore_count)
+	cost_ms := int(elapsed.Milliseconds())
+	parse_speed := sql_count * 1000 / cost_ms
+	avg_sql_len := total_sql_len / uint64(sql_count)
+	avg_parse_speed_us := int(elapsed.Microseconds() / int64(sql_count))
+	fmt.Printf("parse sql count %d , cost time %d ms, avg %d sql/s avg %d bytes/sql, avg parse cost %d us/sql\n",
+		sql_count, cost_ms, parse_speed, avg_sql_len, avg_parse_speed_us)
 	return nil
 }
 
