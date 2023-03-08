@@ -4,7 +4,6 @@
 #include <zconf.h>
 #include <zlib.h> 
 #include <stddef.h>
-#include <my_inttypes.h>
 #include <sql/current_thd.h>
 #include <mysql/plugin.h>
 #include <sql/set_var.h>
@@ -12,11 +11,20 @@
 #include <sql/sql_class.h>
 #include <sql/sql_lex.h>
 #include <sql/sql_parse.h>
+#include <my_inttypes.h>
 // #include <my_md5_size.h>
 
 int main()
 {
-	THD *thd = new THD(false);
+	my_init();
+	// init_common_variables();
+
+	THD *thd ;
+	thd = new THD(true);
+	thd->set_new_thread_id();
+	thd->store_globals();
+	lex_start(thd);
+
     const char *query_text = "select 1";
     uint query_length = strlen(query_text);
     Object_creation_ctx *ctx = nullptr;
