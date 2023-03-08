@@ -1,0 +1,25 @@
+# use g++ version 11 to compile
+#MYSQL_CXXFLAGS=$(shell /usr/local/mysql/bin/mysql_config --cxxflags --libs)
+MYSQL_CXXFLAGS=$(shell /usr/bin/mysql_config --libs)
+MYSQL_SRC_ROOT=$(shell echo ~/repos/mysql-server)
+MYSQL_BUILD_ROOT=$(shell echo ~/build-mysql8)
+BOOST_DIR=/usr/local/boost_1_73_0
+
+CXXFLAGS= -Wall -g  -I${MYSQL_SRC_ROOT}/include -I${MYSQL_SRC_ROOT} \
+	-I${BOOST_DIR}/boost  -I${MYSQL_BUILD_ROOT}/include  -I${MYSQL_SRC_ROOT}/extra/rapidjson/include\
+	-L${BOOST_DIR}/libs -L${MYSQL_BUILD_ROOT}/library_output_directory \
+	-L /usr/lib64/mysql -L${MYSQL_BUILD_ROOT}/archive_output_directory -I${MYSQL_BUILD_ROOT}/extra/zlib
+
+LDFLAGS= -lmysqlclient -lmysqlservices -lz -lzlib -lserver_unittest_library ${MYSQL_CXXFLAGS}
+.PHONY: all clean run scl
+
+all:
+	g++ ${CXXFLAGS} ${MYSQL_BUILD_ROOT}/archive_output_directory/libz.a main.cc -o main ${LDFLAGS} 
+
+run:
+	LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${MYSQL_BUILD_ROOT}/library_output_directory ./main
+
+clean:
+	rm -rf main *.o
+scl:
+	scl enable devtoolset-11 zsh
