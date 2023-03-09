@@ -14,6 +14,7 @@
 #include <sql/sql_parse.h>
 #include <my_inttypes.h>
 // #include <my_md5_size.h>
+#include <errno.h>
 
 #ifndef _WIN32
 #include <sys/resource.h>
@@ -74,6 +75,17 @@ int main(int argc, char *argv[])
 	printf("init_server_components ok, max_digest_length %lu\n",max_digest_length);
 	max_digest_length= 1024*1024-1;
 
+	if( argc < 2 ){
+		printf("usage: ./program input_sql_file\n");
+		return 1;
+	}
+	FILE*input_fp = fopen(argv[1],"r");
+
+	if(input_fp == NULL){
+		printf(" open file %s failed,errno %d\n",argv[1],errno);
+		return 1;
+	}
+
 #ifndef _WIN32
 	rlimit core_limit;
 	core_limit.rlim_cur = 0;
@@ -95,19 +107,43 @@ int main(int argc, char *argv[])
 	bool rc;
 
 	Parser_state parser_state;
-	if (parser_state.init(thd, query_text, query_length))
-	{
-		printf("error\n");
-	}
+	
 
 	parser_state.m_input.m_compute_digest = true;
 	thd->m_digest = &thd->m_digest_state;
 	thd->m_digest->reset(thd->m_token_array, max_digest_length);
+
+	char line[64*1024];
 	auto start = std::chrono::steady_clock::now();
-	rc = parse_sql(thd, &parser_state, ctx);
+	query_text = line;
+	int ignore_count=0;
+	int sql_count = 0;
+	long int total_sql_len=0;
+	while(NULL != fgets(line,sizeof(line),input_fp)){
+		while(*query_text==' ' )query_text++;// skip space
+		int sql_len = strlen(query_text);
+		if(sql_len < 3 || query_text[0]=='-'){
+			ignore_count++;
+			continue;
+		}
+		if (parser_state.init(thd, query_text, sql_len))
+		{
+			printf("error\n");
+		}
+		rc = parse_sql(thd, &parser_state, ctx);
+		sql_count++;
+		total_sql_len += sql_len;
+		query_text = line;
+	}
+	
 	auto end = std::chrono::steady_clock::now();
 	std::chrono::duration<double> elapsed_seconds = std::chrono::duration<double>(end-start);
-	cout << "elapsed time: " << elapsed_seconds.count() << "s"<<endl;
+	int avg_sql_len =total_sql_len/sql_count;
+	double avg_sql_parse_time_us = elapsed_seconds.count()*1000*1000/sql_count;
+	cout << "Sql Count:"<<sql_count<<",ignore_count: "<<ignore_count;
+	cout << ",elapsed time: " << elapsed_seconds.count() << "s"<<endl;
+	cout <<"avg_sql_len:"<<avg_sql_len<<" ,"<<"avg_sql_parse_time:"<<avg_sql_parse_time_us<<" us"<<endl;
+
 	if (!rc)
 	{
 		unsigned char hash_buf[DIGEST_HASH_SIZE+1];
