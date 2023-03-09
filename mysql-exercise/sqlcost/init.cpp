@@ -14,6 +14,8 @@
 #include <my_inttypes.h>
 #include <mysql.h>
 
+#include "my_mock.hpp"
+
 extern void partitioning_init();
 extern bool table_def_init(void);
 extern int my_timer_initialize(void);
@@ -65,4 +67,35 @@ int init_server_components() {
 
     locked_in_memory = false;
     return 0;
+}
+
+ void my_error_handler_hook(uint err, const char *str, myf my) {
+    printf("caught an error %d %d: %s\n",err,my,str);
+ }
+
+
+
+Mock_error_handler::Mock_error_handler(THD *thd, uint expected_error)
+    : m_thd(thd), m_expected_error(expected_error), m_handle_called(0) {
+  thd->push_internal_handler(this);
+}
+
+Mock_error_handler::~Mock_error_handler() {
+  // Strange Visual Studio bug: have to store 'this' in local variable.
+  Internal_error_handler *me = this;
+  // EXPECT_EQ(me, m_thd->get_internal_handler());
+  if (m_expected_error == 0) {
+    // EXPECT_EQ(0, m_handle_called);
+  } else {
+    //EXPECT_GT(m_handle_called, 0)
+      std::cout  << "Error " << m_expected_error << " expected.";
+  }
+}
+
+bool Mock_error_handler::handle_condition(THD *, uint sql_errno, const char *,
+                                          Sql_condition::enum_severity_level *,
+                                          const char *) {
+  std::cout<<"m_expected_error:"<<m_expected_error<<",sql_errno:"<<sql_errno<<std::endl;
+  ++m_handle_called;
+  return true;
 }

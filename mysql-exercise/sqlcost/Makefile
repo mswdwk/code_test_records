@@ -10,7 +10,8 @@ CXXFLAGS= -Wall -g  -I${MYSQL_SRC_ROOT}/include -I${MYSQL_SRC_ROOT} \
 	-I${BOOST_DIR}/boost  -I${MYSQL_BUILD_ROOT}/include  \
 	-L${BOOST_DIR}/libs -L${MYSQL_BUILD_ROOT}/lib \
 	-I${MYSQL_SRC_ROOT}/extra/rapidjson/include -I${MYSQL_BUILD_ROOT}/extra/zlib \
-	-I${MYSQL_SRC_ROOT}/extra/zlib -I${MYSQL_SRC_ROOT}/extra/protobuf/protobuf-3.11.4/src
+	-I${MYSQL_SRC_ROOT}/extra/zlib -I${MYSQL_SRC_ROOT}/extra/protobuf/protobuf-3.11.4/src \
+	-I${MYSQL_SRC_ROOT}/unittest/gunit
 
 LDFLAGS= -lz -lserver_unittest_library -lmysqlclient
 .PHONY: all clean run scl
