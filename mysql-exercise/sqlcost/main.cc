@@ -70,9 +70,8 @@ int main(int argc, char *argv[])
 		printf("init_server_components failed\n");
 		return 1;
 	}
-	printf("init_server_components ok\n");
-
-	
+	printf("init_server_components ok, max_digest_length %lu\n",max_digest_length);
+	max_digest_length= 1024*1024-1;
 
 #ifndef _WIN32
 	rlimit core_limit;
@@ -101,18 +100,20 @@ int main(int argc, char *argv[])
 	}
 
 	parser_state.m_input.m_compute_digest = true;
+	thd->m_digest = &thd->m_digest_state;
+	thd->m_digest->reset(thd->m_token_array, max_digest_length);
 
 	rc = parse_sql(thd, &parser_state, ctx);
 	if (!rc)
 	{
-		// unsigned char md5[MD5_HASH_SIZE];
-		char digest_text[1024];
-		bool truncated;
+		unsigned char hash_buf[DIGEST_HASH_SIZE+1];
+		String digest_text;
 		const sql_digest_storage *digest = &thd->m_digest->m_digest_storage;
-
-		// compute_digest_md5(digest, & md5[0]);
-		// compute_digest_text(digest, & digest_text[0], sizeof(digest_text), &truncated);
-		printf("parse sql OK\n");
+		printf("Parse Sql OK, %p\n",thd->m_digest);
+		compute_digest_hash(digest, hash_buf);
+		compute_digest_text(digest, &digest_text);
+		printf("Sql Hash: %s\n",hash_buf);
+		printf("Sql Normalized: [ %s ]\n",digest_text.c_ptr());
 	}
 
 	mysql_mutex_destroy(&LOCK_open);
