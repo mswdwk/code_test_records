@@ -20,6 +20,7 @@
 #include <sys/time.h>
 #endif
 
+using namespace std;
 int init_server_components();
 extern const char *my_progname;
 extern PSI_mutex_service_t *psi_mutex_service;
@@ -102,8 +103,11 @@ int main(int argc, char *argv[])
 	parser_state.m_input.m_compute_digest = true;
 	thd->m_digest = &thd->m_digest_state;
 	thd->m_digest->reset(thd->m_token_array, max_digest_length);
-
+	auto start = std::chrono::steady_clock::now();
 	rc = parse_sql(thd, &parser_state, ctx);
+	auto end = std::chrono::steady_clock::now();
+	std::chrono::duration<double> elapsed_seconds = std::chrono::duration<double>(end-start);
+	cout << "elapsed time: " << elapsed_seconds.count() << "s"<<endl;
 	if (!rc)
 	{
 		unsigned char hash_buf[DIGEST_HASH_SIZE+1];
