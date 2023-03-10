@@ -1,0 +1,21 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "~/repos/mysql-server/**",
+                "~/repos/mysql-server/extra/**",
+                "~/repos/mysql-server/include/**",
+                "~/build-mysql8/**",
+                "/usr/local/boost_1_73_0/boost/**"
+            ],
+            "defines": [],
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "c11",
+            "cppStandard": "c++14",
+            "intelliSenseMode": "linux-gcc-x64"
+        }
+    ],
+    "version": 4
+}
