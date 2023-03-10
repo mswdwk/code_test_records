@@ -66,11 +66,10 @@ fn main() {
             continue;
         }
 
-        if Parser::parse_sql(&dialect, &line).is_ok() {
-            total_sql_length += line.len() as u64;
-        } else {
+        if Parser::parse_sql(&dialect, &line).is_err() {
             error_sql_count += 1;
         }
+        total_sql_length += line.len() as u64;
         sql_count += 1;
     }
     let cost_ms = now.elapsed().as_millis();
