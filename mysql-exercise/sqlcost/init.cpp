@@ -70,7 +70,7 @@ int init_server_components() {
 }
 
  void my_error_handler_hook(uint err, const char *str, myf my) {
-    printf("caught an error %d %d: %s\n",err,my,str);
+    //printf("caught an error %d %d: %s\n",err,my,str);
  }
 
 
@@ -82,20 +82,20 @@ Mock_error_handler::Mock_error_handler(THD *thd, uint expected_error)
 
 Mock_error_handler::~Mock_error_handler() {
   // Strange Visual Studio bug: have to store 'this' in local variable.
-  Internal_error_handler *me = this;
+  // Internal_error_handler *me = this;
   // EXPECT_EQ(me, m_thd->get_internal_handler());
   if (m_expected_error == 0) {
     // EXPECT_EQ(0, m_handle_called);
   } else {
     //EXPECT_GT(m_handle_called, 0)
-      std::cout  << "Error " << m_expected_error << " expected.";
+    //  std::cout  << "Error " << m_expected_error << " expected.";
   }
 }
 
 bool Mock_error_handler::handle_condition(THD *, uint sql_errno, const char *,
                                           Sql_condition::enum_severity_level *,
                                           const char *) {
-  std::cout<<"m_expected_error:"<<m_expected_error<<",sql_errno:"<<sql_errno<<std::endl;
+  // std::cout<<"m_expected_error:"<<m_expected_error<<",sql_errno:"<<sql_errno<<std::endl;
   ++m_handle_called;
   return true;
 }

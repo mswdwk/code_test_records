@@ -1,8 +1,8 @@
 # use g++ version 11 to compile
 # mysql-server version is mysql-8.0.25
-MYSQL_CXXFLAGS=$(shell ~/MySQL-8025/bin/mysql_config --cxxflags --libs)
+MYSQL_CXXFLAGS=$(shell ~/MySQL-8025-rel/bin/mysql_config --cxxflags --libs)
 MYSQL_SRC_ROOT=$(shell echo ~/repos/mysql-server)
-MYSQL_BUILD_ROOT=$(shell echo ~/build-mysql8)
+MYSQL_BUILD_ROOT=$(shell echo ~/build-mysql8-rel)
 BOOST_DIR=/usr/local/boost_1_73_0
 MYSQL_INSTALL_ROOT=$(shell echo ~/MySQL-8025)
 

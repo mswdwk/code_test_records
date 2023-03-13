@@ -142,36 +142,45 @@ int main(int argc, char *argv[])
   int ignore_count = 0;
   int sql_count = 0;
   long int total_sql_len = 0;
+  int error_sql_count = 0;
+  // TODO: consider sql too long, more than sizeof(line)
   while (NULL != fgets(line, sizeof(line), input_fp))
   {
     while (*query_text == ' ')
       query_text++; // skip space
-    int sql_len = strlen(query_text);
-    if (sql_len < 3 || query_text[0] == '-')
+    query_length = strlen(query_text);
+    if (query_length < 3 || query_text[0] == '-')
     {
       ignore_count++;
       continue;
     }
-    if (parser_state.init(thd, query_text, sql_len))
+    if (parser_state.init(thd, query_text, query_length))
     {
       printf("error\n");
     }
-    rc = parse_sql(thd, &parser_state, ctx);
+    if( parse_sql(thd, &parser_state, ctx)){
+      error_sql_count++;
+    }
     sql_count++;
-    total_sql_len += sql_len;
+    total_sql_len += query_length;
     query_text = line;
-    printf("sql_count=%d ignore_count=%d sql_len %d\r",sql_count,ignore_count,sql_len);
+    // thd->set_time();
+    // TODO reset, in case of sql contains ';' , which means multi sql
+    // parser_state.reset();
+    //printf("sql_count=%d ignore_count=%d sql_len %d\r",sql_count,ignore_count,sql_len);
   }
 
   auto end = std::chrono::steady_clock::now();
   std::chrono::duration<double> elapsed_seconds = std::chrono::duration<double>(end - start);
   int avg_sql_len = total_sql_len / sql_count;
   double avg_sql_parse_time_us = elapsed_seconds.count() * 1000 * 1000 / sql_count;
-  cout << "Sql Count:" << sql_count << ",ignore_count: " << ignore_count;
+  cout << "Total Sql Count:" << sql_count << ",ignore_count: " << ignore_count;
+  cout << ",Error sql count: "<<error_sql_count;
   cout << ",elapsed time: " << elapsed_seconds.count() << "s" << endl;
-  cout << "avg_sql_len:" << avg_sql_len << " ,"
-       << "avg_sql_parse_time:" << avg_sql_parse_time_us << " us" << endl;
-
+  cout << "Avg_sql_len:" << avg_sql_len << " ,"
+       << "Avg_sql_parse_time:" << avg_sql_parse_time_us << " us" << endl;
+  
+  rc = true;
   if (!rc)
   {
     unsigned char hash_buf[DIGEST_HASH_SIZE + 1];
