@@ -25,8 +25,8 @@ public class App
         }
         String fileName = args[0];
         int sql_count = 0;
-        int ignore_count = 0;
-        int error_count = 0;
+        int ignore_sql_count = 0;
+        int error_sql_count = 0;
         int total_sql_len = 0;
         List<SQLStatement> stmtList;
         try {
@@ -35,7 +35,7 @@ public class App
             while (sc.hasNextLine()) {  //按行读取字符串
                 String sql = sc.nextLine().trim();
                 if(sql.length() < 3 || sql.startsWith("--")){
-                    ignore_count++;
+                    ignore_sql_count++;
                     continue;
                 }
                 try {
@@ -44,7 +44,7 @@ public class App
                 }catch (Exception e){
                     // System.err.println("caught an parse error:"+e.toString());
                     // e.printStackTrace();
-                    error_count++;
+                    error_sql_count++;
                 }
                 total_sql_len += sql.length();
             }
@@ -53,14 +53,14 @@ public class App
             if (sql_count == 0)
                 return;
             long cost_ms = dur.toMillis();
-            long avg_sql_cost_us = dur.toNanos() / 1000 / sql_count;
-            int avg_sql_len = total_sql_len / (error_count+sql_count);
-            System.out.println("Total cost time:"+cost_ms + " ms"
-                    +",Parse ok_sql_count: " + sql_count
-                    +",ignore_count: "+ignore_count
-                    +",error_sql_count: "+error_count
-                    +",avg parse cost time: " + avg_sql_cost_us + " us/sql"
-                    +",avg_sql_len: "+avg_sql_len
+            long avg_sql_cost_us = dur.toNanos() / 1000 / (error_sql_count+sql_count);
+            int avg_sql_len = total_sql_len / (error_sql_count+sql_count);
+            System.out.println("    Total cost time: "+cost_ms + " ms.\n"
+                              +" Parse ok_sql_count: " + sql_count +"\n"
+                              +"    error_sql_count: " + error_sql_count +"\n"
+                              +"   ignore_sql_count: " + ignore_sql_count +"\n"
+                              +"avg parse cost time: " + avg_sql_cost_us + " us/sql" +"\n"
+                              +"        avg_sql_len: " + avg_sql_len + " bytes/sql"
             );
         } catch (Exception e){
             System.err.println("caught an error:"+e.toString());
