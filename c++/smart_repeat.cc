@@ -14,7 +14,7 @@ stack<char*> s_string;
 // 2[3[yb]5[x]2[1[nihao]5[i]]]
 char* repeat_str(const char* input) {
     while ( NULL != input && *input !='\0') {
-        cout<<"input:"<<input<<endl;
+        // cout<<"input:"<<input<<endl;
         char tmp_digit[128]={0};
         int i = 0;
         while (isdigit(*input)) {
@@ -26,13 +26,11 @@ char* repeat_str(const char* input) {
             s_number.push(num);
             cout<<"push number:"<<num<<",i="<<i<<endl;
         }
-        // cout<<"input step 2:"<<input<<endl;
         if (*input == '[') {
             input++;
             char *ch = new char(1);
             *ch='\0';
             s_string.push(ch);
-            // s_number.push(1);
             cout<<"push string: noop"<<endl;
         }
 
@@ -44,33 +42,18 @@ char* repeat_str(const char* input) {
             input++;
             i++;
         }
-        // cout<<"input step 3:"<<input<<", i="<<i<<endl;
         ch_tmp[i] = '\0';
         if (strlen(ch_tmp) > 0) {
             char* new_ch = NULL;
-            char* top_ch = NULL ;//s_string.top();
-            // s_string.pop();
             int length = 0;
-            if ( top_ch != NULL) {
-                length = strlen(ch_tmp)+strlen(top_ch);
-                new_ch = new char(length+1);
-                strcpy(new_ch, top_ch);
-                strcat(new_ch, ch_tmp);
-                delete top_ch;
-            } else {
-                length = strlen(ch_tmp);
-                new_ch = new char(length+1);
-                strcpy(new_ch,ch_tmp);
-            }
+            length = strlen(ch_tmp);
+            new_ch = new char(length+1);
+            strcpy(new_ch,ch_tmp);
             new_ch[length]='\0';
-
             s_string.push(new_ch);
-
-            cout<<"push string:"<<new_ch<<", stack number.size="<<s_number.size();
-                cout<<", s_string.size="<<s_string.size()<<endl;
+            // cout<<"push single string:"<<new_ch<<", stack number.size="<<s_number.size();
+            // cout<<", s_string.size="<<s_string.size()<<endl;
         } 
-        // cout<<"input step 4:"<<input<<endl;
-        // 2[3[ab]5[cd[7[x]2[p]]]
         if (*input == ']') {
             cout<<"caught: input="<<input<<", number.size="<<s_number.size();
                 cout<<", s_string.size="<<s_string.size()<<endl;
@@ -89,24 +72,27 @@ char* repeat_str(const char* input) {
                     strcat(ch_new,ch);
                 }
                 ch_new[length] = '\0';
-                delete ch;
-                delete ch2;
-                char *top = NULL;
+                cout<<"s_string.size()= "<<s_string.size()<<endl;
+                char *top = NULL;;
                 char *merge_ch = ch_new;
-                top=s_string.top();
-                if((top) != NULL){
+                if(!s_string.empty()){
+                    top = s_string.top();
+                    cout<<"before push merge string: get top str["<<top<<"]"<<endl;
                     length =strlen(ch_new)+strlen(top);
                     merge_ch = new char(length+1);
-                    strcat(merge_ch,ch_new);
+                    memset(merge_ch,0,length+1);
                     strcat(merge_ch,top);
+                    strcat(merge_ch,ch_new);
+                    delete ch_new;
                     s_string.pop();
                     delete top;
                 }
                 merge_ch[length]='\0';
                 s_string.push(merge_ch);
-                cout<<"push merge string: "<<ch_new<<",orgin str:["<<ch<<","<<ch2<<"],orgin str len:[";
+                cout<<"push merge string: "<<merge_ch<<",orgin str:["<<ch<<","<<ch2<<"],orgin str len:[";
                 cout<<strlen(ch)<<","<<strlen(ch2)<<"],top_number:"<<top_int<<endl;
-                
+                delete ch;
+                delete ch2;
             } else {
                 cout<<"caught an error: input="<<input<<", number.size="<<s_number.size();
                 cout<<", s_string.size="<<s_string.size()<<endl;
