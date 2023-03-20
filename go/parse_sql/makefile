@@ -14,7 +14,8 @@ help:
 	$Decho "2 tidy"
 get:
 	go get -u -v
-	
+	go get -v github.com/pingcap/tidb/types/parser_driver@fc166ff
+
 run:
 	$Dgo run .
 

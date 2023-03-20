@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/pingcap/tidb/parser"
-
-	_ "github.com/pingcap/tidb/parser/test_driver"
+	_ "github.com/pingcap/tidb/types/parser_driver"
+	// _ "github.com/pingcap/tidb/parser/test_driver"
 )
 
 var (
