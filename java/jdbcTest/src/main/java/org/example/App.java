@@ -105,12 +105,12 @@ public class App
     }
 
     public static void main( String[] args ) {
+        CacheDiffentDbSameTable.test_for_jdbc_cache_config();
         // objToJsonString()
-/*        FluxDemo fluxDemo = new FluxDemo();
+/*  R2DBC test
+    FluxDemo fluxDemo = new FluxDemo();
         fluxDemo.test2();
-
         Scheduler s = Schedulers.newParallel("parallel-scheduler", 4);
-
         final Flux<String> flux = Flux
                 .range(1, 2)
                 .map(i -> 10 + i)
@@ -118,24 +118,25 @@ public class App
                 .map(i -> "value " + i);
         flux.subscribe(System.out::println);
 */
-        Dbconnect dbconnect = new Dbconnect();
-        // dbconnect.test_r2dbc_mysql_2();
-        dbconnect.test_for_jdbc_login_timeout();
-        Xatest xatest = new Xatest();
-        try {
-            xatest.test();
-        }catch (Exception e){
-            System.out.println("xatest test err:" + e.toString());
-        }
+        /* XA TEST
+                Dbconnect dbconnect = new Dbconnect();
+                // dbconnect.test_r2dbc_mysql_2();
+                dbconnect.test_for_jdbc_login_timeout();
+                Xatest xatest = new Xatest();
+                try {
+                    xatest.test();
+                }catch (Exception e){
+                    System.out.println("xatest test err:" + e.toString());
+                }
+        */
 
-//        try {
-//            high_level();
-//           // es();
-//        }catch (Exception e){
-//            System.out.println(e.toString());
-//        }
-
+        /* ES test
+            try {
+                high_level();
+               // es();
+            }catch (Exception e){
+                System.out.println(e.toString());
+            }
+        */
     }
-
-
 }
