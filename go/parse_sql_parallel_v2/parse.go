@@ -11,6 +11,7 @@ import (
 	"sync/atomic"
 
 	"github.com/pingcap/tidb/parser"
+	"github.com/pingcap/tidb/parser/ast"
 
 	_ "github.com/pingcap/tidb/parser/test_driver"
 )
@@ -144,8 +145,9 @@ func parse_one_sql(ch_sql <-chan string, s chan<- SqlParseResult) {
 		// p.SetParserConfig()
 		// p.SetStrictDoubleTypeCheck()
 		// p.ParseSQL()
-		_, _, err := p.Parse(sql, "", "")
-		// stms[0]
+		stms, _, err := p.Parse(sql, "", "")
+		var stm ast.StmtNode = stms[0]
+		fmt.Println("sql is ", stm.Text())
 		normalized, digest := parser.NormalizeDigest(sql)
 		r := SqlParseResult{sql, normalized, digest.String(), err}
 		s <- r

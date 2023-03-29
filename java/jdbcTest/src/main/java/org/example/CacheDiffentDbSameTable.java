@@ -1,6 +1,7 @@
 package org.example;
 
 import java.sql.*;
+import java.util.Enumeration;
 
 public class CacheDiffentDbSameTable {
     public static enum UseSchemaMethodType{
@@ -15,11 +16,11 @@ public class CacheDiffentDbSameTable {
         Statement stmt = con.createStatement();
         long cur_ns = System.nanoTime();
         // con.setSchema(dbname); NOT realize, just an Abstract method
-        switch (useSchemaMethod){
+        switch (useSchemaMethod) {
             case useCataLog :
                 con.setCatalog(dbname);
                 break;
-            default:
+            default :
                 stmt.execute("USE "+dbname);
                 break;
         }
@@ -48,6 +49,7 @@ public class CacheDiffentDbSameTable {
                 break;
         }
         pStmt = con.prepareStatement(sql);
+        pStmt.setInt(1,2);
         ResultSet rs = pStmt.executeQuery();
         // System.out.println("execute sql finish.");
         long cost_ms = (System.nanoTime() - cur_ns) / 1000 / 1000;
@@ -69,6 +71,15 @@ public class CacheDiffentDbSameTable {
         }
         try {
             DriverManager.setLoginTimeout(1);
+            Enumeration<Driver> drivers = DriverManager.getDrivers();
+            int id = 0;
+            while (drivers.hasMoreElements()){
+                Driver d = drivers.nextElement();
+                id= id+1;
+                System.out.println("Drivers["+id+"]: "+d.getMajorVersion()+"."+d.getMinorVersion());
+            }
+
+
             String cache_feature = "&useServerPrepStmts=true&cachePrepStmts=true";
             // String cache_feature = "&useServerPrepStmts=true";
             Connection con1 = DriverManager.getConnection("jdbc:mysql://192.168.79.132:8025/testdb?" +
@@ -77,7 +88,7 @@ public class CacheDiffentDbSameTable {
                     "characterEncoding=UTF-8&connectTimeout=3000" + cache_feature, "root", "123456");
             System.out.println("mysql 数据库连接成功");
 
-            String same_sql = "select * from t1";
+            String same_sql = "select * from t1 where id=?";
             System.out.println("MySQL 5.7, Cache Test, use Catalog");
             query(con2,"testdb", UseSchemaMethodType.useCataLog,same_sql);
             query(con2,"yestdb", UseSchemaMethodType.useCataLog,same_sql);
