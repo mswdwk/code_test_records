@@ -7,7 +7,10 @@ public class CacheDiffentDbSameTable {
         useCataLog,
         useDatabase
     }
-    static void query(Connection con,String dbname,UseSchemaMethodType useSchemaMethod,String sql) throws Exception{
+    static void query(Connection con,String dbname,UseSchemaMethodType useSchemaMethod,String sql) throws Exception {
+        prepare_query(con,dbname,useSchemaMethod,sql);
+    }
+    static void non_prepare_query(Connection con,String dbname,UseSchemaMethodType useSchemaMethod,String sql) throws Exception{
         PreparedStatement pStmt;
         Statement stmt = con.createStatement();
         long cur_ns = System.nanoTime();
@@ -17,7 +20,7 @@ public class CacheDiffentDbSameTable {
                 con.setCatalog(dbname);
                 break;
             default:
-                stmt.execute("use "+dbname);
+                stmt.execute("USE "+dbname);
                 break;
         }
         ResultSet rs = stmt.executeQuery(sql);
@@ -32,12 +35,18 @@ public class CacheDiffentDbSameTable {
         }
         rs.close();
     }
-    static void prepare_query(Connection con,String dbname,String sql) throws Exception{
+    static void prepare_query(Connection con,String dbname,UseSchemaMethodType useSchemaMethod,String sql) throws Exception{
         PreparedStatement pStmt;
         Statement stmt = con.createStatement();
         long cur_ns = System.nanoTime();
-        con.setCatalog(dbname);
-        // stmt.execute("use "+dbname);
+        switch (useSchemaMethod){
+            case useCataLog :
+                con.setCatalog(dbname);
+                break;
+            default:
+                stmt.execute("USE "+dbname);
+                break;
+        }
         pStmt = con.prepareStatement(sql);
         ResultSet rs = pStmt.executeQuery();
         // System.out.println("execute sql finish.");
@@ -60,28 +69,28 @@ public class CacheDiffentDbSameTable {
         }
         try {
             DriverManager.setLoginTimeout(1);
-            // String cache_feature = "&useServerPrepStmts=true&cachePrepStmts=true";
-            String cache_feature = "&useServerPrepStmts=true";
+            String cache_feature = "&useServerPrepStmts=true&cachePrepStmts=true";
+            // String cache_feature = "&useServerPrepStmts=true";
             Connection con1 = DriverManager.getConnection("jdbc:mysql://192.168.79.132:8025/testdb?" +
                     "characterEncoding=UTF-8&connectTimeout=3000" + cache_feature, "root", "R1o2o3.");
             Connection con2 = DriverManager.getConnection("jdbc:mysql://192.168.79.132:3310/testdb?" +
                     "characterEncoding=UTF-8&connectTimeout=3000" + cache_feature, "root", "123456");
             System.out.println("mysql 数据库连接成功");
 
-
+            String same_sql = "select * from t1";
             System.out.println("MySQL 5.7, Cache Test, use Catalog");
-            query(con1,"testdb", UseSchemaMethodType.useCataLog,"select * from t1");
-            query(con2,"yestdb", UseSchemaMethodType.useCataLog,"select * from t1");
+            query(con2,"testdb", UseSchemaMethodType.useCataLog,same_sql);
+            query(con2,"yestdb", UseSchemaMethodType.useCataLog,same_sql);
             System.out.println("MySQL 5.7, Cache Test, use Database");
-            query(con1,"testdb", UseSchemaMethodType.useDatabase,"select * from t1");
-            query(con2,"yestdb", UseSchemaMethodType.useDatabase,"select * from t1");
+            query(con2,"testdb", UseSchemaMethodType.useDatabase,same_sql);
+            query(con2,"yestdb", UseSchemaMethodType.useDatabase,same_sql);
 
             System.out.println("\nMySQL 8.0, Cache Test, use Catalog");
-            query(con1,"testdb", UseSchemaMethodType.useCataLog,"select * from t1");
-            query(con2,"yestdb", UseSchemaMethodType.useCataLog,"select * from t1");
+            query(con1,"testdb", UseSchemaMethodType.useCataLog,same_sql);
+            query(con1,"yestdb", UseSchemaMethodType.useCataLog,same_sql);
             System.out.println("\nMySQL 8.0, Cache Test, use Database");
-            query(con1,"testdb", UseSchemaMethodType.useDatabase,"select * from t1");
-            query(con2,"yestdb", UseSchemaMethodType.useDatabase,"select * from t1");
+            query(con1,"testdb", UseSchemaMethodType.useDatabase,same_sql);
+            query(con1,"yestdb", UseSchemaMethodType.useDatabase,same_sql);
 
             con1.close();
             con2.close();
