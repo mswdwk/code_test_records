@@ -1,0 +1,28 @@
+FILE=go.mod
+exist=$(shell if [ -f $(FILE) ]; then echo exist; else echo notexist; fi;)
+D=@
+.PHONY:get build run init
+build:init tidy 
+	go build -ldflags "-s"
+init:
+ifeq (${exist},exist)
+	echo "already exist $(FILE)"
+else
+	go mod init examp/gethbase
+endif
+
+help:
+	$Decho "1 replace example.com/greetings to greetings"
+	$Decho "2 tidy"
+get:
+	go get -u -v
+run:
+	$Dgo run .
+
+clean:
+	rm -rf hello  test_mysql go.mod go.sum *.exe db2test test
+
+replace:
+	go mod edit -replace example.com/greetings=../greetings
+tidy:
+	go mod tidy
