@@ -6,9 +6,9 @@ build:init tidy
 	go build -ldflags "-s"
 init:
 ifeq (${exist},exist)
-	echo "already exist $(FILE)"
+	$Decho "already exist $(FILE)"
 else
-	go mod init examp/gethbase
+	$Dgo mod init examp/gethbase
 endif
 
 help:
