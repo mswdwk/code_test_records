@@ -1,0 +1,47 @@
+SET CURRENT SCHEMA testdb;
+
+DROP TABLE test1;
+
+CREATE TABLE test1(
+ID BIGINT NOT NULL ,--GENERATED ALWAYS AS IDENTITY,
+CLAIMQUERYNO VARCHAR(350) NOT NULL,
+USERCODE VARCHAR(350) NOT NULL,
+AREACODE VARCHAR(350) NOT NULL,
+PRIMARY KEY (ID));
+
+DROP PROCEDURE  createdata;
+
+CREATE OR REPLACE  PROCEDURE createdata (IN start_id INT , IN num INT)
+BEGIN
+DECLARE v_counter INT DEFAULT 0;
+DECLARE v_random_char varchar(350) DEFAULT '';
+SET v_counter = start_id;
+WHILE v_counter < num
+DO
+SET v_random_char = v_counter||'_abcdefghijklmnopqrst12345678901234567890abcdefghijklmnopqrst12345678901234567890111111111111111';
+INSERT INTO test1 (ID,CLAIMQUERYNO,USERCODE,AREACODE) VALUES (v_counter
+	,v_random_char
+	,'c3_'||v_random_char
+	,'c4_'||v_random_char);
+SET v_counter = v_counter + 1;
+END WHILE;
+END
+
+GRANT EXECUTE ON PROCEDURE testdb.createdata TO PUBLIC;
+
+SET CURRENT  SCHEMA TESTDB;
+
+CALL testdb.createdata(0,100100);
+
+DELETE FROM testdb.test1;
+
+SELECT count(*) FROM test1;
+SELECT min(id),max(id) FROM test1;
+
+SELECT * FROM test1 LIMIT 10000123,10;
+
+SELECT * FROM test1 LIMIT 1000,10;
+
+SELECT * FROM SYSCAT.PROCEDURES WHERE procname LIKE 'CREATEDATA%';
+
+SELECT * FROM SYSCAT.PROCEDURES ORDER BY procname;
