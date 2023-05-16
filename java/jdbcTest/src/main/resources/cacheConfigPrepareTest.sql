@@ -1,10 +1,10 @@
-create database if not exists testdb;
-create database if not exists yestdb;
-drop table if exists testdb.t1;  -- rename ?
-drop table if exists yestdb.t1;
-create table testdb.t1(id int primary key,name varchar(64) not null default '');
-create table yestdb.t1(id int primary key,name varchar(64) not null default '');
-insert into testdb.t1 values(1,'name 1'),(2,'name 2');
-insert into yestdb.t1 values(2,'name 2,from yestdb');
-select * from testdb.t1;
-select * from yestdb.t1;
+CREATE DATABASE IF NOT EXISTS db1;
+CREATE DATABASE IF NOT EXISTS db2;
+DROP TABLE  IF EXISTS db1.t1;  -- rename ?
+DROP TABLE  IF EXISTS db2.t1;
+CREATE TABLE db1.t1(id INT PRIMARY KEY,name VARCHAR(64) NOT NULL DEFAULT '',`c3` DATE DEFAULT NULL);
+CREATE TABLE db2.t1(id INT PRIMARY KEY,name VARCHAR(64) NOT NULL DEFAULT '',`c3` VARCHAR(32) NOT NULL DEFAULT '');
+INSERT INTO db1.t1 VALUES (2,'name 2','2023-03-30');
+INSERT INTO db2.t1 VALUES(2,'name 2,from db2','2023-03-30');
+SELECT * FROM db1.t1;
+SELECT * FROM db2.t1;

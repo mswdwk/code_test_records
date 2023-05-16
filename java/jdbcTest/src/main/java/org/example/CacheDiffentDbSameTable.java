@@ -78,6 +78,9 @@ public class CacheDiffentDbSameTable {
                 System.out.println("Drivers["+id+"]: "+d.getMajorVersion()+"."+d.getMinorVersion());
             }
 
+            String host = "192.168.79.132";
+            String user = "root";
+            // String cache_feature = "&useServerPrepStmts=true&cachePrepStmts=true";
 
             String Host = "192.168.79.31";
             String cache_feature = "&useServerPrepStmts=false";

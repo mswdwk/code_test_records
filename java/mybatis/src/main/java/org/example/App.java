@@ -22,14 +22,14 @@ public class App
             //构建sqlSession的工厂
             SqlSessionFactory sessionFactory = new SqlSessionFactoryBuilder().build(reader);
 
-            SqlSession session= sessionFactory.openSession();
-            UserMapper mapper=session.getMapper(UserMapper.class);
+            SqlSession session = sessionFactory.openSession();
+            UserMapper mapper = session.getMapper(UserMapper.class);
             int userId = 1;
             User user= mapper.GetUserByID(userId);
             if(user != null)
                 System.out.println(user.toString());
             else
-                System.out.println("no user id "+userId);
+                System.out.println("no user id: "+userId);
 
             session.commit();
         } catch (Exception e) {
