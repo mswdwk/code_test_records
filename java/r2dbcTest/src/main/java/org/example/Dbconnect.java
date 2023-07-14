@@ -18,14 +18,14 @@ public class Dbconnect {
     public static ConnectionFactoryOptions create_option(){
         ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
                 .option(DRIVER, "mysql")
-                .option(HOST, "192.168.79.133")
+                .option(HOST, "192.168.79.132")
                 .option(USER, "root")
                 .option(PORT, 3310)  // optional, default 3306
-                .option(PASSWORD, "123") // optional, default null, null means has no password
+                .option(PASSWORD, "123456") // optional, default null, null means has no password
                 .option(DATABASE, "testdb") // optional, default null, null means not specifying the database
                 .option(CONNECT_TIMEOUT, Duration.ofSeconds(3)) // optional, default null, null means no timeout
-                /*.option(SSL, true) // optional, default sslMode is "preferred", it will be ignore if sslMode is set
-                .option(Option.valueOf("sslMode"), "verify_identity") // optional, default "preferred"
+                .option(SSL, false) // optional, default sslMode is "preferred", it will be ignore if sslMode is set
+                /*.option(Option.valueOf("sslMode"), "verify_identity") // optional, default "preferred"
                 .option(Option.valueOf("sslCa"), "/path/to/mysql/ca.pem") // required when sslMode is verify_ca or verify_identity, default null, null means has no server CA cert
                 .option(Option.valueOf("sslCert"), "/path/to/mysql/client-cert.pem") // optional, default null, null means has no client cert
                 .option(Option.valueOf("sslKey"), "/path/to/mysql/client-key.pem") // optional, default null, null means has no client key
@@ -58,9 +58,11 @@ public class Dbconnect {
                         .map((row, rowMetadata) -> row.get("user", String.class)))
                 .doOnNext(System.out::println)
                 .subscribe();*/
+        System.out.println("connectionFactory meta Name: "+connectionFactory.getMetadata().getName());
         Mono<? extends io.r2dbc.spi.Connection> conn = Mono.from(connectionFactory.create());
         System.out.println("start map conn:"+conn.toString());
-        conn.flatMapMany(connection -> {
+        conn.doOnError(e->System.err.println("got connection error: "+e.toString()))
+                .flatMapMany(connection -> {
                     System.out.println("get connection:" + connection);
                     Publisher<? extends Result> res = connection
                             .createStatement("SELECT * FROM mysql.user ")
@@ -76,6 +78,7 @@ public class Dbconnect {
         ConnectionFactory connectionFactory = ConnectionFactories.get(create_option());
         System.out.println("get connection factory "+connectionFactory);
         Mono.from(connectionFactory.create())
+                .doOnError(e->System.err.println("got connection error 2: "+e.toString()))
                 .flatMapMany(connection -> connection
                         .createStatement("SELECT * FROM testdb.t1 WHERE id = 1")
                         // .bind("$1", 100)
@@ -89,9 +92,10 @@ public class Dbconnect {
                             log.debug("debug");
                             return c1;
                         }))
+                .doOnNext( a -> System.out.println("OnNext"+a))
                 .subscribe( i -> System.err.println("i= " +i.intValue()),
                         error -> {
-                                System.err.println("got error: " + error);
+                                System.err.println("got error 3: " + error);
                                 error.printStackTrace();},
                         () -> System.out.println("Done"));
 

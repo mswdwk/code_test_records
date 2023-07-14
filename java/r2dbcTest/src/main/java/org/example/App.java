@@ -85,14 +85,14 @@ public class App
         FluxDemo.test2();
         Dbconnect dbconnect = new Dbconnect();
         dbconnect.test_r2dbc_mysql();
-        dbconnect.test_r2dbc_connect();
+        // dbconnect.test_r2dbc_connect2();
         // dbconnect.test_for_jdbc_login_timeout();
 
         // TODO,wait r2dbc thread finish its job!
         try {
             // at least 200 millisecods to wait the finish of async r2dbc thread to start/run/finish.
-            Xatest.test();
-            Thread.sleep(1000);
+            // Xatest.test();
+            Thread.sleep(3000);
         } catch (Exception e){
             System.out.println("error:"+e.toString());
         }
