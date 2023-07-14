@@ -18,14 +18,14 @@
     <maven.compiler.target>1.8</maven.compiler.target>
     <es.version>5.6.0</es.version>
   </properties>
-  <repository>
+  <!--repository>
     <id>spring-snapshots</id>
     <name>Spring Snapshots</name>
     <url>https://repo.spring.io/snapshot</url>
     <snapshots>
       <enabled>true</enabled>
     </snapshots>
-  </repository>
+  </repository-->
 
   <dependencies>
     <dependency>
@@ -86,6 +86,11 @@
         <artifactId>r2dbc-client</artifactId>
         <version>0.8.0.RC1</version>
       </dependency-->
+    <dependency>
+      <groupId>org.mybatis</groupId>
+      <artifactId>mybatis</artifactId>
+      <version>3.5.13</version>
+    </dependency>
   </dependencies>
 
 

@@ -9,11 +9,14 @@ import (
 )
 
 func main() {
-    // ip:port 是hbase 连接的 etcd/zkServer
+	// ip:port 是hbase 连接的 etcd/zkServer
 	hbase_client := gohbase.NewClient("192.168.79.134:12181") // hbase服务器地址,可以是只有ip没有port，也可以是ip:port。
 	// hbase_client := gohbase.NewClient("127.0.0.1")
 	getRequest, err := hrpc.NewGetStr(context.Background(), "student", "00000000000000000009512345")
 	getRsp, err := hbase_client.Get(getRequest) // Get()方法返回查询结果。通过客户端真正读取数据
+	hbase_client.Put(getRequest)
+	adm_cli := gohbase.NewAdminClient("")
+	adm_cli.del
 	if err != nil {
 		fmt.Println("hbase get client error:" + err.Error())
 		return

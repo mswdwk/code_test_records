@@ -1,0 +1,3 @@
+go test -coverprofile=cover.data -test.timeout=5s./...
+go tool cover -func=cover.data -o coverage.txt
+
