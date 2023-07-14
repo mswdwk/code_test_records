@@ -11,6 +11,6 @@
         <result property="account" column="account" javaType="java.lang.Double"></result-->
     </resultMap>
     <select id="GetUserByID" parameterType="int"  resultMap="userMap">
-        select * from `user` where id = #{id}
+        select * from `user1` where id = #{id}
     </select>
 </mapper>

@@ -21,6 +21,7 @@ public class App
             Reader reader = Resources.getResourceAsReader("mybatis-config.xml");
             //构建sqlSession的工厂
             SqlSessionFactory sessionFactory = new SqlSessionFactoryBuilder().build(reader);
+            sessionFactory.getConfiguration().getParameterMapNames("");
 
             SqlSession session = sessionFactory.openSession();
             UserMapper mapper = session.getMapper(UserMapper.class);
