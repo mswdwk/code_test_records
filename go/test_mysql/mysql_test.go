@@ -20,20 +20,20 @@ import (
 func Test_mysql(t *testing.T){
 	test_mysql()
 	if 1 != 1 {
-		t.Errorf("test string")
+		t.Errorf("test string 1")
 	}	
 }
 
 func TestListDir(t *testing.T){
 	list_dir()
 	if 1 != 1 {
-		t.Errorf("test string")
+		t.Errorf("test string 2")
 	}	
 }
 
 func TestMain(t *testing.T){
 	main()
 	if 1 != 1 {
-		t.Errorf("test string")
+		t.Errorf("test string 3")
 	}	
 }
