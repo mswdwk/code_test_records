@@ -1,10 +1,10 @@
 create database if not exists testdb;
-drop table t1;
+drop table if exists t1;
 CREATE TABLE `t1` (
-  `c1` int(11) NOT NULL,
+  `id` int(11) NOT NULL,
   `c2` int(11) DEFAULT NULL,
   `c3` int(11) DEFAULT NULL,
-  PRIMARY KEY (`c1`),
+  PRIMARY KEY (`id`),
   UNIQUE KEY `c2` (`c2`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 

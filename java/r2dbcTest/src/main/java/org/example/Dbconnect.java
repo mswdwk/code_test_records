@@ -14,16 +14,46 @@ import java.time.Duration;
 import static io.r2dbc.spi.ConnectionFactoryOptions.*;
 
 public class Dbconnect {
+    private String driverName = "mysql";
+    private String host="";
+    private int port = 0;
+    private String user="";
+    private String password="";
+    private Duration connect_timeout =  Duration.ofSeconds(3);
+    private String database = "testdb";
     private static Logger log = LoggerFactory.getLogger(Dbconnect.class);
-    public static ConnectionFactoryOptions create_option(){
+    Dbconnect(String[] args) throws Exception {
+        if( args.length < 4) {
+            Exception e = new Exception("arguments less than 4!");
+            // e.fillInStackTrace();
+            throw e;
+        }
+        this.host = args[0];
+        this.port = Integer.decode(args[1]).intValue();
+        this.user = args[2];
+        this.password = args[3];
+    }
+    Dbconnect(MyConfig myConfig) throws Exception {
+        this.host = myConfig.host;
+        this.port = myConfig.port;
+        this.user = myConfig.user;
+        this.password = myConfig.password;
+    }
+    Dbconnect(String host,String user,String password, int port){
+        this.host = host;
+        this.port = port;
+        this.user = user;
+        this.password = password;
+    }
+    public ConnectionFactoryOptions create_option(){
         ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
-                .option(DRIVER, "mysql")
-                .option(HOST, "192.168.79.132")
-                .option(USER, "root")
-                .option(PORT, 3310)  // optional, default 3306
-                .option(PASSWORD, "123456") // optional, default null, null means has no password
-                .option(DATABASE, "testdb") // optional, default null, null means not specifying the database
-                .option(CONNECT_TIMEOUT, Duration.ofSeconds(3)) // optional, default null, null means no timeout
+                .option(DRIVER, driverName)
+                .option(HOST, host)
+                .option(USER, user)
+                .option(PORT, port)  // optional, default 3306
+                .option(PASSWORD, password) // optional, default null, null means has no password
+                .option(DATABASE, database) // optional, default null, null means not specifying the database
+                .option(CONNECT_TIMEOUT,connect_timeout) // optional, default null, null means no timeout
                 .option(SSL, false) // optional, default sslMode is "preferred", it will be ignore if sslMode is set
                 /*.option(Option.valueOf("sslMode"), "verify_identity") // optional, default "preferred"
                 .option(Option.valueOf("sslCa"), "/path/to/mysql/ca.pem") // required when sslMode is verify_ca or verify_identity, default null, null means has no server CA cert
@@ -39,7 +69,7 @@ public class Dbconnect {
                 .option(Option.valueOf("tcpNoDelay"), true) // optional, default false
                 .option(Option.valueOf("autodetectExtensions"), false) // optional, default false
                 */.build();
-                System.out.println("create option");
+                System.out.println("create db option success");
                 return options;
     }
     public void test_r2dbc_connect(){
@@ -78,21 +108,23 @@ public class Dbconnect {
         ConnectionFactory connectionFactory = ConnectionFactories.get(create_option());
         System.out.println("get connection factory "+connectionFactory);
         Mono.from(connectionFactory.create())
-                .doOnError(e->System.err.println("got connection error 2: "+e.toString()))
+                .doOnError(e->System.err.println("got connection error: "+e.toString()))
+                .doOnSuccess(c -> System.out.println("get connection success"))
                 .flatMapMany(connection -> connection
-                        .createStatement("SELECT * FROM testdb.t1 WHERE id = 1")
+                        .createStatement("SELECT * FROM testdb.t1 ")
                         // .bind("$1", 100)
                         .execute())
+                .doOnError(e -> System.err.println("select error: "+e.toString()))
                 .flatMap(result -> result
                         .map((row, rowMetadata) -> {
-                            //Integer c1 = row.get("id",Integer.class);
-                            Long c1 =  (Long)row.get("id");
-                            System.err.println("id = " +c1);
+                            Integer c1 = row.get("id",Integer.class);
+                            // Long c1 =  (Long)row.get("id");
+                            System.out.println("id = " +c1);
                             log.info("id : " + c1.intValue());
                             log.debug("debug");
                             return c1;
                         }))
-                .doOnNext( a -> System.out.println("OnNext"+a))
+                .doOnNext( a -> System.out.println("OnNext: "+a))
                 .subscribe( i -> System.err.println("i= " +i.intValue()),
                         error -> {
                                 System.err.println("got error 3: " + error);
