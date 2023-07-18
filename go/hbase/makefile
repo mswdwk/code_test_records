@@ -8,7 +8,7 @@ init:
 ifeq (${exist},exist)
 	$Decho "already exist $(FILE)"
 else
-	$Dgo mod init examp/gethbase
+	$Dgo mod init demo
 endif
 
 help:
@@ -20,7 +20,7 @@ run:
 	$Dgo run .
 
 clean:
-	rm -rf hello  test_mysql go.mod go.sum *.exe db2test test
+	rm -rf hello  test_mysql go.mod go.sum *.exe db2test test  gethbase demo
 
 replace:
 	go mod edit -replace example.com/greetings=../greetings

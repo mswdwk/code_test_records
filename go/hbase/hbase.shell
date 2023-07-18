@@ -1,0 +1,23 @@
+create 'student','cf'
+desc 'student'
+list
+disable 'student'
+drop 'student'
+
+put 'student','row1','cf:name','name1'
+put 'student','row1','cf:age','24'
+
+put 'student','row2','cf:name','name2'
+put 'student','row2','cf:age','34'
+
+get 'student','row1'
+
+scan 'student'
+
+scan 'student',{STARTROW=>'row1',STOPROW=>'row9',LIMIT => 10000}
+
+scan 'student',{STARTROW=>'row1',STOPROW=>'row9',LIMIT => 10000,}
+
+
+// sum/avg
+
