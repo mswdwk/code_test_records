@@ -1,7 +1,8 @@
 OS=`uname -o`
 if [ $OS = "GNU/Linux" ];then
-	export PD_DIR=~/.tiup/components/pd/v6.6.0
-	export KV_DIR=~/.tiup/components/tikv/v6.6.0
+	#export PD_DIR=~/.tiup/components/pd/v6.6.0
+	export PD_DIR=~/repos/pingcap/pd/bin
+	export KV_DIR=~/repos/pingcap/tikv/target/release
 	export TIDB_DIR=~/repos/pingcap/tidb/bin
 else 
 	export PD_DIR=~/.tiup/components/pd/v6.6.0
