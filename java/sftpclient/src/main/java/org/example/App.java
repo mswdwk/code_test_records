@@ -13,9 +13,9 @@ public class App
         System.out.println( "Hello World!" );
         SftpUtil sftpUtil = new SftpUtil();
         //上传文件
-        sftpUtil.uploadFile("C:\\Users\\lenovo\\Downloads\\instr.sql","1.txt");
+        // sftpUtil.uploadFile("C:\\Users\\lenovo\\Downloads\\instr.sql","1.txt");
         //下载文件
-        sftpUtil.downloadFile("1_0.txt","1.txt");
+        sftpUtil.downloadFile("1_0_2.txt","1.txt");
         //写文件
         // sftpUtil.writeFile();
         //读文件
