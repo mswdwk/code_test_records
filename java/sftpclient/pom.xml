@@ -12,6 +12,7 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.jdk.version>1.8</project.jdk.version>
   </properties>
 
   <dependencies>
@@ -37,5 +38,58 @@
       <version>2.0.7</version>
     </dependency>
   </dependencies>
-
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <source>${project.jdk.version}</source>
+          <target>${project.jdk.version}</target>
+          <encoding>UTF-8</encoding>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <configuration>
+          <appendAssemblyId>false</appendAssemblyId>
+          <descriptorRefs>
+            <descriptorRef>jar-with-dependencies</descriptorRef>
+          </descriptorRefs>
+          <archive>
+            <manifest>
+              <!-- 此处指定main方法入口的class -->
+              <mainClass>org.example.App</mainClass>
+            </manifest>
+          </archive>
+        </configuration>
+        <executions>
+          <execution>
+            <id>make-assembly</id>
+            <phase>package</phase>
+            <goals>
+              <goal>assembly</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>3.0.2</version>
+        <configuration>
+          <source>${project.jdk.version}</source>
+          <target>${project.jdk.version}</target>
+          <archive>
+            <manifest>
+              <mainClass>org.example.App</mainClass>
+              <!--addClasspath>true</addClasspath>
+              <classpathPrefix>lib/</classpathPrefix-->
+            </manifest>
+          </archive>
+          <classesDirectory>
+          </classesDirectory>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 </project>
