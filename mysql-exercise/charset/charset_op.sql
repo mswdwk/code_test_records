@@ -18,6 +18,7 @@ select hex('a'); -- 䶮字音yǎn
 select unhex('E4BDA0');
 -- '䶮字音yǎn'
 select unhex('EEA1A320');
+<<<<<<< HEAD
 # 4)
 CREATE TABLE `t1` (
   `name` varchar(1) DEFAULT NULL
