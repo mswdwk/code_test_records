@@ -1,6 +1,5 @@
 package org.example;
 
-// import static org.example.SftpUtil.test_client_main;
 
 /**
  * Hello world!
@@ -11,7 +10,15 @@ public class App
     public static void main( String[] args )
     {
         System.out.println( "Hello World!" );
-        SftpUtil sftpUtil = new SftpUtil();
+        if ( args.length < 4){
+            System.out.println("Usage: host port loginname");
+            return;
+        }
+        String host = args[0];
+        int port = Integer.parseInt(args[1]);
+        String loginName = args[2];
+        String prikeyPath = args[3];
+        SftpUtil sftpUtil = new SftpUtil(host,port,loginName,prikeyPath);
         //上传文件
         // sftpUtil.uploadFile("C:\\Users\\lenovo\\Downloads\\instr.sql","1.txt");
         //下载文件
