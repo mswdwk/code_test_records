@@ -22,6 +22,15 @@ public class SftpUtil {
     private String server = "192.168.79.132";
     private Integer port = 22;
 
+    private String prikeyPath="";
+
+    public SftpUtil(String host,int port ,String loginName,String prikeyPath){
+        this.server = host;
+        this.port = port;
+        this.loginName = loginName;
+        this.prikeyPath = prikeyPath;
+        System.out.println("server "+server+":"+port+" loginName "+loginName + " prikeyPath "+ prikeyPath);
+    }
 
    /* public  void test_client_main(String[] args) {
         SftpUtil sftpUtil = new SftpUtil();
@@ -78,8 +87,8 @@ public class SftpUtil {
         Session session = null;
         ChannelSftp sftp = null;
         try {
-            jsch.addIdentity("C:\\Users\\lenovo\\.ssh\\id_rsa");
-            jsch.setKnownHosts("C:\\Users\\lenovo\\.ssh\\known_hosts");
+            jsch.addIdentity(this.prikeyPath);
+            // jsch.setKnownHosts("C:\\Users\\lenovo\\.ssh\\known_hosts");
 
             // set up session
             session = jsch.getSession(loginName,server,port);
@@ -90,7 +99,7 @@ public class SftpUtil {
                     "publickey,keyboard-interactive,password");
             session.setConfig("kex", "diffie-hellman-group1-sha1");
             session.setConfig("StrictHostKeyChecking", "no");
-            session.setTimeout(5);
+            // session.setTimeout(5);
             System.out.println("user info:"+session.getUserName());
             //跳过Kerberos username 身份验证提示
             // session.setConfig("PreferredAuthentications", "publickey,keyboard-interactive,password");
@@ -158,14 +167,14 @@ public class SftpUtil {
         ChannelSftp sftp = null;
         try {
             // sftp = connect();
-            String localKeyFile = "C:\\Users\\lenovo\\Desktop\\id_rsa";
+            // String localKeyFile = "C:\\Users\\lenovo\\Desktop\\id_rsa";
             // String localKey ="C:\\Users\\lenovo\\Desktop\\ssh_host_dsa_key.pub";
-            sftp = connect_by_pubkey(localKeyFile);
+            sftp = connect_by_pubkey(this.prikeyPath);
             if(sftp == null){
                 return ;
             }
             //sftp服务器上文件路径
-            // String remoteFilename = "/test1/测试.txt";
+
             //下载至本地路径
             File localFile = new File(localFilename);
             output = new FileOutputStream(localFile);

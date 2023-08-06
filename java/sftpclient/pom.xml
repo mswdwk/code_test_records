@@ -12,7 +12,7 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <project.jdk.version>1.8</project.jdk.version>
+    <project.jdk.version>1.6</project.jdk.version>
   </properties>
 
   <dependencies>
@@ -77,8 +77,6 @@
         <artifactId>maven-jar-plugin</artifactId>
         <version>3.0.2</version>
         <configuration>
-          <source>${project.jdk.version}</source>
-          <target>${project.jdk.version}</target>
           <archive>
             <manifest>
               <mainClass>org.example.App</mainClass>
