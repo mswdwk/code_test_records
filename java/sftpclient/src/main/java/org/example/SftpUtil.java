@@ -17,6 +17,7 @@ import java.util.*;
 // @Slf4j
 public class SftpUtil {
     // public static final Logger log = LoggerFactory.getLogger(SftpUtil.class);
+    private String loginType = "privateKeyPath"; // password/privateKeyPath
     private String loginName = "user";
     private String loginPassword = "123456";
     private String server = "192.168.79.132";
@@ -24,12 +25,27 @@ public class SftpUtil {
 
     private String prikeyPath="";
 
-    public SftpUtil(String host,int port ,String loginName,String prikeyPath){
+    public SftpUtil(String loginType,String host,int port ,String loginName,String prikeyPath) {
+        this.loginType = loginType;
         this.server = host;
         this.port = port;
         this.loginName = loginName;
-        this.prikeyPath = prikeyPath;
-        System.out.println("server "+server+":"+port+" loginName "+loginName + " prikeyPath "+ prikeyPath);
+        if (loginType == "password") {
+            this.loginPassword = prikeyPath;
+        } else {
+            this.prikeyPath = prikeyPath;
+        }
+        System.out.println("loginType= "+loginType+" server "+server+":"+port+" loginName "+loginName + " prikeyPath "+ prikeyPath);
+    }
+
+    private ChannelSftp getSftp(){
+        ChannelSftp sftp = null;
+        if (this.loginType.equals( "password")){
+            sftp = connect();
+        } else {
+            sftp = connect_by_pubkey(this.prikeyPath);
+        }
+        return sftp;
     }
 
    /* public  void test_client_main(String[] args) {
@@ -146,7 +162,7 @@ public class SftpUtil {
      */
     public void disconnect(ChannelSftp sftp) {
         try {
-            if(sftp!=null){
+            if(sftp != null){
                 if(sftp.getSession().isConnected()){
                     sftp.getSession().disconnect();
                 }
@@ -166,15 +182,11 @@ public class SftpUtil {
         FileOutputStream output = null;
         ChannelSftp sftp = null;
         try {
-            // sftp = connect();
-            // String localKeyFile = "C:\\Users\\lenovo\\Desktop\\id_rsa";
-            // String localKey ="C:\\Users\\lenovo\\Desktop\\ssh_host_dsa_key.pub";
-            sftp = connect_by_pubkey(this.prikeyPath);
+            sftp = getSftp();
             if(sftp == null){
                 return ;
             }
             //sftp服务器上文件路径
-
             //下载至本地路径
             File localFile = new File(localFilename);
             output = new FileOutputStream(localFile);
@@ -199,8 +211,6 @@ public class SftpUtil {
             }
         }
     }
-
-
 
     /**
      * 读取远程sftp服务器文件
@@ -247,7 +257,6 @@ public class SftpUtil {
             }
         }
     }*/
-
 
     /**
      * 写文件至远程sftp服务器
@@ -298,7 +307,7 @@ public class SftpUtil {
         // String remotePath = "./file/sftp/从sftp服务器上下载.txt";
         // String remoteFilename = "/test1/上传至sftp服务器.txt";
         try {
-            sftp = connect();
+            sftp = getSftp();
             if(sftp == null){
                 return ;
             }
@@ -327,7 +336,6 @@ public class SftpUtil {
         }
     }
 
-
     /**
      * 遍历远程文件
      *
@@ -341,7 +349,7 @@ public class SftpUtil {
         String fileName = null;
         ChannelSftp sftp = null;
         try{
-            sftp = connect();
+            sftp = getSftp();
             if(sftp == null){
                 return null;
             }
@@ -363,21 +371,19 @@ public class SftpUtil {
 
     }
 
-
     /**
      * 删除远程文件
      * @return
      */
-    public void deleteFile() {
+    public void deleteFile(String remotePath,String remoteFilename) {
         boolean success = false;
         ChannelSftp sftp = null;
         try {
-            sftp = connect();
+            sftp = getSftp();
             if(sftp == null){
                 return;
             }
-            String remotePath = "/test1/";
-            String remoteFilename = "limit.lua";
+
             // 更改服务器目录
             sftp.cd(remotePath);
             //判断文件是否存在
@@ -390,6 +396,7 @@ public class SftpUtil {
 
         } catch (Exception e) {
             // log.error("删除文件时有异常!",e);
+            System.err.println("delete remote file "+remotePath+"/"+remoteFilename+" Failed!");
             e.printStackTrace();
         } finally {
             // 关闭连接
