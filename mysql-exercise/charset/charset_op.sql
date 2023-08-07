@@ -5,7 +5,7 @@
 -- F09F9982
 select convert(unhex("F09F9982") using utf8mb4);
 
--- this covert generate warnings when character_client is utf8
+-- this covert generate warnings when character_results is utf8
 select convert(unhex("F09F9982") using utf8mb3);
 select convert(unhex("F09F9982") using utf8);
 
@@ -18,3 +18,13 @@ select hex('a'); -- 䶮字音yǎn
 select unhex('E4BDA0');
 -- '䶮字音yǎn'
 select unhex('EEA1A320');
+<<<<<<< HEAD
+# 4)
+CREATE TABLE `t1` (
+  `name` varchar(1) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+insert into t1 values ( unhex('F09F9982')); -- failed
+"ERROR 1366 (HY000): Incorrect string value: '\xF0\x9F\x99\x82' for column 'name' at row 1"
+
+insert into t1 values ( unhex('EEA1A320')); -- ok
