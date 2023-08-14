@@ -14,7 +14,7 @@ fi
 export PD_DATA_DIR=/tmp/pingcap/pd
 export PD_LOG_DIR=/tmp/pingcap/log
 
-export KV_DATA_DIR=/tmp/pingcap/tikv
+export KV_DATA_DIR=/data/pingcap/tikv
 export KV_LOG_DIR=/tmp/pingcap/log
 
 export TIDB_DATA_DIR=/tmp/pingcap/tidb
