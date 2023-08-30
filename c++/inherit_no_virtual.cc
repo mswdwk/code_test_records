@@ -28,9 +28,12 @@ int main()
 	A *a;
 	B b;
 	b.call_del();		
+	b.del();
 	a = (A*)&b;
 	a->call_del();
+	a->del();
 	B  *bp;
 	bp = (B*)a;
 	bp->call_del();
+	bp->del();
 }
