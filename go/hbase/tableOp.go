@@ -13,23 +13,60 @@ import (
 )
 
 var table string
+var HbaseAc gohbase.AdminClient
 
 func init() {
 	table = fmt.Sprintf("gohbase_test_%d", time.Now().UnixNano())
 }
 
-func TestTableOpMain(delete_table bool) {
+func InitHbaseAdminClient() {
 	if host == nil {
 		panic("Host is not set!")
 	}
+	HbaseAc = gohbase.NewAdminClient(*host)
+	if nil == HbaseAc {
+		emsg := fmt.Sprintf("hbase client null,host=%s\n", host)
+		panic(emsg)
+	} else {
+		fmt.Println("init hbase admin client ok")
+	}
+}
 
+func TestCreateTable(tablename string, cfs []string, maxVersion uint32) {
+	// []string{"cf", "cf1", "cf2"}
+	err := CreateTable(HbaseAc, tablename, cfs, maxVersion)
+	count := 0
+	for {
+		count += 1
+		if err != nil &&
+			(strings.Contains(err.Error(), "org.apache.hadoop.hbase.PleaseHoldException") ||
+				strings.Contains(err.Error(),
+					"org.apache.hadoop.hbase.ipc.ServerNotRunningYetException")) {
+			time.Sleep(time.Second * 5)
+		} else if err != nil {
+			panic(err)
+		} else {
+			fmt.Printf("create table ok: %s,count=%d\n", tablename, count)
+			break
+		}
+	}
+}
+
+func TestDeleteTable(tablename string) {
+	err := DeleteTable(HbaseAc, tablename)
+	if nil != err {
+		fmt.Printf("delete table failed: %s", tablename)
+	} else {
+		fmt.Printf("delete table ok: %s", tablename)
+	}
+}
+
+func TestTableOpMain(delete_table bool) {
 	log.SetLevel(log.DebugLevel)
-
-	ac := gohbase.NewAdminClient(*host)
 
 	var err error
 	for {
-		err = CreateTable(ac, table, []string{"cf", "cf1", "cf2"})
+		err = CreateTable(HbaseAc, table, []string{"cf", "cf1", "cf2"}, 1)
 		if err != nil &&
 			(strings.Contains(err.Error(), "org.apache.hadoop.hbase.PleaseHoldException") ||
 				strings.Contains(err.Error(),
@@ -44,7 +81,7 @@ func TestTableOpMain(delete_table bool) {
 	}
 	// res := m.Run()
 	if delete_table {
-		err = DeleteTable(ac, table)
+		err = DeleteTable(HbaseAc, table)
 		if err != nil {
 			panic(err)
 		}
@@ -55,7 +92,7 @@ func TestTableOpMain(delete_table bool) {
 }
 
 // CreateTable creates the given table with the given families
-func CreateTable(client gohbase.AdminClient, table string, cFamilies []string) error {
+func CreateTable(client gohbase.AdminClient, table string, cFamilies []string, maxVersion uint32) error {
 	// If the table exists, delete it
 	DeleteTable(client, table)
 	// Don't check the error, since one will be returned if the table doesn't
@@ -68,6 +105,7 @@ func CreateTable(client gohbase.AdminClient, table string, cFamilies []string) e
 
 	// pre-split table for reverse scan test of region changes
 	keySplits := [][]byte{[]byte("REVTEST-100"), []byte("REVTEST-200"), []byte("REVTEST-300")}
+	hrpc.MaxVersions(maxVersion)
 	ct := hrpc.NewCreateTable(context.Background(), []byte(table), cf, hrpc.SplitKeys(keySplits))
 	if err := client.CreateTable(ct); err != nil {
 		return err

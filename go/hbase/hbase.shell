@@ -1,5 +1,12 @@
 create 'student','cf'
 desc 'student'
+
+// keep latest 3 version of Family 'cf'
+alter 'default:student',NAME=>'cf',VERSIONS=>3
+// get all latest 3 data version 
+scan 'default:student',VERSIONS=>3
+get 'default:student','row1',{COLUMNS=>'cf:a',VERSIONS=>3}
+
 list
 disable 'student'
 drop 'student'

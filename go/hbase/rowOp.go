@@ -9,6 +9,18 @@ import (
 	"github.com/tsuna/gohbase/hrpc"
 )
 
+var hbaseClient gohbase.Client
+
+func InitHbaseClient() {
+	// ip:port 是hbase 连接的 etcd/zkServer
+	hbaseClient = gohbase.NewClient(*host) // hbase服务器地址,可以是只有ip没有port，也可以是ip:port。
+	if nil == hbaseClient {
+		panic("init hbase client failed")
+	} else {
+		fmt.Println("init hbase client ok")
+	}
+}
+
 func displayCells(result *hrpc.Result) {
 	for k, v := range result.Cells { // v结构体中的Value保存了真正的数据
 		// value := v.Value
@@ -29,53 +41,40 @@ func displayCells(result *hrpc.Result) {
 	}
 }
 
-func TestGetMain() {
-	// ip:port 是hbase 连接的 etcd/zkServer
-	hbase_client := gohbase.NewClient(*host) // hbase服务器地址,可以是只有ip没有port，也可以是ip:port。
-	// hbase_client := gohbase.NewClient("127.0.0.1")
-	getRequest, err := hrpc.NewGetStr(context.Background(), "student", "row1")
-	getRsp, err := hbase_client.Get(getRequest) // Get()方法返回查询结果。通过客户端真正读取数据
+func TestGetMain(tablename string, rowkey string) {
+	// hrpc.MaxVersions(3)
+	getRequest, err := hrpc.NewGetStr(context.Background(), tablename, rowkey, hrpc.MaxVersions(3))
+	// getRequest.maxVersions = 3
+	getRsp, err := hbaseClient.Get(getRequest) // Get()方法返回查询结果。通过客户端真正读取数据
 
 	if err != nil {
 		fmt.Println("hbase get client error:" + err.Error())
 		return
 	}
-	// create 'member','member_id','address','info'
-	type mystruct struct {
-		Use    string               `json:"user_id" `
-		Movies map[string][]float64 `json:"movies" ` // 用户看的多部电影 "电影id":[打分int,喜好程度float]
-	}
 	displayCells(getRsp)
 }
 
-func TestPutMain() {
-	// ip:port 是hbase 连接的 etcd/zkServer
-	hbase_client := gohbase.NewClient(*host) // hbase服务器地址,可以是只有ip没有port，也可以是ip:port。
-	// hbase_client := gohbase.NewClient("127.0.0.1")
-
-	values := map[string]map[string][]byte{"cf": {"a": []byte(time.Now().String())}}
-	// values := map[string]map[string][]byte{"cf": map[string][]byte{"a": []byte("1")}}
-	putRequest, err := hrpc.NewPutStr(context.Background(), "student", "row1", values)
-	resp, err := hbase_client.Put(putRequest)
+func TestPutMain(tablename string, rowkey string, cf string, field string, value string) {
+	values := map[string]map[string][]byte{cf: map[string][]byte{field: []byte(value)}}
+	putRequest, err := hrpc.NewPutStr(context.Background(), tablename, rowkey, values)
+	resp, err := hbaseClient.Put(putRequest)
 
 	if err != nil {
 		fmt.Println("hbase clientput row error:" + err.Error())
 		return
 	}
-	displayCells(resp)
 
-	fmt.Println("put row ok")
+	fmt.Printf("put rowkey[%s] ok %t\n", rowkey, resp.Stale)
 }
 
 func TestDeleteMain() {
 	// ip:port 是hbase 连接的 etcd/zkServer
-	hbase_client := gohbase.NewClient(*host) // hbase服务器地址,可以是只有ip没有port，也可以是ip:port。
-	// hbase_client := gohbase.NewClient("127.0.0.1")
+	hbaseClient := gohbase.NewClient(*host) // hbase服务器地址,可以是只有ip没有port，也可以是ip:port。
 
 	values := map[string]map[string][]byte{"cf": {"a": []byte(time.Now().String())}}
 	// values := map[string]map[string][]byte{"cf": map[string][]byte{"a": []byte("1")}}
 	putRequest, err := hrpc.NewDelStr(context.Background(), "student", "row1", values)
-	resp, err := hbase_client.Delete(putRequest)
+	resp, err := hbaseClient.Delete(putRequest)
 
 	if err != nil {
 		fmt.Println("hbase clientput row error:" + err.Error())
@@ -84,4 +83,10 @@ func TestDeleteMain() {
 	displayCells(resp)
 
 	fmt.Println("delete row ok")
+}
+
+// create 'member','member_id','address','info'
+type mystruct struct {
+	Use    string               `json:"user_id" `
+	Movies map[string][]float64 `json:"movies" ` // 用户看的多部电影 "电影id":[打分int,喜好程度float]
 }
