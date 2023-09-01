@@ -24,14 +24,14 @@ func InitHbaseClient() {
 func displayCells(result *hrpc.Result) {
 	for k, v := range result.Cells { // v结构体中的Value保存了真正的数据
 		// value := v.Value
-		fmt.Println("key:" + string(k))
+		fmt.Printf("key:" + string(k))
 		//fmt.Printf("v=%V"+ *v)
-		fmt.Println("Row:" + string(v.Row))
-		fmt.Println("Family:" + string(v.Family))
-		fmt.Println("Qualifier:" + string(v.Qualifier))
-		fmt.Println("value:" + string(v.Value))
-		fmt.Println("cellType:" + string(*v.CellType))
-		fmt.Println("tags:" + string(v.Tags))
+		fmt.Printf("\tRow:" + string(v.Row))
+		fmt.Printf("\tFamily:" + string(v.Family))
+		fmt.Printf("\tQualifier:" + string(v.Qualifier))
+		fmt.Printf("\tvalue:" + string(v.Value))
+		fmt.Printf("\tcellType:" + string(*v.CellType))
+		fmt.Println("\ttags:" + string(v.Tags))
 		//      var myuser mystruct
 		//      err := json.Unmarshal(value, &myuser) // value为 []unit8类型的字节数组，所以可以直接放到json.Unmarshal
 		//      if err != nil {
@@ -51,20 +51,39 @@ func TestGetMain(tablename string, rowkey string) {
 		fmt.Println("hbase get client error:" + err.Error())
 		return
 	}
+	fmt.Printf("get table %s rowkey %s\n", tablename, rowkey)
 	displayCells(getRsp)
 }
 
-func TestPutMain(tablename string, rowkey string, cf string, field string, value string) {
+func TestPutOneRow(tablename string, rowkey string, cf string, field string, value string) {
 	values := map[string]map[string][]byte{cf: map[string][]byte{field: []byte(value)}}
 	putRequest, err := hrpc.NewPutStr(context.Background(), tablename, rowkey, values)
 	resp, err := hbaseClient.Put(putRequest)
 
 	if err != nil {
-		fmt.Println("hbase clientput row error:" + err.Error())
+		fmt.Println("hbase client put row error:" + err.Error())
 		return
 	}
+	fmt.Printf("table %s put rowkey %s [%s:%s] value[%s] , resp partial %t\n",
+		tablename, rowkey, cf, field, value, resp.Partial)
+}
 
-	fmt.Printf("put rowkey[%s] ok %t\n", rowkey, resp.Stale)
+func TestCheckAndPut(tablename string, rowkey string, cf string, field string, oldvalue string, newvalue string) {
+
+	// oldValueMap := map[string]map[string][]byte{cf: map[string][]byte{field: []byte(oldvalue)}}
+	// oldValue, err := json.Marshal(oldValueMap)
+
+	newValueMap := map[string]map[string][]byte{cf: map[string][]byte{field: []byte(newvalue)}}
+	newRequest, err := hrpc.NewPutStr(context.Background(), tablename, rowkey, newValueMap)
+
+	ret, err := hbaseClient.CheckAndPut(newRequest, cf, field, []byte(oldvalue))
+
+	if err != nil {
+		fmt.Println("hbase client put row error:" + err.Error())
+		return
+	}
+	fmt.Printf("check and put table %s rowkey %s [%s:%s] oldV[%s] newV[%s], ret %t\n",
+		tablename, rowkey, cf, field, oldvalue, newvalue, ret)
 }
 
 func TestDeleteMain() {
