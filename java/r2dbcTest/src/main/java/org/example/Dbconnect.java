@@ -10,6 +10,7 @@ import java.sql.*;
 import java.sql.Connection;
 import java.sql.Statement;
 import java.time.Duration;
+import java.util.Objects;
 
 import static io.r2dbc.spi.ConnectionFactoryOptions.*;
 
@@ -21,7 +22,7 @@ public class Dbconnect {
     private String password="";
     private Duration connect_timeout =  Duration.ofSeconds(3);
     private String database = "testdb";
-    private static Logger log = LoggerFactory.getLogger(Dbconnect.class);
+    private static final Logger log = LoggerFactory.getLogger(Dbconnect.class);
     Dbconnect(String[] args) throws Exception {
         if( args.length < 4) {
             Exception e = new Exception("arguments less than 4!");
@@ -52,7 +53,7 @@ public class Dbconnect {
                 .option(USER, user)
                 .option(PORT, port)  // optional, default 3306
                 .option(PASSWORD, password) // optional, default null, null means has no password
-                .option(DATABASE, database) // optional, default null, null means not specifying the database
+                //.option(DATABASE, database) // optional, default null, null means not specifying the database
                 .option(CONNECT_TIMEOUT,connect_timeout) // optional, default null, null means no timeout
                 .option(SSL, false) // optional, default sslMode is "preferred", it will be ignore if sslMode is set
                 /*.option(Option.valueOf("sslMode"), "verify_identity") // optional, default "preferred"
@@ -104,7 +105,7 @@ public class Dbconnect {
                 .doOnNext(System.out::println)
                 .subscribe(i -> System.out.println("this is:" + i));
     }
-    public void test_r2dbc_mysql(){
+    public void test_r2dbc_mysql_dql(){
         ConnectionFactory connectionFactory = ConnectionFactories.get(create_option());
         System.out.println("get connection factory "+connectionFactory);
         Mono.from(connectionFactory.create())
@@ -130,6 +131,70 @@ public class Dbconnect {
                                 System.err.println("got error 3: " + error);
                                 error.printStackTrace();},
                         () -> System.out.println("Done"));
+
+        /*Uni.createFrom().publisher(connectionFactory.create())
+                .onItem().transformToMulti(connection -> connection
+                .createStatement("SELECT firstname FROM PERSON WHERE age > $1")
+                .bind("$1", 42)
+                .execute())
+                .onItem().transform(result -> result
+                .map((row, rowMetadata) -> row.get("firstname", String.class)))
+                .subscribe().with(System.out::println);
+        */
+
+    }
+    public void test_r2dbc_mysql(String dbName,String tbName){
+        ConnectionFactory connectionFactory = ConnectionFactories.get(create_option());
+        log.info("get connection factory "+connectionFactory);
+        io.r2dbc.spi.Connection conn = Mono.from(connectionFactory.create()).doOnError(e -> log.error("create connection failed:"+e)).block();
+        assert conn != null;
+        String tableDef = "create table "+tbName+"(id int primary key,c2 varchar(64),c3 text )";
+        Mono.from(conn.createStatement("create database if not exists "+dbName)
+                        // .bind("$1", 100)
+                        .execute())
+                .flatMapMany(Result::getRowsUpdated)
+                .doOnNext(r -> log.info("create database "+dbName+": updateRows="+ r))
+                .thenMany(conn.createStatement("use "+dbName).execute())
+                .flatMap(Result::getRowsUpdated)
+                .doOnNext(r -> log.info("user database "+dbName+": updateRows="+ r))
+                .thenMany(conn.createStatement("drop table if exists "+tbName).execute())
+                .flatMap(Result::getRowsUpdated)
+                .doOnNext(r -> log.info("drop table RowsUpdated="+ r))
+                .thenMany(conn.createStatement(tableDef).execute())
+                .flatMap(Result::getRowsUpdated)
+                .doOnError(e -> System.err.println("create table "+tbName+" error: "+e))
+                .doOnNext( r -> log.info("create table "+tbName+" successfully: rowsUpdated="+r))
+                .thenMany(conn.createStatement("delete from "+tbName+" where id in (1,2,3,4,5,6,7,8,9,10)").execute())
+                .flatMap(Result::getRowsUpdated)
+                .doOnNext( r -> log.info("delete from "+tbName+" successfully: rowsUpdated="+r))
+                .doOnError(e-> log.error("delete from "+tbName+" failed"))
+                .thenMany(conn.createStatement("insert into "+tbName+" values (1,'name 1','1234567890 1'), " +
+                        "(2,'name 2','1234567890 2'), (3,'name 3','1234567890 3'), (4,'name 4','1234567890 4') ").execute())
+                .flatMap(Result::getRowsUpdated)
+                .doOnNext(r -> log.info("insert into "+tbName+": updateRows="+ r))
+                .thenMany(conn.createStatement("select * from "+tbName+" where id > ?").bind(0,1).execute())
+                .flatMap(result -> result
+                        .map((row, rowMetadata) -> {
+                            Integer c1 = row.get("id",Integer.class);
+                            // column id start from 0
+                            String c2 = Objects.requireNonNull(row.get(1)).toString();
+                            String c3 = Objects.requireNonNull(row.get(2)).toString();
+                            // Long c1 =  (Long)row.get("id");
+                            // System.out.println("id = " +c1);
+                            // assert c1 != null;
+                            log.info("id : " + c1+", c2="+c2+", c3="+c3);
+                            log.debug("debug");
+                            return c1;
+                        }))
+                .doOnNext( a -> System.out.println("OnNext: "+a))
+                .thenMany(conn.createStatement("delete from "+tbName+" where id >3 and id < 1000").execute())
+                .flatMap(Result::getRowsUpdated)
+                .doOnNext(r -> log.info("delete from "+tbName+": updateRows="+ r))
+                .subscribe( id -> System.err.println("id= " + id),
+                        error -> {
+                            System.err.println("finally got error: " + error);
+                            error.printStackTrace();},
+                        () -> System.out.println("finally Done"));
 
         /*Uni.createFrom().publisher(connectionFactory.create())
                 .onItem().transformToMulti(connection -> connection

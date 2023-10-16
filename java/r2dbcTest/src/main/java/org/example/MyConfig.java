@@ -8,8 +8,11 @@ import org.apache.ibatis.javassist.compiler.ast.Variable;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.session.SqlSessionFactoryBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MyConfig {
+    private static final Logger log = LoggerFactory.getLogger(Dbconnect.class);
     public   String databaseurl="";
     public String host="";
     public int port = 0;
@@ -33,6 +36,9 @@ public class MyConfig {
             this.user = (String) vars.get("jdbc.username");
             this.password = (String) vars.get("jdbc.password");
             // System.out.println("host:"+sessionFactory.getConfiguration().getVariables().get("jdbc.databaseurl"));
+            log.info("databaseurl = "+databaseurl);
+            log.info("user = "+user);
+            log.info("password = "+password);
         } catch (Exception e){
             e.printStackTrace();
         }

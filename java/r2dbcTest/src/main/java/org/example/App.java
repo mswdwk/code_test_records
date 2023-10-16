@@ -92,7 +92,7 @@ public class App
         try {
             MyConfig myConfig = new MyConfig("mybatis-config.xml");
             Dbconnect dbconnect = new Dbconnect(myConfig);
-            dbconnect.test_r2dbc_mysql();
+            dbconnect.test_r2dbc_mysql("testdb","table1");
             // at least 200 millisecods to wait the finish of async r2dbc thread to start/run/finish.
             // Xatest.test();
             Thread.sleep(3000);
