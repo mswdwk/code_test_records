@@ -1,5 +1,6 @@
 package org.example;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
@@ -25,14 +26,14 @@ public class AppTest
     @Test
     public void test_mono_block(){
         Mono<Integer> mono = Mono.just(123);
-        assertTrue(mono.block() == 123);
+        assertEquals(123, (int) mono.block());
     }
 
     @Test
     public void test_flux_block(){
         Flux<Integer> flux = Flux.just(123,234,345);
-        assertTrue(flux.blockFirst() == 123);
-        assertTrue(flux.blockLast() == 345);
+        assertEquals(123, (int) flux.blockFirst());
+        assertEquals(345, (int) flux.blockLast());
         List<Integer> r = flux.collectList().block();
         System.out.println("test "+r);
     }

@@ -39,6 +39,8 @@ public class MyConfig {
             log.info("databaseurl = "+databaseurl);
             log.info("user = "+user);
             log.info("password = "+password);
+            log.info("host = "+host);
+            log.info("port="+port);
         } catch (Exception e){
             e.printStackTrace();
         }

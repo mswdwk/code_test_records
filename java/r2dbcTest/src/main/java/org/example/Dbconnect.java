@@ -25,7 +25,10 @@ public class Dbconnect {
     private String host="";
     private int port = 0;
     private String user="";
-    private String password="";
+    // ok in dev.muki:r2dbc-mysql:0.8.2-RELEASE
+   //  private String password="";
+    // IN io.asyncer:r2dbc-mysql:1.0.5 , you should use CharSequence for password
+    CharSequence password ; //= new StringBuffer("朝雾轻寒");
     private Duration connect_timeout =  Duration.ofSeconds(3);
     private String database = "testdb";
     private static final Logger log = LoggerFactory.getLogger(Dbconnect.class);
@@ -38,19 +41,19 @@ public class Dbconnect {
         this.host = args[0];
         this.port = Integer.decode(args[1]).intValue();
         this.user = args[2];
-        this.password = args[3];
+        this.password = new StringBuffer(args[3]);
     }
     Dbconnect(MyConfig myConfig) throws Exception {
         this.host = myConfig.host;
         this.port = myConfig.port;
         this.user = myConfig.user;
-        this.password = myConfig.password;
+        this.password = new StringBuffer( myConfig.password);
     }
     Dbconnect(String host,String user,String password, int port){
         this.host = host;
         this.port = port;
         this.user = user;
-        this.password = password;
+        this.password = new StringBuffer(password);
     }
     public ConnectionFactoryOptions create_option(){
         ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
@@ -58,9 +61,9 @@ public class Dbconnect {
                 .option(HOST, host)
                 .option(USER, user)
                 .option(PORT, port)  // optional, default 3306
-                .option(PASSWORD, password) // optional, default null, null means has no password
+                .option(PASSWORD, this.password) // optional, default null, null means has no password
                 //.option(DATABASE, database) // optional, default null, null means not specifying the database
-                .option(CONNECT_TIMEOUT,connect_timeout) // optional, default null, null means no timeout
+                //.option(CONNECT_TIMEOUT,connect_timeout) // optional, default null, null means no timeout
                 .option(SSL, false) // optional, default sslMode is "preferred", it will be ignore if sslMode is set
                 /*.option(Option.valueOf("sslMode"), "verify_identity") // optional, default "preferred"
                 .option(Option.valueOf("sslCa"), "/path/to/mysql/ca.pem") // required when sslMode is verify_ca or verify_identity, default null, null means has no server CA cert
@@ -76,7 +79,7 @@ public class Dbconnect {
                 .option(Option.valueOf("tcpNoDelay"), true) // optional, default false
                 .option(Option.valueOf("autodetectExtensions"), false) // optional, default false
                 */.build();
-                System.out.println("create db option success");
+                System.out.println("create db option success:"+options.toString());
                 return options;
     }
     public void test_r2dbc_connect(){
@@ -127,12 +130,13 @@ public class Dbconnect {
                             Integer c1 = row.get("id",Integer.class);
                             // Long c1 =  (Long)row.get("id");
                             System.out.println("id = " +c1);
-                            log.info("id : " + c1.intValue());
+                            assert c1 != null;
+                            log.info("id : " + c1);
                             log.debug("debug");
                             return c1;
                         }))
                 .doOnNext( a -> System.out.println("OnNext: "+a))
-                .subscribe( i -> System.err.println("i= " +i.intValue()),
+                .subscribe( i -> System.err.println("i= " + i),
                         error -> {
                                 System.err.println("got error 3: " + error);
                                 error.printStackTrace();},
@@ -199,7 +203,8 @@ public class Dbconnect {
                 .subscribe( id -> System.err.println("id= " + id),
                         error -> {
                             System.err.println("finally got error: " + error);
-                            error.printStackTrace();},
+                            //error.printStackTrace();
+                            },
                         () -> System.out.println("finally Done"));
 
         /*Uni.createFrom().publisher(connectionFactory.create())
@@ -219,6 +224,7 @@ public class Dbconnect {
         ConnectionFactory connectionFactory = ConnectionFactories.get(create_option());
         io.r2dbc.spi.Connection conn = Mono.from(connectionFactory.create()).block();
 
+        assert conn != null;
         conn
                 .createStatement("SELECT user,host FROM mysql.user WHERE user = $1")
             .bind("$1", "root")
@@ -262,13 +268,15 @@ public class Dbconnect {
         //String tdl = "CREATE TEMPORARY TABLE test(id INT PRIMARY KEY AUTO_INCREMENT," +
         String tdl = "CREATE TABLE test(id INT PRIMARY KEY AUTO_INCREMENT," +
                 "email VARCHAR(190),password VARCHAR(190),updated_at DATETIME,created_at DATETIME)";
-
+        assert connection != null;
         Flux.fromArray(Sqls)
-        .flatMap( sql -> {log.info("execute:"+sql);return  connection.createStatement(sql).execute();})
-                .flatMap(result -> result.getRowsUpdated())
+        .flatMap( sql -> {log.info("execute:"+sql);
+
+            return  connection.createStatement(sql).execute();})
+                .flatMap(Result::getRowsUpdated)
                 .doOnNext(r -> log.info( " rowUpdated="+r))
                 .thenMany(connection.createStatement(tdl).execute())
-                .flatMap(result -> result.getRowsUpdated())
+                .flatMap(Result::getRowsUpdated)
                 .doOnNext( r -> log.info("create table update rows="+r))
                 .thenMany(Flux.range(0, 10))
                 .flatMap(it -> Flux.from(connection.createStatement("INSERT INTO test VALUES(DEFAULT,?,?,NOW(),NOW())")
