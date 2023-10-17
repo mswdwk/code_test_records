@@ -4,15 +4,21 @@ import io.r2dbc.spi.*;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.sql.*;
 import java.sql.Connection;
 import java.sql.Statement;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static io.r2dbc.spi.ConnectionFactoryOptions.*;
+import static org.junit.Assert.assertEquals;
 
 public class Dbconnect {
     private String driverName = "mysql";
@@ -245,7 +251,42 @@ public class Dbconnect {
                 .subscribe().with(System.out::println);
 */
     }
+    public void test_r2dbc_create_database_table(){
+        String Sqls[] = new String[]{"drop database if exists newdb1",
+                "create database if not exists newdb1", "use newdb1"
+        };
+        // Sqls.forEach(sql -> System.out.println(sql));
+        ConnectionFactory connectionFactory = ConnectionFactories.get(create_option());
+        io.r2dbc.spi.Connection connection = Mono.from(connectionFactory.create()).block();
 
+        //String tdl = "CREATE TEMPORARY TABLE test(id INT PRIMARY KEY AUTO_INCREMENT," +
+        String tdl = "CREATE TABLE test(id INT PRIMARY KEY AUTO_INCREMENT," +
+                "email VARCHAR(190),password VARCHAR(190),updated_at DATETIME,created_at DATETIME)";
+
+        Flux.fromArray(Sqls)
+        .flatMap( sql -> {log.info("execute:"+sql);return  connection.createStatement(sql).execute();})
+                .flatMap(result -> result.getRowsUpdated())
+                .doOnNext(r -> log.info( " rowUpdated="+r))
+                .thenMany(connection.createStatement(tdl).execute())
+                .flatMap(result -> result.getRowsUpdated())
+                .doOnNext( r -> log.info("create table update rows="+r))
+                .thenMany(Flux.range(0, 10))
+                .flatMap(it -> Flux.from(connection.createStatement("INSERT INTO test VALUES(DEFAULT,?,?,NOW(),NOW())")
+                        .bind(0, String.format("integration-test%d@mail.com", it))
+                        .bind(1, "* "+it.toString())
+                        .execute()))
+                .flatMap(Result::getRowsUpdated)
+                .reduce(Math::addExact)
+                .doOnNext(it -> assertEquals(it.longValue(),10))
+                .then(Mono.from(connection.createStatement("SELECT email FROM test").execute()))
+                .flatMapMany(result -> result.map((row, metadata) -> row.get(0, String.class)))
+                .collectList()
+                .doOnNext(it -> assertEquals(it, IntStream.range(0, 10)
+                        .mapToObj(i -> String.format("integration-test%d@mail.com", i))
+                        .collect(Collectors.toList())))
+                .subscribe(r -> log.info("result:"+r),e -> log.error("final error:"+e),() -> log.info("final Done"))
+        ;
+    }
     public  void test_for_jdbc_login_timeout() {
         try {
             Class.forName("com.mysql.jdbc.Driver");
@@ -277,4 +318,5 @@ public class Dbconnect {
             e.printStackTrace();
         }
     }
+
 }

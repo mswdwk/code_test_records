@@ -27,6 +27,7 @@ import reactor.core.scheduler.Schedulers;
 
 import static org.example.jsonTest.objToJsonString;
 
+
 /**
  * Hello world!
  *
@@ -92,7 +93,8 @@ public class App
         try {
             MyConfig myConfig = new MyConfig("mybatis-config.xml");
             Dbconnect dbconnect = new Dbconnect(myConfig);
-            dbconnect.test_r2dbc_mysql("testdb","table1");
+            //dbconnect.test_r2dbc_mysql("testdb","table1");
+            dbconnect.test_r2dbc_create_database_table();
             // at least 200 millisecods to wait the finish of async r2dbc thread to start/run/finish.
             // Xatest.test();
             Thread.sleep(3000);
