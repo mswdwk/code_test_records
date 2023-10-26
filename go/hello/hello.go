@@ -80,6 +80,8 @@ func list_dir() {
 
 func main() {
 
+	a := []string{"123"}
+	fmt.Println("a="+a[len(a)-1])
 	// greetings.This_user()
 	// test_mysql()
 

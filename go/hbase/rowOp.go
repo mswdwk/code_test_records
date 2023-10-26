@@ -29,9 +29,10 @@ func displayCells(result *hrpc.Result) {
 		fmt.Printf("\tRow:" + string(v.Row))
 		fmt.Printf("\tFamily:" + string(v.Family))
 		fmt.Printf("\tQualifier:" + string(v.Qualifier))
-		fmt.Printf("\tvalue:" + string(v.Value))
-		fmt.Printf("\tcellType:" + string(*v.CellType))
-		fmt.Println("\ttags:" + string(v.Tags))
+		fmt.Printf("\tvalue: %s\n", string(v.Value))
+		// fmt.Printf("\tcellType:" + string(*v.CellType))
+		// fmt.Println("\ttags:" + string(v.Tags))
+
 		//      var myuser mystruct
 		//      err := json.Unmarshal(value, &myuser) // value为 []unit8类型的字节数组，所以可以直接放到json.Unmarshal
 		//      if err != nil {
@@ -108,4 +109,26 @@ func TestDeleteMain() {
 type mystruct struct {
 	Use    string               `json:"user_id" `
 	Movies map[string][]float64 `json:"movies" ` // 用户看的多部电影 "电影id":[打分int,喜好程度float]
+}
+
+func TableScanRange(tablename string, startRow, stopRow string) {
+	// hrpc.MaxVersions(3)
+	request, err := hrpc.NewScanRange(context.Background(), []byte(tablename), []byte(startRow), []byte(stopRow))
+	// getRequest.maxVersions = 3
+	scan := hbaseClient.Scan(request) // Scan()方法返回查询结果。通过客户端真正读取数据
+	defer scan.Close()
+	if err != nil {
+		fmt.Println("hbase get client error:" + err.Error())
+		return
+	}
+	fmt.Printf("scan hbase table %s startRow %s stopRow %s\n", tablename, startRow, stopRow)
+
+	for {
+		r, err := scan.Next()
+		if nil != err {
+			fmt.Println("finish scan table " + tablename)
+			break
+		}
+		displayCells(r)
+	}
 }

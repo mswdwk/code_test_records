@@ -25,7 +25,7 @@ func InitHbaseAdminClient() {
 	}
 	HbaseAc = gohbase.NewAdminClient(*host)
 	if nil == HbaseAc {
-		emsg := fmt.Sprintf("hbase client null,host=%s\n", host)
+		emsg := fmt.Sprintf("hbase Admin client null,host=%s\n", host)
 		panic(emsg)
 	} else {
 		fmt.Println("init hbase admin client ok")
@@ -44,7 +44,9 @@ func TestCreateTable(tablename string, cfs []string, maxVersion uint32) {
 					"org.apache.hadoop.hbase.ipc.ServerNotRunningYetException")) {
 			time.Sleep(time.Second * 5)
 		} else if err != nil {
-			panic(err)
+			fmt.Printf("create table failed: %s,count=%d\n", tablename, count)
+			break
+			// panic(err)
 		} else {
 			fmt.Printf("create table ok: %s,count=%d\n", tablename, count)
 			break
@@ -94,7 +96,8 @@ func TestTableOpMain(delete_table bool) {
 // CreateTable creates the given table with the given families
 func CreateTable(client gohbase.AdminClient, table string, cFamilies []string, maxVersion uint32) error {
 	// If the table exists, delete it
-	DeleteTable(client, table)
+	// DeleteTable(client, table)
+
 	// Don't check the error, since one will be returned if the table doesn't
 	// exist
 
@@ -102,7 +105,7 @@ func CreateTable(client gohbase.AdminClient, table string, cFamilies []string, m
 	for _, f := range cFamilies {
 		cf[f] = nil
 	}
-
+	// reference : https://www.cnblogs.com/cnblogs-syui/p/12566642.html
 	// pre-split table for reverse scan test of region changes
 	keySplits := [][]byte{[]byte("REVTEST-100"), []byte("REVTEST-200"), []byte("REVTEST-300")}
 	hrpc.MaxVersions(maxVersion)
