@@ -16,7 +16,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
-    <es.version>5.6.0</es.version>
+    <es.version>6.8.17</es.version>
   </properties>
   <!--repository>
     <id>spring-snapshots</id>
