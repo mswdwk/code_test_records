@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	"example.com/greetings"
 	_ "github.com/go-sql-driver/mysql"
@@ -79,7 +80,16 @@ func list_dir() {
 }
 
 func main() {
+	var sb strings.Builder
+	s := sb.String()
+	fmt.Println("s="+s)
+	fmt.Println("len(s)=",len(s))
 
+    sb.WriteString("")
+	s2 := sb.String()
+	fmt.Println("2 s="+s2)
+	fmt.Println("2 len(s)=",len(s2))
+	return 
 	a := []string{"123"}
 	fmt.Println("a="+a[len(a)-1])
 	// greetings.This_user()
