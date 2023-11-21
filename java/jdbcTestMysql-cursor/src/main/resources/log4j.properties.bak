@@ -1,0 +1,30 @@
+# https://zhuanlan.zhihu.com/p/623644687
+
+log4j.rootLogger=file,stdout,info
+log4j.debug=false
+log4j.info=true
+log4j.additivity.org.apache=true
+
+
+# 日志格式的统一输出
+PATTERN=[%-5p] %d{yyyy-MM-dd HH:mm:ss}[%c:%L] %m%n
+PATTERN2=%d{yyyy-MM-dd HH:mm:ss.sss} %p [%c:%L] - %m%n
+
+# 日志输出的根目录
+HOME_LOG=log
+
+## Direct log messages to stdout
+log4j.appender.stdout=org.apache.log4j.ConsoleAppender
+log4j.appender.stdout.Target=System.out
+log4j.appender.stdout.layout=org.apache.log4j.PatternLayout
+log4j.appender.stdout.layout.ConversionPattern=${PATTERN2}
+log4j.appender.stdout.encoding=UTF-8
+
+# Direct log messages to a log file
+log4j.appender.file=org.apache.log4j.RollingFileAppender
+log4j.appender.file.File=./my.log
+log4j.appender.file.MaxFileSize=10MB
+log4j.appender.file.MaxBackupIndex=10
+log4j.appender.file.layout=org.apache.log4j.PatternLayout
+log4j.appender.file.layout.ConversionPattern=${PATTERN2}
+log4j.appender.file.encoding=UTF-8

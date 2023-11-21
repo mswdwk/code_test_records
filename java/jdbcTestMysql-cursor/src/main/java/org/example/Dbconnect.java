@@ -1,8 +1,9 @@
 package org.example;
 
 import io.r2dbc.spi.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.UnicastProcessor;
 import java.sql.*;
@@ -13,7 +14,12 @@ import java.time.Duration;
 import static io.r2dbc.spi.ConnectionFactoryOptions.*;
 
 public class Dbconnect {
-    private static Logger log = LoggerFactory.getLogger(Dbconnect.class);
+    private static final Logger log = LogManager.getLogger();
+    private static String dbFlowUrl = "jdbc:mysql://localhost:8031/testdb?characterEncoding=UTF-8&connectTimeout=3000&useSSL=false";
+    private static String dbCursorUrl = "jdbc:mysql://localhost:8031/testdb?characterEncoding=UTF-8&connectTimeout=3000&useSSL=false&useCursorFetch=true";
+
+    private static String dbUser = "super";
+    private static String dbPasswd = "1A3d5g7j";
 
     // reference to https://www.jianshu.com/p/4bf56af986a7
     // http://blog.csdn.net/seven_3306/article/details/9303879
@@ -27,17 +33,17 @@ public class Dbconnect {
     public  void flow_search() {
         try {
             Class.forName("com.mysql.jdbc.Driver");
-            System.out.println("数据库驱动加载成功");
+            log.info("数据库驱动加载成功");
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
         try {
             DriverManager.setLoginTimeout(1);
-            Connection con = DriverManager.getConnection("jdbc:mysql://192.168.79.31:3310/testdb?characterEncoding=UTF-8&connectTimeout=3000", "root", "123");
+            Connection con = DriverManager.getConnection(dbFlowUrl, dbUser, dbPasswd);
             // Connection con = DriverManager.getConnection("jdbc:mysql://192.168.79.132:3306?characterEncoding=UTF-8","user","123");
             // stmt = con.createStatement();
             ResultSet rs;
-            System.out.println("数据库连接成功");
+            log.info("数据库连接成功");
             Statement statement = con.createStatement(
                     ResultSet.TYPE_FORWARD_ONLY,
                     ResultSet.CONCUR_READ_ONLY);
@@ -47,29 +53,30 @@ public class Dbconnect {
             rs=statement.executeQuery("select * from sbtest1");
             long search_ns = System.nanoTime();
             long cost_ms = ( search_ns - cur_ns) / 1000 / 1000;
-            System.out.println("first fetch cost_ms= " + cost_ms);
+            log.info("first fetch cost_ms= " + cost_ms);
             StringBuffer sb=null;
             int count = 0;
             int rows = 10000;
+
             while (rs.next() && count < rows){
-                sb=new StringBuffer("");
+                sb = new StringBuffer(512);
                 sb.append(rs.getString("id")).append("_").append(rs.getString("k")).append("_").append(rs.getString("c"));
-                //System.out.println(sb.toString());
+                //log.info(sb.toString());
                 count++;
             }
             long read_data_ns = System.nanoTime() ;
             cost_ms = ( read_data_ns - search_ns) / 1000 / 1000;
-            System.out.println("read data("+rows+" rows) from resultset cost_ms= " + cost_ms);
+            log.info("read data("+rows+" rows) from resultset cost_ms= " + cost_ms);
             statement.close();
             long close_st = System.nanoTime() ;
             cost_ms = ( close_st - read_data_ns) / 1000 / 1000;
-            System.out.println("close statement cost_ms= " + cost_ms);
+            log.info("close statement cost_ms= " + cost_ms);
             con.close();
             long close_cn = System.nanoTime() ;
             cost_ms = ( close_cn - close_st) / 1000 / 1000;
-            System.out.println("close connection cost_ms= " + cost_ms);
+            log.info("close connection cost_ms= " + cost_ms);
         } catch (SQLException e) {
-            System.out.println("error:" + e.toString());
+            log.error("error:" + e.toString());
             e.printStackTrace();
         }
     }
@@ -82,19 +89,19 @@ public class Dbconnect {
         try {
             log.info("Cursor search Demo start");
             Class.forName("com.mysql.jdbc.Driver");
-            System.out.println("数据库驱动加载成功");
+            log.info("数据库驱动加载成功");
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
         try {
             DriverManager.setLoginTimeout(1);
             Connection con = DriverManager.getConnection(
-                    "jdbc:mysql://192.168.79.31:3310/testdb?characterEncoding=UTF-8&connectTimeout=3000&useCursorFetch=true",
-                    "root", "123");
+                    dbCursorUrl,
+                    dbUser, dbPasswd);
             // Connection con = DriverManager.getConnection("jdbc:mysql://192.168.79.132:3306?characterEncoding=UTF-8","user","123");
             // stmt = con.createStatement();
             ResultSet rs;
-            System.out.println("数据库连接成功");
+            log.info("数据库连接成功");
             Statement statement = con.createStatement(
                     ResultSet.TYPE_FORWARD_ONLY,
                     ResultSet.CONCUR_READ_ONLY);
@@ -104,29 +111,29 @@ public class Dbconnect {
             rs=statement.executeQuery("select * from sbtest1");
             long search_ns = System.nanoTime();
             long cost_ms = ( search_ns - cur_ns) / 1000 / 1000;
-            System.out.println("first fetch cost_ms= " + cost_ms);
+            log.info("first fetch cost_ms= " + cost_ms);
             StringBuffer sb=null;
             int count = 0;
             int rows = 10000;
             while (rs.next() && count < rows){
                 sb=new StringBuffer("");
                 sb.append(rs.getString("id")).append("_").append(rs.getString("k")).append("_").append(rs.getString("c"));
-                //System.out.println(sb.toString());
+                //log.info(sb.toString());
                 count++;
             }
             long read_data_ns = System.nanoTime() ;
             cost_ms = ( read_data_ns - search_ns) / 1000 / 1000;
-            System.out.println("read data("+rows+" rows) from resultset cost_ms= " + cost_ms);
+            log.info("read data("+rows+" rows) from resultset cost_ms= " + cost_ms);
             statement.close();
             long close_st = System.nanoTime() ;
             cost_ms = ( close_st - read_data_ns) / 1000 / 1000;
-            System.out.println("close statement cost_ms= " + cost_ms);
+            log.info("close statement cost_ms= " + cost_ms);
             con.close();
             long close_cn = System.nanoTime() ;
             cost_ms = ( close_cn - close_st) / 1000 / 1000;
-            System.out.println("close connection cost_ms= " + cost_ms);
+            log.info("close connection cost_ms= " + cost_ms);
         } catch (SQLException e) {
-            System.out.println("error:" + e.toString());
+            log.error("error:" + e.toString());
             e.printStackTrace();
         }
     }
