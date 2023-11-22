@@ -11,18 +11,19 @@ import java.io.FileInputStream;
 
 public class App
 {
-    private static final Logger log = LogManager.getLogger(App.class);
-    public static void main( String[] args ) throws Exception {
-        File logFile = new File("src/main/resources/log4j2.properties");
+    private static final Logger log = LogManager.getLogger();
+    // Log4j2 will search log4j2.properties itself, so you not need to init Log4j2 yourself.
+    public void LogInit(String logConfigFile) throws Exception{
+        File logFile = new File(logConfigFile);//"src/main/resources/log4j2.properties"
         BufferedInputStream in = new BufferedInputStream(new FileInputStream(logFile));
         final ConfigurationSource configurationSource = new ConfigurationSource(in);
         Configurator.initialize(null,configurationSource);
-
-        log.info("start connect database");
-        Dbconnect dbconnect = new Dbconnect();
-        log.info("start flow search test");
-        dbconnect.flow_search();
-        log.info("start cursor search test");
-        dbconnect.cursor_search();
+    }
+    public static void main( String[] args ) throws Exception {
+        DbConfig dbConf = new DbConfig("src/main/resources/db.properties");
+        log.info("Start database flow query");
+        DbDataFlowQuery ddfq = new DbDataFlowQuery(dbConf);
+        ddfq.FlowQuery(null,null,dbConf.batchSize);
+        ddfq.CursorQuery(null,null,dbConf.batchSize);
     }
 }
