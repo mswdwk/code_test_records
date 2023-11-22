@@ -107,6 +107,7 @@ public class DbDataFlowQuery {
             log.fatal("Connection or statement is null ");
             return;
         }
+        log.info("Current Statement Fetch Size "+statement.getFetchSize());
         ResultSet rs;
         long cur_ns = System.nanoTime();
         rs = statement.executeQuery(querySql);

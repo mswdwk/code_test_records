@@ -21,7 +21,7 @@ public class App
     }
     public static void main( String[] args ) throws Exception {
         DbConfig dbConf = new DbConfig("src/main/resources/db.properties");
-        log.info("Start database flow query");
+        log.info("Start Database Flow Query Test");
         DbDataFlowQuery ddfq = new DbDataFlowQuery(dbConf);
         ddfq.FlowQuery(null,null,dbConf.batchSize);
         ddfq.CursorQuery(null,null,dbConf.batchSize);
