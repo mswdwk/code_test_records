@@ -113,7 +113,8 @@ public class DbDataFlowQuery {
         rs = statement.executeQuery(querySql);
         long search_ns = System.nanoTime();
         long cost_ms = ( search_ns - cur_ns) / 1000 / 1000;
-        log.info("First fetch cost_ms= " + cost_ms);
+        log.info("First fetch cost " + cost_ms+" ms, column count "+rs.getMetaData().getColumnCount());
+
         StringBuffer sb = null;
         int count = 0;
 
@@ -124,16 +125,34 @@ public class DbDataFlowQuery {
             count++;
         }
         long read_data_ns = System.nanoTime() ;
-        cost_ms = ( read_data_ns - search_ns) / 1000 / 1000;
-        log.info("Read "+rows+" rows from resultSet. cost_ms= " + cost_ms);
+        long read_data_cost_ms = ( read_data_ns - search_ns) / 1000 / 1000;
+
         statement.close();
         long close_st = System.nanoTime() ;
-        cost_ms = ( close_st - read_data_ns) / 1000 / 1000;
-        log.info("close statement cost_ms= " + cost_ms);
+        long close_statement_cost_ms = ( close_st - read_data_ns) / 1000 / 1000;
+
         con.close();
-        long close_cn = System.nanoTime() ;
-        cost_ms = ( close_cn - close_st) / 1000 / 1000;
-        log.info("close connection cost_ms= " + cost_ms);
+        long connection_close_cost_ms = ( System.nanoTime() - close_st) / 1000 / 1000;
+
+        log.info("Read "+rows+" rows from resultSet. cost " + read_data_cost_ms+" ms");
+        log.info("Close statement cost " + close_statement_cost_ms+" ms");
+        log.info("Close connection cost " + connection_close_cost_ms+" ms");
+    }
+
+    // TO GET TOTAL ROW NUMBER
+    // Reference https://www.cnblogs.com/hailexuexi/p/14933573.html
+    // ATTENTION: Operation not supported for streaming result sets
+    public long GetTotalRowCount(ResultSet rs) throws SQLException {
+        long start_ns = System.nanoTime() ;
+        rs.last(); //移到最后一行
+        long move2last_ns = System.nanoTime() ;
+        int rowCount = rs.getRow();//得到当前行号，也就是记录数
+        rs.beforeFirst(); //如果还要用结果集，就把指针再移到初始化的位置
+        long move2first_ns = System.nanoTime() ;
+        long move2LastRowCostUs = (move2last_ns - start_ns)/1000;
+        long move2FirstRowCostUs = (move2first_ns - move2last_ns)/1000;
+        log.info("ResultSet Move to last row cost "+move2LastRowCostUs+" us, move to first row cost "+ move2FirstRowCostUs+" us");
+        return rowCount;
     }
     // TODO: NORMAL SEARCH
     // normal_search
