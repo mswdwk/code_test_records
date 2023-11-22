@@ -1,8 +1,9 @@
 package org.example;
 
 import io.r2dbc.spi.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.UnicastProcessor;
 import java.sql.*;
@@ -13,7 +14,7 @@ import java.time.Duration;
 import static io.r2dbc.spi.ConnectionFactoryOptions.*;
 
 public class Dbconnect {
-    private static Logger log = LoggerFactory.getLogger(Dbconnect.class);
+    private static Logger log = LogManager.getLogger();
     public static ConnectionFactoryOptions create_option(){
         ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
                 .option(DRIVER, "mysql")

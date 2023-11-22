@@ -8,11 +8,11 @@ import org.apache.ibatis.javassist.compiler.ast.Variable;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.session.SqlSessionFactoryBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class MyConfig {
-    private static final Logger log = LoggerFactory.getLogger(Dbconnect.class);
+    private static final Logger log = LogManager.getLogger();
     public   String databaseurl="";
     public String host="";
     public int port = 0;

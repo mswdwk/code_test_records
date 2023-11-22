@@ -1,12 +1,12 @@
 package org.example;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 public class FluxDemo {
-    private static Logger log = LoggerFactory.getLogger(FluxDemo.class);
+    private static Logger log = LogManager.getLogger();
     public static void test1() {
         Flux<Integer> flux = Flux.range(1, 1)
                 .log("test1")

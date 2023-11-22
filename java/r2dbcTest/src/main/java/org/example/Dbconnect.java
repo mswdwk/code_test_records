@@ -1,9 +1,11 @@
 package org.example;
 
 import io.r2dbc.spi.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import org.reactivestreams.Publisher;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -31,7 +33,7 @@ public class Dbconnect {
     CharSequence password ; //= new StringBuffer("朝雾轻寒");
     private Duration connect_timeout =  Duration.ofSeconds(3);
     private String database = "testdb";
-    private static final Logger log = LoggerFactory.getLogger(Dbconnect.class);
+    private static final Logger log = LogManager.getLogger();
     Dbconnect(String[] args) throws Exception {
         if( args.length < 4) {
             Exception e = new Exception("arguments less than 4!");
