@@ -24,12 +24,17 @@ func main() {
 	TestPutOneRow("student", "row1a", "cf", "c1", "value row1a")
 	go TestCheckAndPut("student", "row1", "cf", "c1", "value 3", "new value 3")
 	go TestCheckAndPut("student", "row1", "cf", "c1", "value 3", "new value 4")
+
 	TestGetMain("student", "row1")
 	TableScanRange("student", "row1", "row2")
 	TableScanRange("student", "row1", "row3")
 	TableScanRange("student", "ro", "row3")
 	TableScanRange("student", "", "row3")
 	TableScanRange("student", "row1", "")
+
+	go TestCheckAndPut("student", "row2", "cf", "c1", "value 3", "new value 3")
+	go TestCheckAndPut("student", "row2", "cf", "c1", "value 3", "new value 4")
+	TestGetMain("student", "row2")
 
 	// TestPutMain("student", "row1", "cf", "c2", "value 111")
 	// TestDeleteMain()
