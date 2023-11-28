@@ -25,6 +25,11 @@ public class DbConfig {
     public DbConfig(String dbConfigFile) {
         if(null == prop)
              prop = new Properties();
+        if(null == dbConfigFile || dbConfigFile.isEmpty()){
+            log.fatal("dbConfigFile is null or empty");
+            System.exit(1);
+            return ;
+        }
         log.info("Init DbConfig through file "+dbConfigFile);
         try {
             // 读取属性文件

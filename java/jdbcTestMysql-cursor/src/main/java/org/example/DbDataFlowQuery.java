@@ -94,7 +94,7 @@ public class DbDataFlowQuery {
                 querySql = this.querySql;
             Statement statement = con.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
             //设置为流式查询（每次next都取一条数据）
-            statement.setFetchSize(1);
+            statement.setFetchSize(this.dbc.batchSize);
             Query(con,statement,querySql,rows);
         } catch (SQLException e) {
             log.error("error:" + e.toString());
