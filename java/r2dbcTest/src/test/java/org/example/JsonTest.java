@@ -1,13 +1,15 @@
 package org.example;
 
 import com.alibaba.fastjson.JSON;
+import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-public class jsonTest {
-    public static void objToJsonString(){
+public class JsonTest {
+    @Test
+    public  void objToJsonString(){
         HashMap<String,Object> job = new HashMap<>();
         HashMap<String ,Object> job2= new HashMap<>();
         job.put("key1",1);
@@ -29,7 +31,7 @@ public class jsonTest {
         String userGroupJson = JSON.toJSONString(job);
         System.out.println("json="+userGroupJson);
 
-        String jsonStr1 = "{'password':'123456','username':'dmego'}";
+        String jsonStr1 = "{'password':'123456','username':'dmeo'}";
         User user = JSON.parseObject(jsonStr1, User.class);
         System.out.println("json字符串转简单java对象:"+user.toString());
     }

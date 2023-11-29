@@ -7,6 +7,8 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.nio.entity.NStringEntity;
 import org.apache.http.util.EntityUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -25,7 +27,6 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
-import static org.example.jsonTest.objToJsonString;
 
 
 /**
@@ -34,6 +35,7 @@ import static org.example.jsonTest.objToJsonString;
  */
 public class App 
 {
+    private final static Logger log = LogManager.getLogger();
     public static void es() throws  Exception{
         RestClient restClient = RestClient.builder(
                 new HttpHost("localhost", 9200, "http"),
@@ -81,10 +83,7 @@ public class App
     }
 
     public static void main( String[] args ) {
-        objToJsonString();
-        FluxDemo.test1();
-        FluxDemo.test2();
-        System.out.println("args:"+args.length);
+        log.info("args: "+args.length);
 
         // dbconnect.test_r2dbc_connect2();
         // dbconnect.test_for_jdbc_login_timeout();
@@ -99,7 +98,7 @@ public class App
             // Xatest.test();
             Thread.sleep(3000);
         } catch (Exception e){
-            System.out.println("error:"+e.toString());
+            log.error("error:"+e);
         }
     }
 }
