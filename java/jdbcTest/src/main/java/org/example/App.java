@@ -7,6 +7,8 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.nio.entity.NStringEntity;
 import org.apache.http.util.EntityUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -31,6 +33,7 @@ import reactor.core.scheduler.Schedulers;
  */
 public class App 
 {
+    private static final Logger log = LogManager.getLogger();
     public static void es() throws  Exception{
         RestClient restClient = RestClient.builder(
                 new HttpHost("localhost", 9200, "http"),
