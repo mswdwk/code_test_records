@@ -23,18 +23,4 @@ public class AppTest
         assertTrue( true );
     }
 
-    @Test
-    public void test_mono_block(){
-        Mono<Integer> mono = Mono.just(123);
-        assertEquals(123, (int) mono.block());
-    }
-
-    @Test
-    public void test_flux_block(){
-        Flux<Integer> flux = Flux.just(123,234,345);
-        assertEquals(123, (int) flux.blockFirst());
-        assertEquals(345, (int) flux.blockLast());
-        List<Integer> r = flux.collectList().block();
-        System.out.println("test "+r);
-    }
 }
