@@ -7,7 +7,7 @@ edition = "2018"
 
 [dependencies]
 # tokio = { version = "0.3.5", features = ["full"] }
-tokio = { version = "0.2", features = ["full"] }
+tokio = { version = "1.8.4", features = ["full"] }
 reqwest = "0.10.9"
 structopt = "0.3.21"
 futures = "0.3.8"
