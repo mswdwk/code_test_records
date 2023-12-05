@@ -9,8 +9,8 @@ import org.apache.flink.streaming.api.functions.sink.RichSinkFunction;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
  
 import java.io.IOException;
 import java.text.ParseException;
@@ -25,7 +25,7 @@ import java.util.Date;
  * 写入hbase时500条flush一次, 批量插入, 使用的是writeBufferSize
  */
 class HBaseWriter extends RichSinkFunction<DeviceData>{
-    private static final Logger logger = LoggerFactory.getLogger(HBaseWriter.class);
+    private static final Logger log = LogManager.getLogger();
  
     private static org.apache.hadoop.conf.Configuration configuration;
     private static Connection connection = null;
@@ -40,6 +40,7 @@ class HBaseWriter extends RichSinkFunction<DeviceData>{
         configuration.set("hbase.zookeeper.property.clientPort", "2181");
         try {
             connection = ConnectionFactory.createConnection(configuration);
+            log.info("create flink connection "+connection);
         } catch (IOException e) {
             e.printStackTrace();
         }

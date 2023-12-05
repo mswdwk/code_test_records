@@ -60,7 +60,7 @@ public class AppTest
         long cost_ns = System.nanoTime() - start;
 
         long speed = loop_count*1000*1000*1000/cost_ns;
-        System.out.println( "Hello World! cost_ns= "+cost_ns+ " speed="+speed+" len="+arr.length + "\n a="+a );
+        System.out.println( "Hello World! loop_count= "+loop_count+" cost_ms= "+cost_ns/1000/1000+ " speed="+speed+" parse/s len="+arr.length + "\n a="+a );
         //assertEquals(cl,a);
     }
 }
