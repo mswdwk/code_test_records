@@ -29,8 +29,8 @@ func main() {
 	fmt.Printf("Going to create %d goroutines.\n", number)
 	// wait_all_goroutines(number)
 	// this works well
-	// OneProdMultiCons(number, true)
+	 OneProdMultiCons(number, true, 1)
 	// this will panic, because  sync.Add() 的次数大于执行 sync.Done()
-	//OneProdMultiCons(number,false)
-	OPMCOC(number,true)
+	// OneProdMultiCons(number,false,1)
+	// OPMCOC(number,true)
 }

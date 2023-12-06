@@ -41,8 +41,8 @@ func recordResult(resultCh <-chan string) {
 // one producer multi consumer one consumer
 func OPMCOC(number int, close_input_flag bool) {
 	var waitGroup sync.WaitGroup
-	inputCh := make(chan string, number)
-	resultCh := make(chan string, number)
+	inputCh := make(chan string, 1)
+	resultCh := make(chan string, 1)
 	fmt.Printf("%#v\n", waitGroup)
 	for i := 0; i < number; i++ {
 		waitGroup.Add(1)
