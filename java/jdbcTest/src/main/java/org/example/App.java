@@ -108,6 +108,7 @@ public class App
     }
 
     public static void main( String[] args ) {
+        log.info("main start");
         CacheDiffentDbSameTable.test_for_jdbc_cache_config();
         // objToJsonString()
 /*  R2DBC test
