@@ -2,7 +2,7 @@ pipeline {
     agent { 
 	    docker { 
              image 'centos:latest' 
-			label 'linux-node1'
+			 label 'linux-node1'
 		} 	
 	}
 
@@ -50,4 +50,5 @@ pipeline {
         }
     }
     }
+}
 }
