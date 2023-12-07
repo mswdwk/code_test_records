@@ -8,3 +8,5 @@
 *.exe
 .idea
 target/
+go.mod
+go.sum
