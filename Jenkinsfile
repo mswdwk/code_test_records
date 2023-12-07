@@ -1,8 +1,9 @@
 pipeline {
     agent { 
- 		docker { image 'docker.io/yjjy0921/redhat7.2:latest' 
-				label 'node1'
-				} 
+	    docker { 
+             image 'centos:latest' 
+			label 'linux-node1'
+		} 	
 	}
 
     stages {
@@ -21,6 +22,15 @@ pipeline {
 				'''
             }
         }
+		stage('deploy') {
+            steps {
+				sh '''
+					echo "deploy start"
+					echo `date`
+				'''
+            }
+        }
+		post {
 		post {
         always {
             echo 'This will always run'
