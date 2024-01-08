@@ -25,3 +25,5 @@ test:
     --header "Content-Type: application/json" \
     --request "POST" \
     --data '{"id": "4","title": "The Modern Sound of Betty Carter","artist": "Betty Carter","price": 49.99}'
+	curl http://localhost:8081/albums/1
+	curl http://localhost:8081/albums/12

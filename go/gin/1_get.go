@@ -1,4 +1,5 @@
 // main.go
+// https://zhuanlan.zhihu.com/p/616926076
 package main 
 
 import(
@@ -10,6 +11,7 @@ import(
 func main() {
     router := gin.Default()
     router.GET("/albums", getAlbums) // 路由写在这里
+    router.GET("/albums/:id", getAlbumByID) // 路由写在这里
   	router.POST("/albums", postAlbums)
 
     router.Run("localhost:8081")
@@ -34,6 +36,20 @@ func postAlbums(c *gin.Context) {
     // 将newAlbum 加入到albums中,这里是加到内存中的
     albums = append(albums, newAlbum)
     c.IndentedJSON(http.StatusCreated, newAlbum)
+}
+
+// main.go
+func getAlbumByID(c *gin.Context) {
+    id := c.Param("id") // 路径参数获取值
+
+    // 循环找到id
+    for _, a := range albums {
+            if a.ID == id {
+                    c.IndentedJSON(http.StatusOK, a)
+                    return
+            }
+    }
+    c.IndentedJSON(http.StatusNotFound, gin.H{"message": "album not found"})
 }
 
 // 结构体 ID（字段） String(字段类型)
