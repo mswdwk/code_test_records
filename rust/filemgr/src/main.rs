@@ -1,6 +1,7 @@
 use std::{fs, io};
 use std::path::Path;
 use std::fs::DirEntry;
+use chrono::{Datelike, DateTime, Utc};
 
 // one possible implementation of walking a directory only visiting files
 fn visit_dirs(dir: &Path, cb: &dyn Fn(&DirEntry)) -> io::Result<()> {
@@ -28,12 +29,17 @@ fn main() -> io::Result<()> {
 
     entries.sort();
     let cb=  |d: &DirEntry|{
-        println!(" name {:?}",d.file_name());
+        let meta = d.metadata().unwrap();
+        let modify_time = meta.modified().unwrap();
+        let dt: DateTime<Utc> = modify_time.into();
+
+        println!(" name {:?} size {:?} dt {:?} {} {} file_type {:?} path {:?} ",d.file_name(),meta.len(),
+            dt.year(),dt.month(),dt.month0(), d.file_type().unwrap(), d.path().parent().unwrap());
     };
     for e in entries {
         println!("path: {} is_dir: {}",e.display(),e.is_dir());
     }
     let p = Path::new(".");
-    visit_dirs(&p,&cb);
-    Ok(())
+    return visit_dirs(&p,&cb);
+    // Ok(())
 }

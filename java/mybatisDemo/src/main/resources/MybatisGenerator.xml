@@ -17,9 +17,9 @@
 
         <!-- 数据库连接 -->
         <jdbcConnection driverClass="com.mysql.jdbc.Driver"
-                        connectionURL="jdbc:mysql://ip:端口/数据库名?useSSL=false&amp;useUnicode=true&amp;characterEncoding=UTF-8"
-                        userId="用户民"
-                        password="密码">
+                        connectionURL="jdbc:mysql://192.168.79.31:3306/testdb?useSSL=false&amp;useUnicode=true&amp;characterEncoding=UTF-8"
+                        userId="test"
+                        password="T12a79,!">
         </jdbcConnection>
 
         <javaTypeResolver >
@@ -30,8 +30,8 @@
         <!-- targetProject为文件生成的目录  targetPackage 为生成项目结构目录 -->
         <javaModelGenerator targetPackage="com.tools.generator.domain" targetProject="src/main/java">
             <property name="enableSubPackages" value="true" />
-            <!-- 此属性用于选择MyBatis生成器是否添加代码以从数据库返回的字符字段中修剪空白。如果数据库将数据存储在CHAR字段而不是VARCHAR字段中，这将非常有用。如果为true，MyBatis生成器将插入代码来修剪字符字段。可以使用或元素中的trimStrings属性重写。
-默认值为false。 -->
+            <!-- 此属性用于选择MyBatis生成器是否添加代码以从数据库返回的字符字段中修剪空白。如果数据库将数据存储在CHAR字段而不是VARCHAR字段中，这将非常有用。
+            如果为true，MyBatis生成器将插入代码来修剪字符字段。可以使用或元素中的trimStrings属性重写。默认值为false。 -->
             <property name="trimStrings" value="true" />
         </javaModelGenerator>
 
@@ -46,7 +46,7 @@
         </javaClientGenerator>
 
         <!-- 数据表进行生成操作 schema:库名; tableName:表名; domainObjectName:对应的pojo名 -->
-        <table schema="数据库名" tableName="表名" domainObjectName="对应实体类名"
+        <table schema="testdb" tableName="表名" domainObjectName="对应实体类名"
                enableCountByExample="false" enableUpdateByExample="false"
                enableDeleteByExample="false" enableSelectByExample="false"
                selectByExampleQueryId="false">
