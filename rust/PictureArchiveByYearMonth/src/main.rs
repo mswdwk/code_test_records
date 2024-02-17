@@ -38,6 +38,7 @@ fn visit_dirs(dir: &Path, cb: &mut dyn FnMut(&DirEntry)) -> io::Result<()> {
 }
 
 fn main() -> io::Result<()> {
+    let top_dir= ".";
     let mut all_files: HashMap<String, PathBuf> = HashMap::new();
     let mut entries = fs::read_dir(".")?
         .map(|res| res.map(|e| e.path()))
@@ -52,7 +53,7 @@ fn main() -> io::Result<()> {
         let modify_time = meta.modified().unwrap();
         let dt: DateTime<Utc> = modify_time.into();
 
-        let dest_dir = d.path().parent().unwrap().join(dt.year().to_string());
+        let dest_dir = PathBuf::from(top_dir).join(dt.year().to_string());
 
         let dest_path_name = dest_dir.join(d.file_name());
 
@@ -102,7 +103,7 @@ fn main() -> io::Result<()> {
         // std::process::exit(0);
     };
 
-    let p = Path::new(".");
+    let p = Path::new(top_dir);
     let _ = visit_dirs(&p, &mut cb);
     println!("all_files number is  {}", all_files.len());
     Ok(())
