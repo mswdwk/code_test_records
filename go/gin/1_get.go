@@ -14,7 +14,7 @@ func main() {
     router.GET("/albums/:id", getAlbumByID) // 路由写在这里
   	router.POST("/albums", postAlbums)
 
-    router.Run("localhost:8081")
+    router.Run("0.0.0.0:8081")
 }
 
 // 控制器函数 gin.Context 是框架的上下问
