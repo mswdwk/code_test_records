@@ -3,13 +3,34 @@
 package main 
 
 import(
+    "os"
+    "log"
     "net/http"
     "github.com/gin-gonic/gin" // 引入我们要的用的gin框架
 )
 
+// 创建日志文件并返回一个*log.Logger实例
+func newLogger() *log.Logger {
+    file, err := os.OpenFile("gin.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+    if err != nil {
+        log.Fatal(err)
+    }
+    return log.New(file, "", log.LstdFlags)
+}
+
 // 此步骤添加
 func main() {
     router := gin.Default()
+
+    // 创建日志实例
+    logger := newLogger()
+    
+    // 自定义中间件，用于记录请求日志
+    router.Use(func(c *gin.Context) {
+        // 在这里记录请求日志
+        logger.Println(c.Request.Method, c.Request.URL, c.Request.RemoteAddr)
+    })
+
     router.GET("/albums", getAlbums) // 路由写在这里
     router.GET("/albums/:id", getAlbumByID) // 路由写在这里
   	router.POST("/albums", postAlbums)
