@@ -2,8 +2,12 @@ FILE=go.mod
 .PHONY: all clean run test
 exist=$(shell if [ -f $(FILE) ]; then echo exist; else echo not exist; fi;)
 BIN=gt1
+
 all:init
-	go build .	
+	go build -o $(BIN) 1_get.go 
+
+n:
+	go build -o next 2_next.go 
 
 init:
 ifeq (${exist},exist)
