@@ -1,0 +1,43 @@
+// 版本号
+syntax = "proto3";
+
+// https://protobuf.dev/reference/go/go-generated/#package
+option go_package= "exmap/cok/proto"; 
+
+
+// 作者：V-i-c https://www.bilibili.com/read/cv21871593/ 
+/*
+# 当你写好对应的Proto文件后
+# 在终端 cd 到 proto 文件的目录，然后执行 下方的命令
+protoc -I . hello.proto --go_out=plugins=grpc:.
+# 在此间我遇到一个问题，在 proto文件中 option的问题 不能直接用 路径不能用单独用 . 至少要有个 /
+option go_package= "./;proto";
+# 如此就成功通过proto文件生成go代码
+# PS：补充个知识
+option go_package = "ofc_app;pb_ofc_app_v1";
+# option go_package表示生成的go文件的存放地址和包名，分号前是地址，分号后是包名。 
+*/
+
+// 指定包名
+package proto;
+
+// 定义结构体
+message UserRequest {
+    // 定义用户名
+    string name = 1;
+}
+
+// 响应结构体
+message UserResponse {
+    int32 id = 1;
+    string name = 2;
+    int32 age = 3;
+    // repeated修饰符是可变数组，go转切片
+    repeated string hobby = 4;
+}
+
+// service定义方法
+service UserInfoService {
+    rpc GetUserInfo (UserRequest) returns (UserResponse) {
+    }
+}

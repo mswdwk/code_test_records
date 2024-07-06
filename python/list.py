@@ -1,6 +1,10 @@
-list=[1,2,3,4,5,6]
-length=len(list)
-print length
-for l in range(0,length/2):
-    print list[2*l]+list[2*l+1]
-    print list[l]
+#!/bin/python3
+from typing import List
+
+def f1() -> List[tuple]:
+    l = []
+    l.append((1,2,"c3"))
+    l.append((1,2,"c4"))
+    return l
+
+print(f1())
