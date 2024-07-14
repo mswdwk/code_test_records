@@ -17,8 +17,8 @@ import java.sql.SQLException;
  * @Description mysql分布式事务XAConnection模拟
  */
 
-public class Xatest {
-    public static void test() throws SQLException {
+public class XaDemo {
+    public  void test() throws SQLException {
         final String passwd ="Roo123.";
         //true表示打印XA语句,，用于调试
         boolean logXaCommands = true;
