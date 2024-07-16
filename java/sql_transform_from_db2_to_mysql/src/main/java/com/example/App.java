@@ -46,6 +46,8 @@ public class App
         System.out.println("Refer To: SQLUtils.translateOracleToMySql(sql) ");
         // String sql = "alter table T_ORG alter column ORG_NAME set not null";
         String sql = "SELECT decode(id,1,'22222',4,'33333333333') FROM test1 WHERE name <= TO_CHAR('2022-04-22', 'yyyyMMdd') FETCH FIRST 2 ROWS ONLY;";
+        // sql="select * from t1 where t1.id in (select t2.id from t2 where t2.name='123')";
+        sql="select * from t1 where t1.id in (select t2.id from t2 where t2.name in (select t3.name from t3 where t3.yue > 10000 ))";
         // String sql2 = db2sqlToMysql(sql);
         System.out.println( "sql(db2):"+sql);
         //SQLUtils.translateOracleToMySql(sql);

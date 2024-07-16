@@ -12,7 +12,7 @@ import static com.alibaba.druid.sql.SQLUtils.toStatementList;
 
 public class TranslateDB2SqlToMysql {
         public static String d2m(String sql) {
-                List<SQLStatement> stmtList = toStatementList(sql, DbType.db2);
+                List<SQLStatement> stmtList = toStatementList(sql, DbType.mysql);
                 StringBuilder out = new StringBuilder();
                 DB2ToMySqlOutputVistor visitor = new DB2ToMySqlOutputVistor(out);
                 for(int i = 0; i<stmtList.size(); ++i) {

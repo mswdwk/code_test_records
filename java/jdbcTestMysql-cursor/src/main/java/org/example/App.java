@@ -66,6 +66,6 @@ public class App
         log.info("start flow search test");
         dbconnect.FlowQuery(null,null,dbc.batchSize);
         log.info("start cursor search test");
-        dbconnect.CursorQuery(null,null,dbc.batchSize);
+        //dbconnect.CursorQuery(null,null,dbc.batchSize);
     }
 }

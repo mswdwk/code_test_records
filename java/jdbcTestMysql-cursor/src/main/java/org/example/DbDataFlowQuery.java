@@ -70,10 +70,12 @@ public class DbDataFlowQuery {
                 con = GetDbConn(dbFlowUrl);
             if (null == querySql || querySql.length() < 2)
                 querySql = this.querySql;
+            // con.setClientInfo("abc","123");
             ResultSet rs;
             Statement statement = con.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
             //设置为流式查询（每次next都取一条数据）
             statement.setFetchSize(Integer.MIN_VALUE);
+            // System.exit(0);
             Query(con,statement,querySql,rows);
         } catch (SQLException e) {
             log.error("error:" + e);

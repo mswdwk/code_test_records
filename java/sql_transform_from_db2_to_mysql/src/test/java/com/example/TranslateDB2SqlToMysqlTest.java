@@ -1,6 +1,11 @@
 package com.example;
 
+import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.util.JdbcConstants;
 import org.junit.Test;
+
+import java.util.List;
 
 import static org.junit.Assert.*;
 
@@ -28,6 +33,19 @@ public class TranslateDB2SqlToMysqlTest {
                 "FROM b\n" +
                 "LIMIT 20";
         assertEquals(targetMysql,mysql);
+    }
+    @Test
+    public void parse_qiantao()
+    {
+        String sql="select * from t1 where t1.id = (select t2.id from t2 where t2.name = (select t3.name from t3 where t3.yue > 10000 ))";
+        List<SQLStatement> stmts = SQLUtils.parseStatements(sql, JdbcConstants.MYSQL);
+
+        if (stmts == null){
+            System.out.println("stmt is null");
+        } else {
+            System.out.printf("stmt is not null, child size %d \n",stmts.size());
+        }
+
     }
     // String sql = "SELECT id,value(name,'defname')，to_number(name),chr('x') FROM test1 WHERE name <= TO_CHAR('2022-04-22','yyyyMMdd') FETCH FIRST 2 ROWS ONLY ;";
 }
