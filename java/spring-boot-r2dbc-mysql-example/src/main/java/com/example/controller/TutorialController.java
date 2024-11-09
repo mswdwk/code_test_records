@@ -1,5 +1,6 @@
-package com.bezkoder.spring.r2dbc.mysql.controller;
+package com.example.controller;
 
+import com.example.service.TutorialService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -14,8 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.bezkoder.spring.r2dbc.mysql.model.Tutorial;
-import com.bezkoder.spring.r2dbc.mysql.service.TutorialService;
+import com.example.entity.Tutorial;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;

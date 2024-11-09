@@ -1,9 +1,10 @@
-package com.bezkoder.spring.r2dbc.mysql.repository;
+package com.example.repository;
 
+import org.springframework.data.r2dbc.repository.Query;
 import org.springframework.data.r2dbc.repository.R2dbcRepository;
 import org.springframework.stereotype.Repository;
 
-import com.bezkoder.spring.r2dbc.mysql.model.Tutorial;
+import com.example.entity.Tutorial;
 
 import reactor.core.publisher.Flux;
 
@@ -12,4 +13,8 @@ public interface TutorialRepository extends R2dbcRepository<Tutorial, Integer>{
   Flux<Tutorial> findByTitleContaining(String title);
   
   Flux<Tutorial> findByPublished(boolean isPublished);
+
+  @Query("SELECT * FROM tutorial WHERE title = :title")
+  Flux<Tutorial> findByTitle(String title);
+
 }

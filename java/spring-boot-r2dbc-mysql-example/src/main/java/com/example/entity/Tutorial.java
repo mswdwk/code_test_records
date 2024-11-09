@@ -1,4 +1,4 @@
-package com.bezkoder.spring.r2dbc.mysql.model;
+package com.example.entity;
 
 import org.springframework.data.annotation.Id;
 

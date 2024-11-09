@@ -1,12 +1,12 @@
-package com.bezkoder.spring.r2dbc.mysql.service;
+package com.example.service;
 
 import java.util.Optional;
 
+import com.example.repository.TutorialRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.bezkoder.spring.r2dbc.mysql.model.Tutorial;
-import com.bezkoder.spring.r2dbc.mysql.repository.TutorialRepository;
+import com.example.entity.Tutorial;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;

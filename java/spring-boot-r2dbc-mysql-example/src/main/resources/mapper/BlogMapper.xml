@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.repository.BlogMapper">
+  <resultMap id="BaseResultMap" type="com.example.entity.Blog">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <id column="crt_dt" jdbcType="TIMESTAMP" property="crtDt" />
+    <result column="upd_dt" jdbcType="TIMESTAMP" property="updDt" />
+    <result column="title" jdbcType="VARCHAR" property="title" />
+    <result column="vers" jdbcType="VARCHAR" property="vers" />
+    <result column="viewed" jdbcType="INTEGER" property="viewed" />
+    <result column="forward" jdbcType="INTEGER" property="forward" />
+    <result column="praise" jdbcType="INTEGER" property="praise" />
+    <result column="trample" jdbcType="INTEGER" property="trample" />
+    <result column="favorite" jdbcType="INTEGER" property="favorite" />
+    <result column="del_flg" jdbcType="SMALLINT" property="delFlg" />
+  </resultMap>
+  <resultMap extends="BaseResultMap" id="ResultMapWithBLOBs" type="com.example.entity.Blog">
+    <result column="cont" jdbcType="LONGVARCHAR" property="cont" />
+  </resultMap>
+  <sql id="Base_Column_List">
+    id, crt_dt, upd_dt, title, vers, viewed, forward, praise, trample, favorite, del_flg
+  </sql>
+  <sql id="Blob_Column_List">
+    cont
+  </sql>
+  <select id="selectByPrimaryKey" parameterType="com.example.entity.BlogKey" resultMap="ResultMapWithBLOBs">
+    select 
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from blog
+    where id = #{id,jdbcType=INTEGER}
+      and crt_dt = #{crtDt,jdbcType=TIMESTAMP}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="com.example.entity.BlogKey">
+    delete from blog
+    where id = #{id,jdbcType=INTEGER}
+      and crt_dt = #{crtDt,jdbcType=TIMESTAMP}
+  </delete>
+  <insert id="insert" parameterType="com.example.entity.Blog">
+    insert into blog (id, crt_dt, upd_dt, 
+      title, vers, viewed, 
+      forward, praise, trample, 
+      favorite, del_flg, cont
+      )
+    values (#{id,jdbcType=INTEGER}, #{crtDt,jdbcType=TIMESTAMP}, #{updDt,jdbcType=TIMESTAMP}, 
+      #{title,jdbcType=VARCHAR}, #{vers,jdbcType=VARCHAR}, #{viewed,jdbcType=INTEGER}, 
+      #{forward,jdbcType=INTEGER}, #{praise,jdbcType=INTEGER}, #{trample,jdbcType=INTEGER}, 
+      #{favorite,jdbcType=INTEGER}, #{delFlg,jdbcType=SMALLINT}, #{cont,jdbcType=LONGVARCHAR}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="com.example.entity.Blog">
+    insert into blog
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        id,
+      </if>
+      <if test="crtDt != null">
+        crt_dt,
+      </if>
+      <if test="updDt != null">
+        upd_dt,
+      </if>
+      <if test="title != null">
+        title,
+      </if>
+      <if test="vers != null">
+        vers,
+      </if>
+      <if test="viewed != null">
+        viewed,
+      </if>
+      <if test="forward != null">
+        forward,
+      </if>
+      <if test="praise != null">
+        praise,
+      </if>
+      <if test="trample != null">
+        trample,
+      </if>
+      <if test="favorite != null">
+        favorite,
+      </if>
+      <if test="delFlg != null">
+        del_flg,
+      </if>
+      <if test="cont != null">
+        cont,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        #{id,jdbcType=INTEGER},
+      </if>
+      <if test="crtDt != null">
+        #{crtDt,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updDt != null">
+        #{updDt,jdbcType=TIMESTAMP},
+      </if>
+      <if test="title != null">
+        #{title,jdbcType=VARCHAR},
+      </if>
+      <if test="vers != null">
+        #{vers,jdbcType=VARCHAR},
+      </if>
+      <if test="viewed != null">
+        #{viewed,jdbcType=INTEGER},
+      </if>
+      <if test="forward != null">
+        #{forward,jdbcType=INTEGER},
+      </if>
+      <if test="praise != null">
+        #{praise,jdbcType=INTEGER},
+      </if>
+      <if test="trample != null">
+        #{trample,jdbcType=INTEGER},
+      </if>
+      <if test="favorite != null">
+        #{favorite,jdbcType=INTEGER},
+      </if>
+      <if test="delFlg != null">
+        #{delFlg,jdbcType=SMALLINT},
+      </if>
+      <if test="cont != null">
+        #{cont,jdbcType=LONGVARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.example.entity.Blog">
+    update blog
+    <set>
+      <if test="updDt != null">
+        upd_dt = #{updDt,jdbcType=TIMESTAMP},
+      </if>
+      <if test="title != null">
+        title = #{title,jdbcType=VARCHAR},
+      </if>
+      <if test="vers != null">
+        vers = #{vers,jdbcType=VARCHAR},
+      </if>
+      <if test="viewed != null">
+        viewed = #{viewed,jdbcType=INTEGER},
+      </if>
+      <if test="forward != null">
+        forward = #{forward,jdbcType=INTEGER},
+      </if>
+      <if test="praise != null">
+        praise = #{praise,jdbcType=INTEGER},
+      </if>
+      <if test="trample != null">
+        trample = #{trample,jdbcType=INTEGER},
+      </if>
+      <if test="favorite != null">
+        favorite = #{favorite,jdbcType=INTEGER},
+      </if>
+      <if test="delFlg != null">
+        del_flg = #{delFlg,jdbcType=SMALLINT},
+      </if>
+      <if test="cont != null">
+        cont = #{cont,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+      and crt_dt = #{crtDt,jdbcType=TIMESTAMP}
+  </update>
+  <update id="updateByPrimaryKeyWithBLOBs" parameterType="com.example.entity.Blog">
+    update blog
+    set upd_dt = #{updDt,jdbcType=TIMESTAMP},
+      title = #{title,jdbcType=VARCHAR},
+      vers = #{vers,jdbcType=VARCHAR},
+      viewed = #{viewed,jdbcType=INTEGER},
+      forward = #{forward,jdbcType=INTEGER},
+      praise = #{praise,jdbcType=INTEGER},
+      trample = #{trample,jdbcType=INTEGER},
+      favorite = #{favorite,jdbcType=INTEGER},
+      del_flg = #{delFlg,jdbcType=SMALLINT},
+      cont = #{cont,jdbcType=LONGVARCHAR}
+    where id = #{id,jdbcType=INTEGER}
+      and crt_dt = #{crtDt,jdbcType=TIMESTAMP}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.example.entity.Blog">
+    update blog
+    set upd_dt = #{updDt,jdbcType=TIMESTAMP},
+      title = #{title,jdbcType=VARCHAR},
+      vers = #{vers,jdbcType=VARCHAR},
+      viewed = #{viewed,jdbcType=INTEGER},
+      forward = #{forward,jdbcType=INTEGER},
+      praise = #{praise,jdbcType=INTEGER},
+      trample = #{trample,jdbcType=INTEGER},
+      favorite = #{favorite,jdbcType=INTEGER},
+      del_flg = #{delFlg,jdbcType=SMALLINT}
+    where id = #{id,jdbcType=INTEGER}
+      and crt_dt = #{crtDt,jdbcType=TIMESTAMP}
+  </update>
+</mapper>

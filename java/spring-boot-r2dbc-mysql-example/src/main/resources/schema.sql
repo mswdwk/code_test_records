@@ -9,20 +9,21 @@ set global max_join_size=102410241024;
 
 DROP TABLE IF EXISTS blog;
 CREATE TABLE IF NOT EXISTS blog (
-    id INT UNSIGNED NOT NULL AUTO_INCREMENT ,
-    created_at DATETIME NOT NULL DEFAULT '1900-01-01 00:00:00',
-    updated_at DATETIME ,
-    title VARCHAR(255) NOT NULL DEFAULT '',
-    content text ,
-    viewed INT UNSIGNED NOT NULL DEFAULT 0,    -- 读
-    forward INT UNSIGNED NOT NULL DEFAULT 0,   -- 转发
-    praise  INT UNSIGNED NOT NULL DEFAULT 0,   -- 赞
-    trample INT UNSIGNED NOT NULL DEFAULT 0,   -- 踩
-    favorite INT UNSIGNED NOT NULL DEFAULT 0,  -- 收藏
-    deleted_flag SMALLINT NOT NULL DEFAULT 0,  -- 删除
-    UNIQUE INDEX (title,created_at),
-    PRIMARY KEY(id,created_at)
-) CHARSET=utf8mb4 PARTITION BY RANGE (YEAR(created_at)) (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
+    crt_dt DATETIME(6) NOT NULL DEFAULT '1900-01-01 00:00:00' COMMENT '创建时间戳',
+    upd_dt DATETIME(6) COMMENT '更新时间戳',
+    title VARCHAR(255) NOT NULL DEFAULT '' COMMENT '标题',
+    vers VARCHAR(10) NOT NULL DEFAULT '版本号',
+    cont TEXT COMMENT '博客内容',
+    viewed INT UNSIGNED NOT NULL DEFAULT 0  COMMENT  '读',
+    forward INT UNSIGNED NOT NULL DEFAULT 0   COMMENT  '转发',
+    praise  INT UNSIGNED NOT NULL DEFAULT 0   COMMENT  '赞',
+    trample INT UNSIGNED NOT NULL DEFAULT 0   COMMENT  '踩',
+    favorite INT UNSIGNED NOT NULL DEFAULT 0  COMMENT  '收藏',
+    del_flg SMALLINT NOT NULL DEFAULT 0  COMMENT  '删除',
+    UNIQUE INDEX (title,vers,crt_dt),
+    PRIMARY KEY(id,crt_dt)
+) CHARSET=utf8mb4 PARTITION BY RANGE (YEAR(crt_dt)) (
     PARTITION p2000 VALUES LESS THAN (2000),
     PARTITION p2010 VALUES LESS THAN (2010),
     PARTITION p2016 VALUES LESS THAN (2016),
@@ -36,6 +37,7 @@ CREATE TABLE IF NOT EXISTS blog (
     PARTITION p2024 VALUES LESS THAN (2024),
     PARTITION p2025 VALUES LESS THAN (2025),
     PARTITION p2026 VALUES LESS THAN (2026),
+    PARTITION p2027 VALUES LESS THAN (2027),
     PARTITION pmax VALUES LESS THAN MAXVALUE
 ) ;
-insert blog values (1,now(),null,'my first blog','hello blog',0,0,0,0,0,0);
+insert into blog values (1,now(),null,'my first blog','1.0','hello blog',0,0,0,0,0,0);
