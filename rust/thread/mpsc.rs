@@ -5,7 +5,7 @@ use std::time::Duration;
 fn main() {
     let (tx, rx) = mpsc::channel();
 
-    for i in 0..10 {
+    for i in 0..1 {
         let tx = tx.clone();
 
         thread::spawn(move || {
@@ -17,7 +17,7 @@ fn main() {
         });
     }
 	thread::sleep(Duration::from_millis(50));
-    for _ in 0..100 {
-        println!("{}", rx.recv().unwrap());
+    for _ in 0..10 {
+        println!("recv={}", rx.recv().unwrap());
     }
 }

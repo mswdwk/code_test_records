@@ -21,8 +21,8 @@ package org.example;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._helpers.bulk.BulkIngester;
-import co.elastic.clients.elasticsearch._helpers.esql.jdbc.ResultSetEsqlAdapter;
-import co.elastic.clients.elasticsearch._helpers.esql.objects.ObjectsEsqlAdapter;
+// import co.elastic.clients.elasticsearch._helpers.esql.jdbc.ResultSetEsqlAdapter;
+// import co.elastic.clients.elasticsearch._helpers.esql.objects.ObjectsEsqlAdapter;
 import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.ElasticsearchTransport;
@@ -71,11 +71,13 @@ public class App {
         String booksUrl = "https://raw.githubusercontent" +
                 ".com/elastic/elasticsearch-php-examples/main/examples/ESQL/data/books.csv";
 
+        serverUrl = "localhost:9200";
+
         try (RestClient restClient = RestClient
                 .builder(HttpHost.create(serverUrl))
-                .setDefaultHeaders(new Header[]{
+                /*.setDefaultHeaders(new Header[]{
                         new BasicHeader("Authorization", "ApiKey " + apiKey)
-                })
+                })*/
                 .build()) {
 
             ObjectMapper mapper = JsonMapper.builder()
@@ -99,7 +101,8 @@ public class App {
                                         .properties("year", p -> p.short_(s -> s))
                                         .properties("publisher", p -> p.text(t -> t))
                                         .properties("ratings", p -> p.halfFloat(hf -> hf))
-                                ));
+                                )
+                        );
             }
 
             Instant start = Instant.now();
@@ -167,7 +170,7 @@ public class App {
                             | limit 10
                         """;
 
-            List<Book> queryRes = (List<Book>) client.esql().query(ObjectsEsqlAdapter.of(Book.class),
+            /* List<Book> queryRes = (List<Book>) client.esql().query(ObjectsEsqlAdapter.of(Book.class),
                     queryAuthor);
 
             System.out.println("~~~\nObject result author:\n" + queryRes.stream().map(Book::title).collect(Collectors.joining("\n")));
@@ -190,6 +193,7 @@ public class App {
 
             queryRes = (List<Book>) client.esql().query(ObjectsEsqlAdapter.of(Book.class), queryPublisher);
             System.out.println("~~~\nObject result publisher:\n" + queryRes.stream().map(Book::title).collect(Collectors.joining("\n")));
+            */
         }
     }
 }

@@ -62,10 +62,10 @@ public class App
         parseArgs(args);
         DbConfig dbc = new DbConfig(dbConf);
         log.info("start connect database");
-        DbDataFlowQuery dbconnect = new DbDataFlowQuery(dbc);
+        /*DbDataFlowQuery dbconnect = new DbDataFlowQuery(dbc);
         log.info("start flow search test");
         dbconnect.FlowQuery(null,null,dbc.batchSize);
-        log.info("start cursor search test");
+        log.info("start cursor search test");*/
         //dbconnect.CursorQuery(null,null,dbc.batchSize);
     }
 }
