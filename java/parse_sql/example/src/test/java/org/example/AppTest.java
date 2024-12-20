@@ -4,6 +4,7 @@ import com.alibaba.druid.DbType;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
+import com.alibaba.druid.util.StringUtils;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
@@ -40,7 +41,8 @@ public class AppTest
     public void testApp() throws Exception
     {
         // assertTrue( true );
-        String sql = "SELECT 'abc',a,bc,d FROM user u left join post p on u.id=p.id and u.name=p.name WHERE u.id = 1 and p.b>'123' or u.c in ('1','abc') ";
+        String sql = "SELECT count(*) as sum,'abc',a,bc,d,u.type FROM user u left join post p on u.id=p.id and u.name=p.name " +
+                "WHERE u.id = 1 and p.b>'123' or u.c in ('1','abc','str123') group by u.type having sum> 10 limit 10,2";
         SQLStatementParser parser = new SQLStatementParser(sql);
         List<SQLStatement> statements = parser.parseStatementList(); // 解析SQL语句
 
@@ -49,7 +51,11 @@ public class AppTest
             // 输出格式化的SQL
             String output = SQLUtils.toSQLString(stmt, DbType.mysql);
             // 输出SQL摘要，去除其中的条件变量
-            System.out.println("sql degest= "+stmt.toParameterizedString());
+            String digest = stmt.toParameterizedString().replace("\n"," ").replace("\t","");
+            System.out.println("sql digest= "+digest);
+            assertEquals("SELECT count(*) AS sum, ?, a, bc , d, u.type FROM user u LEFT JOIN post p ON u.id = p.id " +
+                    "AND u.name = p.name WHERE u.id = ? AND p.b > ? OR u.c IN (?) GROUP BY u.type HAVING sum > ? LIMIT ?, ?",
+                    digest);
         }
     }
 }
