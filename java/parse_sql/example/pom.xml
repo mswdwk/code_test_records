@@ -26,12 +26,12 @@
     <dependency>
       <groupId>com.alibaba</groupId>
       <artifactId>druid</artifactId>
-      <version>1.2.22</version>
+      <version>1.2.23</version>
     </dependency>
       <dependency>
           <groupId>com.fasterxml.jackson.core</groupId>
           <artifactId>jackson-databind</artifactId>
-          <version>2.17.0</version>
+          <version>2.18.1</version>
       </dependency>
   </dependencies>
   <build>
@@ -50,7 +50,7 @@
                             <mainClass>org.example.App</mainClass>
                         </manifest>
                     </archive>
-               ta </configuration>
+                </configuration>
                 <executions>
                     <execution>
                         <id>make-assembly</id>
