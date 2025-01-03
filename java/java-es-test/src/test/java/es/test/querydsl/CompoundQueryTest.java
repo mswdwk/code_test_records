@@ -5,11 +5,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.reindex.DeleteByQueryAction;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -67,4 +70,6 @@ public class CompoundQueryTest extends BaseTest {
     log.info(searchResponse.toString());
     //Assert.assertEquals(1, searchResponse.getHits().getTotalHits());
   }
+
+
 }
