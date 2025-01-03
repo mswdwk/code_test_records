@@ -7,12 +7,30 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.collapse.CollapseBuilder;
+
+import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.aggregations.bucket.terms.Terms;
+
+import org.junit.Before;
 import org.junit.Test;
 
+import java.io.IOException;
+
 public class HighLevelClientTest {
+    private RestHighLevelClient client;
+
+    @Before
+    public void setUp() throws IOException {
+        RestClientBuilder builder = RestClient.builder(new HttpHost("localhost", 9200, "http"));
+        client = new RestHighLevelClient(builder);
+        CreateIndexRequest req = new CreateIndexRequest();
+        client.indices().create();
+    }
     @Test
     public void t2(){
         // 初始化Elasticsearch客户端
@@ -41,11 +59,50 @@ public class HighLevelClientTest {
 
             // 执行查询
             SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+
             System.out.println("resp: "+searchResponse.toString());
             // 处理查询结果
             // ...
         }catch (Exception e) {
             System.out.println("error: "+e);
         }
+    }
+
+    @Test
+    public  void  t3() throws IOException {
+        // 初始化Elasticsearch客户端
+
+        // 创建查询请求并设置索引
+        SearchRequest searchRequest = new SearchRequest("your_index");
+
+        // 构建查询条件
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+        searchSourceBuilder.query(QueryBuilders.matchAllQuery()); // 使用所有文档进行测试
+
+        // 添加分组聚合
+        searchSourceBuilder.aggregation(AggregationBuilders.terms("group_by_field").field("your_field"));
+
+        searchRequest.source(searchSourceBuilder);
+
+        // 执行查询
+        SearchResponse searchResponse = null;
+
+        searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+
+
+        // 获取分组结果
+        Aggregations aggregations = searchResponse.getAggregations();
+        Terms groupAggregation = aggregations.get("group_by_field");
+
+        for (Terms.Bucket bucket : groupAggregation.getBuckets()) {
+            String key = bucket.getKeyAsString(); // 分组的键
+            long docCount = bucket.getDocCount(); // 分组中的文档数量
+            System.out.println(key + " : " + docCount);
+        }
+
+
+
+        // 关闭客户端
+        client.close();
     }
 }
