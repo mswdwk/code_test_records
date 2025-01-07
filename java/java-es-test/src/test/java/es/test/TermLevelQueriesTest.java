@@ -58,9 +58,9 @@ public class TermLevelQueriesTest extends BaseTest {
             .to(10)
             .includeLower(true)
             .includeUpper(false);
-    log.info(price.toString());
+    // log.info(price.toString());
     SearchResponse searchResponse = client.prepareSearch().setQuery(price).get();
-    log.info(searchResponse.toString());
+    // log.info(searchResponse.toString());
     Assert.assertEquals(1, searchResponse.getHits().getTotalHits().value);
     Assert.assertEquals(5, searchResponse.getHits().getHits()[0].getSourceAsMap().get("price"));
 
@@ -74,9 +74,9 @@ public class TermLevelQueriesTest extends BaseTest {
     RangeQueryBuilder price = QueryBuilders.rangeQuery("price")
             .gte(10)
             .lt(20);
-    log.info(price.toString());
+    // log.info(price.toString());
     SearchResponse searchResponse = client.prepareSearch().setQuery(price).get();
-    log.info(searchResponse.toString());
+    // log.info(searchResponse.toString());
     Assert.assertEquals(1, searchResponse.getHits().getTotalHits().value);
     Assert.assertEquals(10, searchResponse.getHits().getHits()[0].getSourceAsMap().get("price"));
   }

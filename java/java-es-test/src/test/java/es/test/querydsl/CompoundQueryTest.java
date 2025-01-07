@@ -65,9 +65,9 @@ public class CompoundQueryTest extends BaseTest {
             constantScoreQuery(
                     termQuery("name", "王百万"))
                     .boost(1.0f);
-    log.info(builder.toString());
+    // log.info(builder.toString());
     SearchResponse searchResponse = client.prepareSearch().setQuery(builder).get();
-    log.info(searchResponse.toString());
+    // log.info(searchResponse.toString());
     //Assert.assertEquals(1, searchResponse.getHits().getTotalHits());
   }
 

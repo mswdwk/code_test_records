@@ -1,0 +1,21 @@
+{
+  "mappings": {
+    "properties": {
+      "province": {
+        "type": "keyword"
+      },
+      "city": {
+        "type": "keyword"
+      },
+      "company": {
+        "type": "keyword"
+      },
+      "product": {
+        "type": "keyword"
+      },
+      "price": {
+        "type": "double"
+      }
+    }
+  }
+}

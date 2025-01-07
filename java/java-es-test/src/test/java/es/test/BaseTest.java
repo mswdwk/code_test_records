@@ -20,6 +20,34 @@ public class BaseTest {
 
   protected Client client;
   protected BulkProcessor bulkProcessor;
+  public String indexName = "";
+  public String indexMapping = "{\n" +
+          "  \"mapping\": {\n" +
+          "    \"properties\": {\n" +
+          "      \"province\": {\n" +
+          "        \"type\": \"keyword\"\n" +
+          "      },\n" +
+          "      \"city\": {\n" +
+          "        \"type\": \"keyword\"\n" +
+          "      },\n" +
+          "      \"company\": {\n" +
+          "        \"type\": \"keyword\"\n" +
+          "      },\n" +
+          "      \"product\": {\n" +
+          "        \"type\": \"keyword\"\n" +
+          "      },\n" +
+          "      \"amount\": {\n" +
+          "        \"type\": \"long\"\n" +
+          "      },\n" +
+          "      \"price\": {\n" +
+          "        \"type\": \"double\"\n" +
+          "      },\n" +
+          "      \"description\": {\n" +
+          "        \"type\": \"text\"\n" +
+          "      }\n" +
+          "    }\n" +
+          "  }\n" +
+          "}";
 
   public BaseTest() {
     //初始化客户端
