@@ -9,6 +9,7 @@ import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.CreateIndexRequest;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
@@ -103,6 +104,12 @@ public class HighLevelClientTest extends BaseTest {
                 .subAggregation(AggregationBuilders.topHits("top_1").size(1).fetchSource(includes,null));
         // 添加分组聚合
         searchSourceBuilder.aggregation(aggregationBuilder);
+
+        QueryBuilder builder ; // = QueryBuilders.termQuery("province","河北");
+        String provinces[] = {"河北","辽宁"};
+        builder = QueryBuilders.termsQuery("province",provinces);
+
+        searchSourceBuilder.query(builder);
 
         searchRequest.source(searchSourceBuilder);
 
