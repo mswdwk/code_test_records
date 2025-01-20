@@ -4,6 +4,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -67,7 +69,7 @@ class DemoApplicationTests {
                 throw new RuntimeException(e);
             }
             return "Hello";
-		}, asyncThreadPoolExecutor());
+		}, threadPoolExecutor);
 		CompletableFuture<String> future2 = CompletableFuture.supplyAsync(() -> {
 			System.out.println("thread name:" + Thread.currentThread().getName() + " 执行future2开始...");
 			try {
@@ -76,12 +78,13 @@ class DemoApplicationTests {
 				throw new RuntimeException(e);
 			}
 			return "World";
-		}, asyncThreadPoolExecutor());
+		}, threadPoolExecutor);
+
 		future1.thenCombine(future2, (result1, result2) -> {
 			String result = result1 + " " + result2;
 			System.out.println("thread name:" + Thread.currentThread().getName() + " 获取到future1、future2聚合结果：" + result);
 			return result;
-		}).thenAccept(result -> System.out.println(result)).join();
+		}).thenAccept(System.out::println).join();
 	}
 
 	/* 先有future1，然后和future2组成一个链：future1 -> future2，
@@ -105,6 +108,141 @@ class DemoApplicationTests {
 			System.out.println("最终输出结果：" + targetResult);
 			return targetResult;
 		}));
+	}
+
+	@Test
+	public void f() {
+		CompletableFuture<String> f1 = CompletableFuture.supplyAsync(() -> {
+			// 第一个Future实例结果
+			System.out.println("thread name:" + Thread.currentThread().getName() + " 执行future1开始...");
+			return " Hello a ";
+		}, asyncThreadPoolExecutor());
+
+		f1.thenCompose(result1 -> CompletableFuture.supplyAsync( () -> {
+			CompletableFuture<String> f2 = CompletableFuture.supplyAsync(() -> {
+				// 第一个Future实例结果
+				System.out.println("thread name:" + Thread.currentThread().getName() + " 执行future2开始...");
+				return  result1 + " Hello b " ;
+			}, asyncThreadPoolExecutor());
+			CompletableFuture<String>  f3 = CompletableFuture.supplyAsync(() -> {
+				// 第一个Future实例结果
+				System.out.println("thread name:" + Thread.currentThread().getName() + " 执行future3开始...");
+				return " Hello c ";
+			}, asyncThreadPoolExecutor());
+
+			return f2.thenCombine(f3, (result2, result3) -> {
+				String result = result2 + " " + result3;
+				System.out.println(" thread name:" + Thread.currentThread().getName() + " 获取到future2、future3 聚合结果：" + result);
+				return result;
+			}).thenAccept(System.out::println).join();
+		})).thenAccept( r ->{
+			System.out.println(" Result r = "+r);
+		}).join();
+	}
+
+	@Test
+	public void f2() {
+		CompletableFuture<List<Integer>> f1 = CompletableFuture.supplyAsync(() -> {
+			// 第一个Future实例结果
+			System.out.println("thread name:" + Thread.currentThread().getName() + " 执行future1开始...");
+			List<Integer> result1 = new ArrayList<>();
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+
+            return result1;
+		}, asyncThreadPoolExecutor());
+
+		f1.thenCompose(result1 -> CompletableFuture.supplyAsync( () -> {
+			CompletableFuture<List<Integer>> f2 = CompletableFuture.supplyAsync(() -> {
+				// 第一个Future实例结果
+				System.out.println("thread name:" + Thread.currentThread().getName() + " 执行future2开始...");
+				List<Integer> result2 = new ArrayList<>();
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e) {
+					throw new RuntimeException(e);
+				}
+				return result2 ;
+			}, asyncThreadPoolExecutor());
+			CompletableFuture<List<Integer>>  f3 = CompletableFuture.supplyAsync(() -> {
+				try {
+					Thread.sleep(150);
+				} catch (InterruptedException e) {
+					throw new RuntimeException(e);
+				}
+				System.out.println("thread name:" + Thread.currentThread().getName() + " 执行future3开始...");
+				List<Integer> result3 = new ArrayList<>();
+				return result3;
+			}, asyncThreadPoolExecutor());
+
+			return f2.thenCombine(f3, (result2, result3) -> {
+				List<Integer> result = new ArrayList<>();
+				result.addAll(result1);
+				result.addAll(result2);
+				result.addAll(result3);
+
+				System.out.println(" thread name:" + Thread.currentThread().getName() + " 获取到future2、future3 聚合结果：" + result.size());
+				return result;
+			});
+		})).thenAccept( r ->{
+			List<Integer> r2 = r.join();
+			System.out.println(" Result size = "+r2.size());
+		}).join();
+	}
+
+	@Test
+	public void f3() {
+		CompletableFuture<List<Integer>> f1 = CompletableFuture.supplyAsync(() -> {
+			// 第一个Future实例结果
+			System.out.println("thread name:" + Thread.currentThread().getName() + " 执行future1开始...");
+			List<Integer> result1 = new ArrayList<>();
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException e) {
+				throw new RuntimeException(e);
+			}
+
+			return result1;
+		}, asyncThreadPoolExecutor());
+		List<Integer> resultA = new ArrayList<>();
+		resultA.stream();
+		f1.thenCompose(result1 -> CompletableFuture.supplyAsync( () -> {
+			CompletableFuture<List<Integer>> f2 = CompletableFuture.supplyAsync(() -> {
+				// 第一个Future实例结果
+				System.out.println("thread name:" + Thread.currentThread().getName() + " 执行future2开始...");
+				List<Integer> result2 = new ArrayList<>();
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e) {
+					throw new RuntimeException(e);
+				}
+				return result2 ;
+			}, asyncThreadPoolExecutor());
+			CompletableFuture<List<Integer>>  f3 = CompletableFuture.supplyAsync(() -> {
+				try {
+					Thread.sleep(150);
+				} catch (InterruptedException e) {
+					throw new RuntimeException(e);
+				}
+				System.out.println("thread name:" + Thread.currentThread().getName() + " 执行future3开始...");
+				List<Integer> result3 = new ArrayList<>();
+				return result3;
+			}, asyncThreadPoolExecutor());
+
+			return f2.thenCombine(f3, (result2, result3) -> {
+				List<Integer> result = new ArrayList<>();
+				result.addAll(result2);
+				result.addAll(result3);
+				System.out.println(" thread name:" + Thread.currentThread().getName() + " 获取到future2、future3 聚合结果：" + result.size());
+				return result;
+			});
+		})).thenAccept( r ->{
+			List<Integer> r2 = r.join();
+			System.out.println(" Result size = "+r2.size());
+		}).join();
 	}
 
 }
