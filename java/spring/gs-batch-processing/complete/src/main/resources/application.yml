@@ -1,10 +1,9 @@
 server:
   port: 8880
-
 spring:
-  batch:
-    job:
-      enabled: false
+  profiles:
+    active:
+      - dev
   application:
     name: batchTest
   datasource:
@@ -13,10 +12,11 @@ spring:
       username: root
       password: 123456
       driver-class-name: com.mysql.cj.jdbc.Driver
-      platform: mysql
     secondary:
       jdbc-url: jdbc:mysql://localhost:5742/testdb
       username: root
       password: 123456
       driver-class-name: com.mysql.cj.jdbc.Driver
-      platform: mysql
+  batch:
+      job:
+        enabled: true
