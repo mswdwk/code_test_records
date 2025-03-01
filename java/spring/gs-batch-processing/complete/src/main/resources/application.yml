@@ -5,7 +5,26 @@ spring:
     active:
       - dev
   application:
-    name: batchTest
+    name: batchDemo1
+  batch:
+    jdbc:
+      initialize-schema: never
+    job:
+      name: importUserJob
+      enabled: true  # 开启作业执行，默认是true
+      restart: false  # 是否允许重启已完成的作业，默认是false
+      initializer:
+        enabled: true  # 开启作业初始化器，默认是true
+      joblauncher:
+        fail-on-no-jobs-found: true  # 当找不到作业时是否失败，默认是true
+      job-repository:
+        table-prefix: BATCH_  # 作业仓库的表前缀，默认是BATCH_
+        isolation-level-for-create: DEFAULT  # 创建作业时的事务隔离级别
+        transaction-manager: transactionManager  # 事务管理器名称
+        data-source: managerDataSource  # 数据源名称
+        max-varchar-length: 2500  # 最大VARCHAR长度
+        initialize-schema: never  # 初始化模式，有NEVER、ALWAYS、IF_NEEDED可选
+
   datasource:
     primary:
       jdbc-url: jdbc:mysql://localhost:5742/testdb
@@ -17,6 +36,14 @@ spring:
       username: root
       password: 123456
       driver-class-name: com.mysql.cj.jdbc.Driver
-  batch:
-      job:
-        enabled: true
+    manager:
+      jdbc-url: jdbc:mysql://localhost:5742/demo
+      username: root
+      password: 123456
+      driver-class-name: com.mysql.cj.jdbc.Driver
+
+# 以下是假设你有一个名为 myJob 的作业，配置它的启动参数（可选）
+importUserJob:
+  parameters:
+    param1: value1
+    param2: value2

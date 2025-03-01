@@ -26,9 +26,12 @@ import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.support.JdbcTransactionManager;
 
 @Configuration
-@EnableBatchProcessing(dataSourceRef = "primaryDataSource", transactionManagerRef = "batchTransactionManager")
+@EnableBatchProcessing(dataSourceRef = "managerDataSource", transactionManagerRef = "batchTransactionManager",
+		databaseType = "mysql",maxVarCharLength = 10000)
 public class BatchConfiguration {
 	private static final Logger log = LogManager.getLogger();
+
+
 
 	@Autowired
 	@Qualifier("primaryDataSource")
@@ -38,6 +41,10 @@ public class BatchConfiguration {
 	@Qualifier("secondaryDataSource")
 	private DataSource secondaryDataSource;
 
+	@Autowired
+	@Qualifier("managerDataSource")
+	private DataSource managerDataSource;
+
 	@Bean
 	public JdbcTransactionManager batchTransactionManager(DataSource dataSource) {
 		log.info("batchTransactionManager");
@@ -46,8 +53,8 @@ public class BatchConfiguration {
 
 
 	// tag::readerwriterprocessor[]
-	/*@Bean
-	public FlatFileItemReader<Person> reader() {
+	@Bean
+	public FlatFileItemReader<Person> fileReader() {
 		return new FlatFileItemReaderBuilder<Person>()
 			.name("personItemReader")
 			.resource(new ClassPathResource("sample-data.csv"))
@@ -55,14 +62,14 @@ public class BatchConfiguration {
 			.names("firstName", "lastName")
 			.targetType(Person.class)
 			.build();
-	}*/
+	}
 
 	@Bean
 	public JdbcCursorItemReader<Person> reader(){
 		return new JdbcCursorItemReaderBuilder<Person>()
 				.name("personItemReader")
 				.dataSource(primaryDataSource)
-				.sql("SELECT id, name FROM table1")
+				.sql("SELECT id, name FROM people")
 				.rowMapper(new BeanPropertyRowMapper<>(Person.class))
 				.build()
 				;
@@ -95,7 +102,7 @@ public class BatchConfiguration {
 
 	@Bean
 	public Step step1(JobRepository jobRepository, DataSourceTransactionManager transactionManager,
-					  JdbcCursorItemReader<Person> reader, PersonItemProcessor processor, JdbcBatchItemWriter<Person> writer) {
+					  FlatFileItemReader<Person> reader, PersonItemProcessor processor, JdbcBatchItemWriter<Person> writer) {
 		return new StepBuilder("step1", jobRepository)
 			.<Person, Person>chunk(3, transactionManager)
 			.reader(reader)
@@ -103,6 +110,35 @@ public class BatchConfiguration {
 			.writer(writer)
 			.build();
 	}
+
+	@Bean
+	public Step step2(JobRepository jobRepository, DataSourceTransactionManager transactionManager,
+					  JdbcCursorItemReader<Person> reader, PersonItemProcessor processor, JdbcBatchItemWriter<Person> writer) {
+		return new StepBuilder("step1", jobRepository)
+				.<Person, Person>chunk(3, transactionManager)
+				.reader(reader)
+				.processor(processor)
+				.writer(writer)
+				.build();
+	}
+
+	/*@Bean
+	public JobLauncher jobLauncher(JobRepository jobRepository) throws Exception {
+		TaskExecutorJobLauncher jobLauncher = new TaskExecutorJobLauncher();
+		jobLauncher.setJobRepository(jobRepository);
+		jobLauncher.afterPropertiesSet();
+		return jobLauncher;
+	}
+
+	@Bean
+	public ThreadPoolTaskExecutor taskExecutor() {
+		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+		executor.setCorePoolSize(5);  // 核心线程数
+		executor.setMaxPoolSize(10);  // 最大线程数
+		executor.setQueueCapacity(20);  // 等待队列容量
+		executor.setThreadNamePrefix("Batch-");  // 线程名称前缀
+		return executor;
+	}*/
 
 	// end::jobstep[]
 }
