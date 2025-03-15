@@ -1,7 +1,9 @@
-package com.example.demo;
+package com.example.demo.config;
 
+import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.mybatis.spring.SqlSessionFactoryBean;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.annotation.Bean;
@@ -30,5 +32,13 @@ public class DataSourceConfig {
     @ConfigurationProperties(prefix = "spring.datasource.manager")
     public DataSource managerDataSource() {
         return DataSourceBuilder.create().build();
+    }
+
+    // 给mybatis用
+    @Bean
+    public SqlSessionFactory sqlSessionFactory(DataSource dataSource) throws Exception {
+        SqlSessionFactoryBean sessionFactory = new SqlSessionFactoryBean();
+        sessionFactory.setDataSource(dataSource);
+        return sessionFactory.getObject();
     }
 }

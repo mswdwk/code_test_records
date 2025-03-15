@@ -1,11 +1,13 @@
 package com.example.demo.restservice;
 
+import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.example.demo.MybatisDemo;
 import com.example.demo.model.Greeting;
 import com.example.demo.model.Greeting2;
 import com.example.demo.model.User;
+import com.example.demo.page.SamplePage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.batch.core.Job;
@@ -38,6 +40,7 @@ public class GreetingController {
     private Job importPersonJob;
 
     private MybatisDemo mybatisDemo = new MybatisDemo();
+    private SamplePage samplePage = new SamplePage();
 
     private static final String template = "Hello, %s!";
     private final AtomicLong counter = new AtomicLong();
@@ -71,5 +74,10 @@ public class GreetingController {
     @PostMapping("/addUser")
     public User addUser(@RequestParam(value = "name", defaultValue = "1") String name,@RequestParam(value = "name", defaultValue = "1") String dept) {
         return mybatisDemo.addUser(name,dept);
+    }
+
+    @GetMapping("/getpage")
+    public List<User> getpage(@RequestParam(value = "id", defaultValue = "1") int id) throws Exception {
+        return samplePage.demo();
     }
 }

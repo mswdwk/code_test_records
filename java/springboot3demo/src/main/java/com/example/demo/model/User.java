@@ -10,6 +10,7 @@ public class User implements Serializable {
     private String dept;
     private String phone;
     private String website;
+    private String py;
 
     public int getId() {
         return id;
@@ -51,6 +52,14 @@ public class User implements Serializable {
         this.website = website;
     }
 
+    public String getPy() {
+        return py;
+    }
+
+    public void setPy(String py) {
+        this.py = py;
+    }
+
     @Override
     public String toString() {
         return "User{" +
@@ -59,6 +68,7 @@ public class User implements Serializable {
                 ", dept='" + dept + '\'' +
                 ", phone='" + phone + '\'' +
                 ", website='" + website + '\'' +
+                ", py='" + py + '\'' +
                 '}';
     }
 

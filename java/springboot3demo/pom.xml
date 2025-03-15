@@ -60,7 +60,7 @@
 		<dependency>
 			<groupId>com.github.pagehelper</groupId>
 			<artifactId>pagehelper-spring-boot-starter</artifactId>
-			<version>1.4.7</version>
+			<version>2.1.0</version>
 		</dependency>
 
 		<!-- 以前的tkmapper 不支持springboot3.x，此版本是支持boo3.x及boot2.x版本的 -->
@@ -68,7 +68,7 @@
 		<dependency>
 			<groupId>io.mybatis</groupId>
 			<artifactId>mybatis-mapper</artifactId>
-			<version>2.1.1</version>
+			<version>2.1.0</version>
 		</dependency>
 
 		<dependency>
