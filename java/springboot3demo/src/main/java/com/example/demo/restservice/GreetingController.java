@@ -2,8 +2,10 @@ package com.example.demo.restservice;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.example.demo.MybatisDemo;
 import com.example.demo.model.Greeting;
 import com.example.demo.model.Greeting2;
+import com.example.demo.model.User;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.batch.core.Job;
@@ -16,7 +18,9 @@ import org.springframework.batch.core.repository.JobExecutionAlreadyRunningExcep
 import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException;
 import org.springframework.batch.core.repository.JobRestartException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -32,6 +36,8 @@ public class GreetingController {
 
     @Autowired
     private Job importPersonJob;
+
+    private MybatisDemo mybatisDemo = new MybatisDemo();
 
     private static final String template = "Hello, %s!";
     private final AtomicLong counter = new AtomicLong();
@@ -55,5 +61,15 @@ public class GreetingController {
         String exitCode = je.getExitStatus().getExitCode();
         log.info("run Job exit code: " + exitCode);
         return exitCode;
+    }
+
+    @GetMapping("/getUser")
+    public User getuser(@RequestParam(value = "id", defaultValue = "1") int id) {
+        return mybatisDemo.getUser(id);
+    }
+
+    @PostMapping("/addUser")
+    public User addUser(@RequestParam(value = "name", defaultValue = "1") String name,@RequestParam(value = "name", defaultValue = "1") String dept) {
+        return mybatisDemo.addUser(name,dept);
     }
 }
