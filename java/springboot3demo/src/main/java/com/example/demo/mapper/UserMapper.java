@@ -1,6 +1,7 @@
 package com.example.demo.mapper;
 
 import com.example.demo.model.User;
+import jakarta.annotation.sql.DataSourceDefinition;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.session.RowBounds;
@@ -17,5 +18,5 @@ public interface UserMapper {
     //@Select("select * from sys_user")
     List<User> findAll();
 
-    // List<User> findAll(RowBounds rowBounds);
+    List<User> findAll(RowBounds rowBounds);
 }

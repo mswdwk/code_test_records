@@ -8,19 +8,19 @@ import com.example.demo.mapper.UserMapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-@Component
+// @Component
 public class SamplePage {
     private static final Logger log = LogManager.getLogger();
 
-    @Autowired
-    UserMapper userMapper;
+    // @Qualifier("")
+    /*@Autowired
+    private UserMapper userMapper;*/
 
-    public List<User> demo() throws Exception {
+    public List<User> demo(UserMapper userMapper) throws Exception {
         PageHelper.startPage(1, 20).disableAsyncCount();
         List<User> users = userMapper.findAll();
         System.out.println("Total: " + ((Page) users).getTotal());
@@ -35,12 +35,12 @@ public class SamplePage {
             System.out.println("Name: " + user.getName());
         }
 
-       /* PageRowBounds rowBounds = new PageRowBounds(3, 5);
+        PageRowBounds rowBounds = new PageRowBounds(3, 5);
         users = userMapper.findAll(rowBounds);
         System.out.println("Total: " + rowBounds.getTotal());
         for (User user : users) {
             System.out.println("Name: " + user.getName());
-        }*/
+        }
         return  users;
     }
 }

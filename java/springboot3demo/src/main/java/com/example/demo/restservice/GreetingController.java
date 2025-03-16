@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.example.demo.MybatisDemo;
+import com.example.demo.mapper.UserMapper;
 import com.example.demo.model.Greeting;
 import com.example.demo.model.Greeting2;
 import com.example.demo.model.User;
@@ -38,6 +39,9 @@ public class GreetingController {
 
     @Autowired
     private Job importPersonJob;
+
+    @Autowired
+    private UserMapper userMapper;
 
     private MybatisDemo mybatisDemo = new MybatisDemo();
     private SamplePage samplePage = new SamplePage();
@@ -78,6 +82,7 @@ public class GreetingController {
 
     @GetMapping("/getpage")
     public List<User> getpage(@RequestParam(value = "id", defaultValue = "1") int id) throws Exception {
-        return samplePage.demo();
+        log.info("userMapper "+userMapper);
+        return samplePage.demo(userMapper);
     }
 }

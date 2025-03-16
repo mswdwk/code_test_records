@@ -33,22 +33,27 @@ spring:
       jdbc-url: jdbc:mysql://localhost:5742/testdb?useUnicode=true&characterEncoding=utf8&useSSL=false
       username: root
       password: 123456
-      driver-class-name: com.mysql.jdbc.Driver
+      driver-class-name: com.mysql.cj.jdbc.Driver
     secondary:
       jdbc-url: jdbc:mysql://localhost:5742/testdb?useUnicode=true&characterEncoding=utf8&useSSL=false
       username: root
       password: 123456
-      driver-class-name: com.mysql.jdbc.Driver
+      driver-class-name: com.mysql.cj.jdbc.Driver
     manager:
       jdbc-url: jdbc:mysql://localhost:5742/demo?useUnicode=true&characterEncoding=utf8&useSSL=false
       username: root
       password: 123456
-      driver-class-name: com.mysql.jdbc.Driver
+      driver-class-name: com.mysql.cj.jdbc.Driver
+
+#  autoconfigure:
+#    exclude: com.alibaba.druid.spring.boot.autoconfigure.DruidDataSourceAutoConfigure
+
 mybatis:
-  mapper-locations: classpath*:mappers/*.xml  # 指定MyBatis mapper XML文件的位置
+  mapper-locations: classpath:resources/mappers/*.xml  # 指定MyBatis mapper XML文件的位置
   type-aliases-package: com.example.demo.model  # 指定别名包路径
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl  # 配置MyBatis日志实现
+  config-location: classpath:mybatis-config.xml
 
 server:
   servlet:
