@@ -9,6 +9,7 @@ import com.example.demo.model.Greeting;
 import com.example.demo.model.Greeting2;
 import com.example.demo.model.User;
 import com.example.demo.page.SamplePage;
+import com.example.demo.service.UserService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.batch.core.Job;
@@ -42,6 +43,9 @@ public class GreetingController {
 
     @Autowired
     private UserMapper userMapper;
+
+    @Autowired
+    UserService userService;
 
     private MybatisDemo mybatisDemo = new MybatisDemo();
     private SamplePage samplePage = new SamplePage();
@@ -84,5 +88,11 @@ public class GreetingController {
     public List<User> getpage(@RequestParam(value = "id", defaultValue = "1") int id) throws Exception {
         log.info("userMapper "+userMapper);
         return samplePage.demo(userMapper);
+    }
+
+    @GetMapping("/get")
+    public List<User> get(@RequestParam(value = "id", defaultValue = "1") int id) throws Exception {
+        log.info("userService "+userService);
+        return userService.getAllUserForDb1();
     }
 }

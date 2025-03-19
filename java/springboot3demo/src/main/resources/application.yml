@@ -48,12 +48,12 @@ spring:
 #  autoconfigure:
 #    exclude: com.alibaba.druid.spring.boot.autoconfigure.DruidDataSourceAutoConfigure
 
-mybatis:
-  mapper-locations: classpath:resources/mappers/*.xml  # 指定MyBatis mapper XML文件的位置
-  type-aliases-package: com.example.demo.model  # 指定别名包路径
-  configuration:
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl  # 配置MyBatis日志实现
-  config-location: classpath:mybatis-config.xml
+#mybatis:
+#  mapper-locations: classpath:resources/mappers/*.xml  # 指定MyBatis mapper XML文件的位置
+#  type-aliases-package: com.example.demo.model  # 指定别名包路径
+#  configuration:
+#    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl  # 配置MyBatis日志实现
+# config-location: classpath:mybatis-config.xml
 
 server:
   servlet:
