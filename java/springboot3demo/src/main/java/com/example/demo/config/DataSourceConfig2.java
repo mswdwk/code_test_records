@@ -5,6 +5,7 @@ import org.apache.ibatis.session.SqlSessionFactory;
 import org.mybatis.spring.SqlSessionFactoryBean;
 import org.mybatis.spring.SqlSessionTemplate;
 import org.mybatis.spring.annotation.MapperScan;
+import org.mybatis.spring.mapper.MapperScannerConfigurer;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.jdbc.DataSourceBuilder;
@@ -15,7 +16,7 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import javax.sql.DataSource;
 
 @Configuration
-@MapperScan(basePackages = "cn.cvzhanshi.testdatasources.mapper.db2", sqlSessionFactoryRef = "db2SqlSessionFactory")
+@MapperScan(basePackages = "com.example.demo.mapper.UserMapper", sqlSessionFactoryRef = "db2SqlSessionFactory")
 public class DataSourceConfig2 {
     @Bean("db2DataSource")
     @ConfigurationProperties(prefix = "spring.datasource.secondary")

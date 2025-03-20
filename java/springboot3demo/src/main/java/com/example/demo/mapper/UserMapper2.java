@@ -9,7 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.util.List;
 
 // @Mapper
-public interface UserMapper {
+public interface UserMapper2 {
 
     User GetUserByID(Integer id) throws Exception;
 

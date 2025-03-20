@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-// @Component
+@Component
 public class SamplePage {
     private static final Logger log = LogManager.getLogger();
 
