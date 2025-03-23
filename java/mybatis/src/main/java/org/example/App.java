@@ -9,7 +9,6 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.FileReader;
 import java.io.Reader;
-import java.nio.charset.Charset;
 import java.sql.Statement;
 
 /**
@@ -31,11 +30,13 @@ public class App {
             Statement st = session.getConnection().createStatement();
             //  Charset.forName("utf8")
             FileReader fr = new FileReader("src/main/resources/table_init.sql");
-            char[] sql = new char[2048];
-            int sql_len = fr.read(sql);
-            sql[sql_len] = 0;
-            log.debug("encoding {}, sql = {}, len {}",fr.getEncoding(), sql, sql_len);
-            // st.execute(sql.toString());
+            char[] sql_char = new char[2048];
+            int sql_len = fr.read(sql_char);
+            sql_char[sql_len] = 0;
+            String sql_str = String.valueOf(sql_char, 0, sql_len);
+            log.info("encoding {}, sql = {}, len {}", fr.getEncoding(), sql_str, sql_len);
+
+            st.execute(sql_str);
 
             UserMapper mapper = session.getMapper(UserMapper.class);
             int userId = 1;
@@ -46,6 +47,7 @@ public class App {
                 log.info("no user id: " + userId);
 
             session.commit();
+            session.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
