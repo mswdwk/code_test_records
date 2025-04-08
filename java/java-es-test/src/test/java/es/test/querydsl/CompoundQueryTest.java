@@ -29,18 +29,18 @@ import static org.elasticsearch.xcontent.XContentFactory.jsonBuilder;
 @Slf4j
 public class CompoundQueryTest extends BaseTest {
 
-
   @Before
   public void setUp() throws IOException {
 
-    CreateIndexRequest req = new CreateIndexRequest("test");
+    /*CreateIndexRequest req = new CreateIndexRequest(indexName);
+    client.admin().indices().prepareCreate(indexName);*/
 
-    client.admin().indices().prepareCreate("test");
+
     //初始化测试数据
-    bulkProcessor.add(new IndexRequest("test", "test").source(jsonBuilder().startObject().field("name", "王百万").endObject()));
-    bulkProcessor.add(new IndexRequest("test", "test").source(jsonBuilder().startObject().field("name", "王大力").endObject()));
-    bulkProcessor.add(new IndexRequest("test", "test").source(jsonBuilder().startObject().field("name", "赵海洋").endObject()));
-    bulkProcessor.add(new IndexRequest("test", "test").source(jsonBuilder().startObject().field("name", "丁建国").endObject()));
+    bulkProcessor.add(new IndexRequest(indexName ).source(jsonBuilder().startObject().field("name", "王百万").endObject()));
+    bulkProcessor.add(new IndexRequest(indexName).source(jsonBuilder().startObject().field("name", "王大力").endObject()));
+    bulkProcessor.add(new IndexRequest(indexName).source(jsonBuilder().startObject().field("name", "赵海洋").endObject()));
+    bulkProcessor.add(new IndexRequest(indexName).source(jsonBuilder().startObject().field("name", "丁建国").endObject()));
     bulkProcessor.flush();
     bulkProcessor.close();
     client.admin().indices().prepareRefresh().get();
@@ -55,7 +55,7 @@ public class CompoundQueryTest extends BaseTest {
             .source("test")
             .get();*/
     DeleteIndexRequest req = new DeleteIndexRequest( );
-    req.indices("test");
+    req.indices(indexName);
     client.admin().indices().delete(req);
   }
 
