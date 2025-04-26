@@ -56,5 +56,6 @@ public class App
         System.out.println( "sql(db2):"+sql);
         //SQLUtils.translateOracleToMySql(sql);
         System.out.println("sql(mysql):"+db2sqlToMysql(TranslateDB2SqlToMysql.d2m(sql)));
+
     }
 }
