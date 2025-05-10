@@ -53,5 +53,7 @@ public class AppTest {
         System.out.println(" formattedDate 1 = " + formattedDate);
         System.out.println(" formattedDate current  = " + sdf.format(currentTimeMillis));
         System.out.println(" formattedDate previous = " + sdf.format(previousDayTimestamp));
+
+
     }
 }
