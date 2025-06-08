@@ -5,19 +5,25 @@ import org.apache.ibatis.mapping.BoundSql;
 import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.mapping.ParameterMap;
 import org.apache.ibatis.mapping.SqlSource;
+import org.apache.ibatis.parsing.XNode;
 import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.session.SqlSessionFactoryBuilder;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.example.model.User;
 
 import java.io.InputStream;
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class MyBatisSqlModifier {
+    private final static Logger log = LogManager.getLogger();
 
     public static void tmain(String[] args) throws Exception {
         // 1. 加载MyBatis配置
@@ -40,6 +46,8 @@ public class MyBatisSqlModifier {
         // 3. 获取原始MappedStatement
         String statementId = "org.example.mapper.UserMapper.selectByAge";
         MappedStatement originalMappedStatement = configuration.getMappedStatement(statementId);
+
+        MappedStatement statement_by_id = configuration.getMappedStatement("org.example.mapper.UserMapper.selectById");
 
         // 4. 获取原始SQL
         BoundSql originalBoundSql = originalMappedStatement.getBoundSql(null);
@@ -74,9 +82,14 @@ public class MyBatisSqlModifier {
                 .cache(originalMappedStatement.getCache())
                 .flushCacheRequired(originalMappedStatement.isFlushCacheRequired())
                 .useCache(originalMappedStatement.isUseCache());
+        ParameterMap origin = originalMappedStatement.getParameterMap();
+        log.info("originalMappedStatement param: {}", origin.getParameterMappings());
+
 
         MappedStatement modifiedMappedStatement = builder.build();
         configuration.addMappedStatement(modifiedMappedStatement);
+
+        log.info("modifiedMappedStatement param: " + modifiedMappedStatement.getParameterMap().toString() + ", " + modifiedMappedStatement.getParameterMap().getParameterMappings());
 
         // 8. 执行修改后的SQL
         try (SqlSession session = sqlSessionFactory.openSession()) {
@@ -84,18 +97,33 @@ public class MyBatisSqlModifier {
             params.put("age", 18);
             params.put("id", 1);
 
+            log.info("statement_by_id {}", statement_by_id.getParameterMap().getParameterMappings());
             // 使用未修改的statementId执行
-            List<User> users = session.selectList(  "org.example.mapper.UserMapper.selectById", new Long(1));
+            List<User> users = session.selectList("org.example.mapper.UserMapper.selectById", new Long(1));
             // 处理结果
             users.forEach(System.out::println);
 
             // 使用未修改的statementId执行
-            users = session.selectList(  "org.example.mapper.UserMapper.selectById2", params);
+            users = session.selectList("org.example.mapper.UserMapper.selectById2", params);
             // 处理结果
             users.forEach(System.out::println);
 
             // 使用修改后的statementId执行
-            users = session.selectList(statementId + "_modified", params);
+            // TODO:
+           // users = session.selectList(statementId + "_modified", params);
+
+
+            XNode m = configuration.getSqlFragments().get("org.example.mapper.UserMapper.mv_table");
+
+            System.out.println("原始SQL 2: " + m.getStringBody());
+            Statement st = session.getConnection().createStatement();
+            String sql2 = "select count(*) from " +m.getStringBody().trim();
+            log.info("sql2 "+sql2);
+            ResultSet rs = st.executeQuery(sql2);
+            if(rs.next()){
+                int count = rs.getInt(1);
+                log.info("count = "+count);
+            }
 
             // 处理结果
             users.forEach(System.out::println);
