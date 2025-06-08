@@ -1,0 +1,1 @@
+create table user(id int ,name varchar(128) , age int) ;
