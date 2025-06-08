@@ -3,6 +3,7 @@ package org.example;
 import org.apache.ibatis.builder.xml.XMLMapperBuilder;
 import org.apache.ibatis.mapping.BoundSql;
 import org.apache.ibatis.mapping.MappedStatement;
+import org.apache.ibatis.mapping.ParameterMap;
 import org.apache.ibatis.mapping.SqlSource;
 import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.SqlSession;
@@ -37,7 +38,7 @@ public class MyBatisSqlModifier {
         mapperParser.parse();
 
         // 3. 获取原始MappedStatement
-        String statementId = "org.example.mapper.UserMapper.selectAll";
+        String statementId = "org.example.mapper.UserMapper.selectByAge";
         MappedStatement originalMappedStatement = configuration.getMappedStatement(statementId);
 
         // 4. 获取原始SQL
@@ -46,7 +47,7 @@ public class MyBatisSqlModifier {
         System.out.println("原始SQL: " + originalSql);
 
         // 5. 加工SQL - 这里添加WHERE条件
-        String modifiedSql = originalSql + " WHERE age > #{minAge}";
+        String modifiedSql = originalSql + " WHERE age > #{age}";
         System.out.println("修改后SQL: " + modifiedSql);
 
         // 6. 创建新的SqlSource
@@ -80,10 +81,21 @@ public class MyBatisSqlModifier {
         // 8. 执行修改后的SQL
         try (SqlSession session = sqlSessionFactory.openSession()) {
             Map<String, Object> params = new HashMap<>();
-            params.put("minAge", 18);
+            params.put("age", 18);
+            params.put("id", 1);
+
+            // 使用未修改的statementId执行
+            List<User> users = session.selectList(  "org.example.mapper.UserMapper.selectById", new Long(1));
+            // 处理结果
+            users.forEach(System.out::println);
+
+            // 使用未修改的statementId执行
+            users = session.selectList(  "org.example.mapper.UserMapper.selectById2", params);
+            // 处理结果
+            users.forEach(System.out::println);
 
             // 使用修改后的statementId执行
-            List<User> users = session.selectList(statementId + "_modified", params);
+            users = session.selectList(statementId + "_modified", params);
 
             // 处理结果
             users.forEach(System.out::println);

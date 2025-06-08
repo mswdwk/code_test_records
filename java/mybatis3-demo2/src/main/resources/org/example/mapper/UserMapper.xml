@@ -3,12 +3,22 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="org.example.mapper.UserMapper">
-    <select id="selectAll" resultType="org.example.model.User">
+    <!-- Result Map -->
+
+    <select id="selectAll"  resultType="org.example.model.User">
         SELECT * FROM users
     </select>
 
     <select id="selectById" parameterType="long" resultType="org.example.model.User">
         SELECT * FROM users WHERE id = #{id}
+    </select>
+
+    <select id="selectById2" parameterType="java.util.Map" resultType="org.example.model.User">
+        SELECT * FROM users WHERE id = #{id}
+    </select>
+
+    <select id="selectByAge" parameterType="java.util.Map" resultType="org.example.model.User">
+        SELECT * FROM users
     </select>
 
     <sql id="mv_table" >
