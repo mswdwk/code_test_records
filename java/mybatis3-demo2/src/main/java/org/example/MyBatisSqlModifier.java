@@ -27,11 +27,12 @@ public class MyBatisSqlModifier {
 
         // 2. 加载Mapper XML文件
         InputStream mapperStream = MyBatisSqlModifier.class.getClassLoader()
-                .getResourceAsStream("mapper/UserMapper.xml");
+                .getResourceAsStream("org/example/mapper/UserMapper.xml");
+        System.out.println("current dir: " + System.getProperty("user.dir") + ", mapperStream " + mapperStream);
         XMLMapperBuilder mapperParser = new XMLMapperBuilder(
                 mapperStream,
                 configuration,
-                "mapper/UserMapper.xml",
+                "org/example/mapper/UserMapper.xml",
                 configuration.getSqlFragments());
         mapperParser.parse();
 
