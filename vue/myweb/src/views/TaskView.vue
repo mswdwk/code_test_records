@@ -19,8 +19,6 @@
 
 <input type="checkbox" id="mike" value="Mike" v-model="checkedNames" />
 <label for="mike">Mike</label>
-<tr>new line</tr>
-<p></p>
 
   </div>
   <div>Picked: {{ picked }}
