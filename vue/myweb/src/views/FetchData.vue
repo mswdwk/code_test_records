@@ -5,6 +5,7 @@
 
 <script>
 const API_URL = `https://api.github.com/repos/vuejs/core/commits?per_page=`
+const API_URL_2 = `http://lostcalhost:8082/hi`
 
 export default {
   data: () => ({
@@ -12,7 +13,8 @@ export default {
     currentBranch: 'main',
     commits: [],
     per_page: 3,
-    count:0
+    count:0,
+    index_names:[]
   }),
 
   created() {
@@ -31,6 +33,17 @@ export default {
       const url = `${API_URL}${this.per_page}&sha=${this.currentBranch}`
       this.commits = await (await fetch(url)).json()
     },
+    async postData() {
+      const url = `${API_URL_2}${this.per_page}&sha=${this.currentBranch}`
+
+      this.index_names = await (await fetch(url,{
+        methods: 'POST',
+        body : JSON.stringify({ uname : 'list',pwd : 123}),　
+        headers:{
+          'Content-Type' : 'application/json'
+        }
+      })).json()
+    },
     truncate(v) {
       const newline = v.indexOf('\n')
       return newline > 0 ? v.slice(0, newline) : v
@@ -40,6 +53,7 @@ export default {
     }
   }
 }
+
 </script>
 
 
@@ -64,7 +78,7 @@ export default {
   </button>
 
 <select v-model="per_page">
-  <option disabled value="">Please select one</option>
+  <option disabled value="">Please select page size</option>
   <option>3</option>
   <option>5</option>
   <option>10</option>
@@ -72,7 +86,20 @@ export default {
 
   <p>vuejs/core@{{ currentBranch }}</p>
   <ul v-if="commits.length > 0">
-    <li v-for="{ html_url, sha, author, commit } in commits" :key="sha">
+    <li v-for="({ html_url, sha, author, commit },index) in commits" :key="sha">
+      {{ index }}
+      <a :href="html_url" target="_blank" class="commit">{{ sha.slice(0, 7) }}</a>
+      - <span class="message">{{ truncate(commit.message) }}</span><br>
+      by <span class="author">
+        <a :href="author.html_url" target="_blank">{{ commit.author.name }}</a>
+      </span>
+      at <span class="date">{{ formatDate(commit.author.date) }}</span>
+    </li>
+  </ul>
+
+   <ul v-if="index_names.length > 0">
+    <li v-for="({ index_name,index_f1,doc_count },index) in index_names" :key="sha">
+      {{ index }}
       <a :href="html_url" target="_blank" class="commit">{{ sha.slice(0, 7) }}</a>
       - <span class="message">{{ truncate(commit.message) }}</span><br>
       by <span class="author">
