@@ -1,10 +1,7 @@
-package com.example.demo.mapper;
+package com.example.demo.mapper.datasource2;
 
 import com.example.demo.model.User;
-import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.session.RowBounds;
-import org.apache.ibatis.session.SqlSessionFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 

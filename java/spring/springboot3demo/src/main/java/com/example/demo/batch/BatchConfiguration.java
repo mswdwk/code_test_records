@@ -46,7 +46,7 @@ public class BatchConfiguration {
     private DataSource managerDataSource;
 
     @Bean
-    public JdbcTransactionManager batchTransactionManager(DataSource dataSource) {
+    public JdbcTransactionManager batchTransactionManager(@Qualifier("managerDataSource") DataSource dataSource) {
         log.info("batchTransactionManager");
         return new JdbcTransactionManager(dataSource);
     }

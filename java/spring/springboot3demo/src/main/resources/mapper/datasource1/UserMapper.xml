@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.demo.mapper.datasource1.UserMapper">
+    <!-- 自定义返回结果集 -->
+    <!--resultMap id="userMap" type="com.example.demo.model.User">
+        <id property="id" column="id" javaType="java.lang.Integer"></id>
+        <result property="name" column="name" javaType="java.lang.String"></result>
+        <result property="py" column="py" javaType="java.lang.String"></result>
+        <result property="dept" column="dept" javaType="java.lang.String"></result>
+    </resultMap-->
+    <select id="GetUserByID" parameterType="int" resultType="com.example.demo.model.User" fetchSize="5000">
+        select * from `user1` where id = #{id}
+    </select>
+
+    <select id="findAll"  resultType="com.example.demo.model.User" fetchSize="5000">
+        select * from `sys_user`
+    </select>
+
+    <insert id="addUser">
+        insert into `user1`(name,dept) value (#{name},#{dept} )
+    </insert>
+
+    <update id="updateUser">
+        update `user1` set dept=#{dept} where id=#{id} )
+    </update>
+</mapper>

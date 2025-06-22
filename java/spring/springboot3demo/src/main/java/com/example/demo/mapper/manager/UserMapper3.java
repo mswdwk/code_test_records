@@ -1,15 +1,12 @@
-package com.example.demo.mapper;
+package com.example.demo.mapper.manager;
 
 import com.example.demo.model.User;
-import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.session.RowBounds;
-import org.apache.ibatis.session.SqlSessionFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 
 // @Mapper
-public interface UserMapper {
+public interface UserMapper3 {
 
     User GetUserByID(Integer id) throws Exception;
 

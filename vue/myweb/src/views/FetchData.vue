@@ -11,7 +11,8 @@ export default {
     branches: ['main', 'minor'],
     currentBranch: 'main',
     commits: [],
-    per_page: 3
+    per_page: 3,
+    count:0
   }),
 
   created() {
@@ -22,7 +23,7 @@ export default {
   watch: {
     // 当 currentBranch 改变时重新获取
     currentBranch: 'fetchData',
-    per_page: 'fetchData'
+    count: 'fetchData'
   },
 
   methods: {
@@ -57,6 +58,10 @@ export default {
   </template>
   
   <p>页大小: {{ per_page }}</p>
+
+    <button @click="count++">
+    Search Count is: {{ count }}
+  </button>
 
 <select v-model="per_page">
   <option disabled value="">Please select one</option>

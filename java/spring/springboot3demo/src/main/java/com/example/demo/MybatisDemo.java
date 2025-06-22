@@ -1,6 +1,6 @@
 package com.example.demo;
 
-import com.example.demo.mapper.UserMapper;
+import com.example.demo.mapper.datasource1.UserMapper;
 import com.example.demo.model.User;
 import org.apache.ibatis.io.Resources;
 import org.apache.ibatis.session.SqlSession;

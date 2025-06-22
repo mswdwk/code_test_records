@@ -4,10 +4,9 @@ import com.example.demo.model.User;
 import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageRowBounds;
-import com.example.demo.mapper.UserMapper;
+import com.example.demo.mapper.datasource1.UserMapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.List;

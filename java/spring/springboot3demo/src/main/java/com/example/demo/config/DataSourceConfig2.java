@@ -16,24 +16,24 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import javax.sql.DataSource;
 
 @Configuration
-@MapperScan(basePackages = "com.example.demo.mapper.UserMapper", sqlSessionFactoryRef = "db2SqlSessionFactory")
+@MapperScan(basePackages = "com.example.demo.mapper.datasource2", sqlSessionFactoryRef = "secondarySqlSessionFactory")
 public class DataSourceConfig2 {
-    @Bean("db2DataSource")
+    @Bean("secondaryDataSource")
     @ConfigurationProperties(prefix = "spring.datasource.secondary")
     public DataSource getDb2DataSource() {
         return DataSourceBuilder.create().build();
     }
 
-    @Bean("db2SqlSessionFactory")
-    public SqlSessionFactory db2SqlSessionFactory(@Qualifier("db2DataSource") DataSource dataSource) throws Exception {
+    @Bean("secondarySqlSessionFactory")
+    public SqlSessionFactory db2SqlSessionFactory(@Qualifier("secondaryDataSource") DataSource dataSource) throws Exception {
         SqlSessionFactoryBean bean = new SqlSessionFactoryBean();
         bean.setDataSource(dataSource);
-        bean.setMapperLocations(new PathMatchingResourcePatternResolver().getResources("classpath*:mapper/*.xml"));
+        bean.setMapperLocations(new PathMatchingResourcePatternResolver().getResources("classpath*:mapper/datasource2/*.xml"));
         return bean.getObject();
     }
 
-    @Bean("db2SqlSessionTemplate")
-    public SqlSessionTemplate db2SqlSessionTemplate(@Qualifier("db2SqlSessionFactory") SqlSessionFactory sqlSessionFactory) {
+    @Bean("secondarySqlSessionTemplate")
+    public SqlSessionTemplate db2SqlSessionTemplate(@Qualifier("secondarySqlSessionFactory") SqlSessionFactory sqlSessionFactory) {
         return new SqlSessionTemplate(sqlSessionFactory);
     }
 }

@@ -45,6 +45,15 @@ spring:
       password: 123456
       driver-class-name: com.mysql.cj.jdbc.Driver
 
+  mvc:
+    static-path-pattern: /static/**
+    view:
+      suffix: html
+      prefix: /template
+
+
+
+
 #  autoconfigure:
 #    exclude: com.alibaba.druid.spring.boot.autoconfigure.DruidDataSourceAutoConfigure
 
@@ -59,11 +68,19 @@ server:
   servlet:
     context-path: /
   port: 8082
+  # 确保使用Undertow作为服务器
   undertow:
     threads:
       io: 4
       worker: 20
     url-charset: UTF-8
+    accesslog:
+      enabled: true
+      dir: logs
+
+# 确保静态资源处理优先级低于控制器
+
+
 
 #pagehelper
 pagehelper:
@@ -78,3 +95,10 @@ pagehelper:
   orderBySqlParser: com.example.demo.page.MyOrderBySqlParser
   helper-dialect: mysql
 
+
+logging:
+  level:
+    org.springframework.web:   DEBUG
+
+
+# logging.level.org.springframework.boot.autoconfigure=DEBUG
