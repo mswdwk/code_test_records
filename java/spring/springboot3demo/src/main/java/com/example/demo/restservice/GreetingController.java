@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/test")
 public class GreetingController {
     private static final Logger log = LogManager.getLogger();
 
