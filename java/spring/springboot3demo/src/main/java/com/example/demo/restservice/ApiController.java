@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 @RestController
 @RequestMapping("/esindex")
-@CrossOrigin
+@CrossOrigin(origins = "*") // 允许所有请求跨域
 public class ApiController {
     private static final Logger log = LogManager.getLogger();
     private final AtomicLong counter = new AtomicLong();
