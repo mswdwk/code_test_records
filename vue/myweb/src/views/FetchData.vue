@@ -5,7 +5,7 @@
 
 <script>
 const API_URL = `https://api.github.com/repos/vuejs/core/commits?per_page=`
-const API_URL_2 = `http://lostcalhost:8082/esindex/getall`
+const API_URL_2 = `http://localhost:8082/esindex/all`
 
 export default {
   data: () => ({
@@ -13,8 +13,7 @@ export default {
     currentBranch: 'main',
     commits: [],
     per_page: 3,
-    count:0,
-    index_names:[]
+    count:0
   }),
 
   created() {
@@ -25,32 +24,13 @@ export default {
   watch: {
     // 当 currentBranch 改变时重新获取
     currentBranch: 'fetchData',
-    count: 'postData'
+    count: 'fetchData'
   },
 
   methods: {
     async fetchData() {
       const url = `${API_URL}${this.per_page}&sha=${this.currentBranch}`
       this.commits = await (await fetch(url)).json()
-    },
-    async postData() {
-      const url = `${API_URL_2}`
-
-      try {
-          response = await fetch(url,{
-          methods: 'POST',
-          body : JSON.stringify({ id : 'id_1',names : ["name1","name 2 ","hello world"]}),　
-          headers:{
-            'Content-Type' : 'application/json'
-          }
-        });
-
-        this.index_names =await response.json();
-
-        console.log("index_names = "+this.index_names)
-      }catch(error){
-        console.error("error is "+error);
-      }
     },
     truncate(v) {
       const newline = v.indexOf('\n')
@@ -104,14 +84,6 @@ export default {
     </li>
   </ul>
 
-   <ul v-if="index_names.length > 0" id="my_index">
-    <li v-for="({ index_name,crat_datetime,es_doc_count,db_row_count },index) in index_names" :key="index_name">
-      {{ index }} -  {{  index_name }}
-       created_at <span class="date">{{ formatDate(crat_datetime) }}</span>
-      - es_doc_count <span >{{ es_doc_count}}</span><br>
-      - db_row_count <span > {{ db_row_count}}</span>
-    </li>
-  </ul>
    </div>
   
 

@@ -4,7 +4,7 @@
 -->
 
 <script>
-const API_URL_2 = `http://localhost:8082/esindex/getall`
+const API_URL_2 = `http://127.0.0.1:8082/esindex/all`
 
 export default {
   data: () => ({
@@ -23,7 +23,7 @@ export default {
 
   watch: {
     // 当 count 改变时重新获取
-    count: 'submitForm'
+    // count: 'submitForm'
   },
 
   methods: {
@@ -31,18 +31,23 @@ export default {
       const url = `${API_URL_2}`
 
       try {
-          response = await fetch(url,{
-          method: 'POST',
-          body : JSON.stringify({ id : "id_1",names : ["name1","name 2 ","hello world"]}),　
-          headers:{
-            'Content-Type' : 'application/json',
+          var response = await fetch(url,{
+            method: 'POST',
+            body: JSON.stringify({ id : "id_1",names : ["name1","name 2 ","hello world"]}),
+            headers:{
+              'Content-Type' : 'application/json;charset=UTF-8',
+            }
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
           }
-        });
 
-        this.index_names = await response.json();
+          this.index_names = await response.json();
 
-        console.log("index_names = "+this.index_names)
-      }catch(error){
+          console.log("index_names = "+this.index_names);
+
+      } catch (error) {
         console.error("error is "+error);
       }
     },
@@ -54,7 +59,7 @@ export default {
 </script>
 
 <template>
-    <div class="PostData">
+    <div class="submitForm">
     <h1>This is an post data page</h1>
  
   <h1>Post Data Test</h1>
@@ -69,11 +74,11 @@ export default {
 
   <p>es index names </p>
    <ul v-if="index_names.length > 0" id="my_index">
-    <li v-for="({ index_name,crat_datetime,es_doc_count,db_row_count },index) in index_names" :key="index_name">
-      {{ index }} -  {{  index_name }}
-       created_at <span class="date">{{ formatDate(crat_datetime) }}</span>
-      - es_doc_count <span >{{ es_doc_count}}</span><br>
-      - db_row_count <span > {{ db_row_count}}</span>
+    <li v-for="({ name,cratTmtp,esDocCount,dbRowCount },index) in index_names" :key="index_name">
+      {{ index }} -  {{  name }}
+       created_at <span class="date">{{ cratTmtp }}</span>
+      - es_doc_count <span >{{ esDocCount}}</span><br>
+      - db_row_count <span > {{ dbRowCount}}</span>
     </li>
   </ul>
    </div>

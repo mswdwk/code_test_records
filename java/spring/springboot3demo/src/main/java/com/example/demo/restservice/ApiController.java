@@ -18,6 +18,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 @RestController
 @RequestMapping("/esindex")
+@CrossOrigin
 public class ApiController {
     private static final Logger log = LogManager.getLogger();
     private final AtomicLong counter = new AtomicLong();
@@ -41,7 +42,7 @@ public class ApiController {
         return ResponseEntity.ok(rsp);
     }
 
-    @PostMapping("/getall")
+    @PostMapping("/all")
     public ResponseEntity<List<OneEsIndex>> getall2(@RequestBody MyReq req) throws JsonProcessingException {
         log.info(" getall2 req =  " + req);
         List<OneEsIndex> rsp = getEsIndex();
