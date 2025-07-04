@@ -13,6 +13,7 @@ import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersInvalidException;
+import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.configuration.JobRegistry;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
@@ -22,6 +23,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
 @RestController
@@ -69,8 +71,10 @@ public class GreetingController {
         log.info("Registered Jobs: " + jobRegistry.getJobNames());
         JobExecution je = jobLauncher.run(importPersonJob, new JobParameters());
         String exitCode = je.getExitStatus().getExitCode();
-        log.info("run Job exit code: " + exitCode);
-        return exitCode;
+        Optional<Long> read_count_sum = je.getStepExecutions().stream().map(StepExecution::getReadCount).reduce(Long::sum);
+        long read_count = read_count_sum.orElse((long) 0);
+        Long jobId = je.getJobId();
+        return "run Job exit code: " + exitCode+ ", read_count " + read_count+ ", jobId "+jobId;
     }
 
     @GetMapping("/getUser")
