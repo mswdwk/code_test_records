@@ -4,6 +4,7 @@ import com.example.demo.model.Person;
 import com.example.demo.processor.PersonItemProcessor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
@@ -94,10 +95,11 @@ public class BatchConfiguration {
 
     // tag::jobstep[]
     @Bean
-    public Job importUserJob(JobRepository jobRepository, Step step1, JobCompletionNotificationListener listener) {
+    public Job importUserJob(JobRepository jobRepository, Step step2, JobCompletionNotificationListener listener) {
         return new JobBuilder("importUserJob", jobRepository)
+                .incrementer(new RunIdIncrementer())
                 .listener(listener)
-                .start(step1)
+                .start(step2)
                 .build();
     }
 
@@ -115,7 +117,7 @@ public class BatchConfiguration {
     @Bean
     public Step step2(JobRepository jobRepository, DataSourceTransactionManager transactionManager,
                       JdbcCursorItemReader<Person> reader, PersonItemProcessor processor, JdbcBatchItemWriter<Person> writer) {
-        return new StepBuilder("step1", jobRepository)
+        return new StepBuilder("step2", jobRepository)
                 .<Person, Person>chunk(3, transactionManager)
                 .reader(reader)
                 .processor(processor)
