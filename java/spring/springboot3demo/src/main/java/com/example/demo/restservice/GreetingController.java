@@ -38,7 +38,7 @@ public class GreetingController {
     private JobLauncher jobLauncher;
 
     @Autowired
-    private Job importPersonJob;
+    private Job importUserJob;
 
     @Autowired
     // @Qualifier("primaryDataSource")
@@ -69,7 +69,7 @@ public class GreetingController {
             @RequestParam(value = "jobName", defaultValue = "batch") String jobName) throws JobInstanceAlreadyCompleteException, JobExecutionAlreadyRunningException, JobParametersInvalidException, JobRestartException, JobParametersInvalidException, JobRestartException {
         log.info("jobName " + jobName);
         log.info("Registered Jobs: " + jobRegistry.getJobNames());
-        JobExecution je = jobLauncher.run(importPersonJob, new JobParameters());
+        JobExecution je = jobLauncher.run(importUserJob, new JobParameters());
         String exitCode = je.getExitStatus().getExitCode();
         Optional<Long> read_count_sum = je.getStepExecutions().stream().map(StepExecution::getReadCount).reduce(Long::sum);
         long read_count = read_count_sum.orElse((long) 0);

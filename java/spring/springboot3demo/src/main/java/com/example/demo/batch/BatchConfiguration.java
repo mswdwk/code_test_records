@@ -69,7 +69,7 @@ public class BatchConfiguration {
         return new JdbcCursorItemReaderBuilder<Person>()
                 .name("personItemReader")
                 .dataSource(primaryDataSource)
-                .sql("SELECT id, name FROM people")
+                .sql("SELECT first_name as firstName,last_name as lastName FROM people")
                 .rowMapper(new BeanPropertyRowMapper<>(Person.class))
                 .build()
                 ;
@@ -84,11 +84,12 @@ public class BatchConfiguration {
     @Bean
     public JdbcBatchItemWriter<Person> writer() {
         return new JdbcBatchItemWriterBuilder<Person>()
-                .sql("INSERT INTO people (first_name, last_name) VALUES (:firstName, :lastName)")
+                .sql("INSERT INTO people2 (first_name, last_name) VALUES (:firstName, :lastName)")
                 .dataSource(secondaryDataSource)
                 .beanMapped()
                 .build();
     }
+
     // end::readerwriterprocessor[]
 
     // tag::jobstep[]
