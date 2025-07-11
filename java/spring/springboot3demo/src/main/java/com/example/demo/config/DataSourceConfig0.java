@@ -47,7 +47,7 @@ public class DataSourceConfig0 {
     }
 
     @Bean("managerJdbcTemplate")
-    public JdbcTemplate jdbcTemplate(@Qualifier("managerDataSource") DataSource dataSource) {
+    public JdbcTemplate  managerJdbcTemplate(@Qualifier("managerDataSource") DataSource dataSource) {
         return new JdbcTemplate(dataSource);
     }
 
