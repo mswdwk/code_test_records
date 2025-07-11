@@ -1,6 +1,6 @@
 package com.example.demo.batch;
 
-import com.example.demo.model.Person;
+import com.example.demo.model.Person2;
 import com.example.demo.processor.PersonItemProcessor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -55,25 +55,24 @@ public class BatchConfiguration {
 
     // tag::readerwriterprocessor[]
     @Bean
-    public FlatFileItemReader<Person> fileReader() {
-        return new FlatFileItemReaderBuilder<Person>()
+    public FlatFileItemReader<Person2> fileReader() {
+        return new FlatFileItemReaderBuilder<Person2>()
                 .name("personItemReader")
                 .resource(new ClassPathResource("sample-data.csv"))
                 .delimited()
                 .names("firstName", "lastName")
-                .targetType(Person.class)
+                .targetType(Person2.class)
                 .build();
     }
 
     @Bean
-    public JdbcCursorItemReader<Person> reader(){
-        return new JdbcCursorItemReaderBuilder<Person>()
+    public JdbcCursorItemReader<Person2> jdbcCursorItemReader(){
+        return new JdbcCursorItemReaderBuilder<Person2>()
                 .name("personItemReader")
                 .dataSource(primaryDataSource)
                 .sql("SELECT first_name as firstName,last_name as lastName FROM people")
-                .rowMapper(new BeanPropertyRowMapper<>(Person.class))
-                .build()
-                ;
+                .rowMapper(new BeanPropertyRowMapper<>(Person2.class))
+                .build();
     }
 
     @Bean
@@ -83,8 +82,8 @@ public class BatchConfiguration {
     }
 
     @Bean
-    public JdbcBatchItemWriter<Person> writer() {
-        return new JdbcBatchItemWriterBuilder<Person>()
+    public JdbcBatchItemWriter<Person2> writer() {
+        return new JdbcBatchItemWriterBuilder<Person2>()
                 .sql("INSERT INTO people2 (first_name, last_name) VALUES (:firstName, :lastName)")
                 .dataSource(secondaryDataSource)
                 .beanMapped()
@@ -105,9 +104,9 @@ public class BatchConfiguration {
 
     @Bean
     public Step step1(JobRepository jobRepository, DataSourceTransactionManager transactionManager,
-                      FlatFileItemReader<Person> reader, PersonItemProcessor processor, JdbcBatchItemWriter<Person> writer) {
+                      FlatFileItemReader<Person2> reader, PersonItemProcessor processor, JdbcBatchItemWriter<Person2> writer) {
         return new StepBuilder("step1", jobRepository)
-                .<Person, Person>chunk(3, transactionManager)
+                .<Person2, Person2>chunk(3, transactionManager)
                 .reader(reader)
                 .processor(processor)
                 .writer(writer)
@@ -116,10 +115,10 @@ public class BatchConfiguration {
 
     @Bean
     public Step step2(JobRepository jobRepository, DataSourceTransactionManager transactionManager,
-                      JdbcCursorItemReader<Person> reader, PersonItemProcessor processor, JdbcBatchItemWriter<Person> writer) {
+                      JdbcCursorItemReader<Person2> jdbcCursorItemReader, PersonItemProcessor processor, JdbcBatchItemWriter<Person2> writer) {
         return new StepBuilder("step2", jobRepository)
-                .<Person, Person>chunk(3, transactionManager)
-                .reader(reader)
+                .<Person2, Person2>chunk(3, transactionManager)
+                .reader(jdbcCursorItemReader)
                 .processor(processor)
                 .writer(writer)
                 .build();
