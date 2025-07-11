@@ -1,5 +1,6 @@
 package com.example.demo.restservice;
 
+import cn.hutool.core.date.LocalDateTimeUtil;
 import com.example.demo.MybatisDemo;
 import com.example.demo.mapper.datasource1.UserMapper;
 import com.example.demo.model.Greeting;
@@ -9,11 +10,7 @@ import com.example.demo.page.SamplePage;
 import com.example.demo.service.UserService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.batch.core.Job;
-import org.springframework.batch.core.JobExecution;
-import org.springframework.batch.core.JobParameters;
-import org.springframework.batch.core.JobParametersInvalidException;
-import org.springframework.batch.core.StepExecution;
+import org.springframework.batch.core.*;
 import org.springframework.batch.core.configuration.JobRegistry;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
@@ -69,12 +66,16 @@ public class GreetingController {
             @RequestParam(value = "jobName", defaultValue = "batch") String jobName) throws JobInstanceAlreadyCompleteException, JobExecutionAlreadyRunningException, JobParametersInvalidException, JobRestartException, JobParametersInvalidException, JobRestartException {
         log.info("jobName " + jobName);
         log.info("Registered Jobs: " + jobRegistry.getJobNames());
-        JobExecution je = jobLauncher.run(importUserJob, new JobParameters());
+
+        JobParameters jobParameters = new JobParametersBuilder()
+                .addLocalDateTime("currentTime", LocalDateTimeUtil.now()).toJobParameters();
+
+        JobExecution je = jobLauncher.run(importUserJob, jobParameters);
         String exitCode = je.getExitStatus().getExitCode();
         Optional<Long> read_count_sum = je.getStepExecutions().stream().map(StepExecution::getReadCount).reduce(Long::sum);
         long read_count = read_count_sum.orElse((long) 0);
         Long jobId = je.getJobId();
-        return "run Job exit code: " + exitCode+ ", read_count " + read_count+ ", jobId "+jobId;
+        return "run Job exit code: " + exitCode + ", read_count " + read_count + ", jobId " + jobId;
     }
 
     @GetMapping("/getUser")
