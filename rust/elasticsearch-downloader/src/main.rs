@@ -13,7 +13,7 @@ use std::{
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use reqwest::{
     blocking::{Client, Response},
-    header,
+    header, redirect::Policy,
 };
 use select::{
     document::Document,
@@ -26,7 +26,7 @@ use url::{Position, Url};
 const BASE_URL: &str = "https://www.elastic.co/guide/en/elasticsearch/reference/7.17/";
 const OUTPUT_DIR: &str = "elasticsearch-reference-7.17";
 const CONCURRENT_DOWNLOADS: usize = 10;
-const USER_AGENT: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36";
+const USER_AGENT: &str = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36";
 
 fn main() -> Result<(), Box<dyn Error>> {
     // 初始化目录
@@ -52,14 +52,22 @@ fn main() -> Result<(), Box<dyn Error>> {
     // 创建HTTP客户端
     let client = Client::builder()
         .user_agent(USER_AGENT)
+        .redirect(Policy::limited(5))
+        // .cookie_store(true)
         .timeout(Duration::from_secs(120))
+        .https_only(true)
         .build()?;
 
     // 下载索引页面
     main_pb.set_message("Fetching index page...");
     let index_url = format!("{}index.html", BASE_URL);
     let body = fetch_url(&client, &index_url)?;
-
+    let body_content_len = body.content_length().unwrap_or(0);
+    println!("body_content_len {}",body_content_len);
+    if body_content_len < 10 {
+        println!("body_content_len less than 10, can not parse!");
+        return Ok(());
+    }
     // 解析索引页面
     main_pb.set_message("Parsing index page...");
     let document = Document::from_read(body)?;
@@ -283,10 +291,54 @@ fn download_resource(
 }
 
 fn fetch_url(client: &Client, url: &str) -> Result<Response, Box<dyn Error>> {
-    let response = client.get(url).timeout(Duration::from_secs(120)).send()?;
-    if !response.status().is_success() {
-        return Err(format!("Failed to fetch {}: {}", url, response.status()).into());
+    return fetch_with_retry(client, url);
+    // let response = client.get(url).timeout(Duration::from_secs(120)).send()?;
+    // if !response.status().is_success() {
+    //     let err  = format!("Failed to fetch {}: {}", url, response.status());
+    //     println!("{}",&err);
+    //     return Err(err.into());
+    // }
+    // Ok(response)
+}
+
+fn fetch_with_retry(client: &Client, url: &str) -> Result<Response, Box<dyn Error>> {
+    // 第一次请求获取可能的cookies
+    let first_resp = client.get(url)
+        .header(header::ACCEPT, "text/html")
+        .send()?;
+    
+    // 提取cookies
+    let cookies: Vec<String> = first_resp.headers()
+        .get_all(header::SET_COOKIE)
+        .iter()
+        .filter_map(|h| h.to_str().ok())
+        .map(|s| s.to_string())
+        .collect();
+    
+    // 第二次请求带上cookies
+    let mut request = client.get(url)
+        .header(header::ACCEPT, "text/html")
+        .header(header::ACCEPT_LANGUAGE, "en-US,en;q=0.9");
+    
+    for cookie in &cookies {
+        if let Some(key_value) = cookie.split(';').next() {
+            request = request.header(header::COOKIE, key_value);
+        }
     }
+    
+    let response = request.send()?;
+    
+    // 检查最终URL
+    let final_url = response.url().to_string();
+    if !final_url.starts_with(BASE_URL) {
+        return Err(format!("Unexpected redirect to: {}", final_url).into());
+    }
+
+    // let body = response.text()?;
+    if  response.content_length().unwrap_or(0) < 1 {
+        return Err(format!("Empty response body! url  {}",final_url).into());
+    }
+
     Ok(response)
 }
 
