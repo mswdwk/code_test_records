@@ -136,6 +136,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+
 fn download_and_process_page(
     client: &Client,
     url: &str,
