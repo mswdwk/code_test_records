@@ -7,13 +7,12 @@ use std::{
         atomic::{AtomicUsize, Ordering},
         Arc, Mutex,
     },
-    time::Duration,
+    time::{Duration,Instant}
 };
 
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use reqwest::{
-    blocking::{Client, Response},
-    header, redirect::Policy,
+    blocking::{Body, Client, Response}, header, redirect::Policy, ResponseBuilderExt, Version
 };
 use select::{
     document::Document,
@@ -21,12 +20,15 @@ use select::{
 };
 use threadpool::ThreadPool;
 use url::{Position, Url};
+use std::io::Read;
 
 // 配置常量
 const BASE_URL: &str = "https://www.elastic.co/guide/en/elasticsearch/reference/7.17/";
 const OUTPUT_DIR: &str = "elasticsearch-reference-7.17";
 const CONCURRENT_DOWNLOADS: usize = 10;
 const USER_AGENT: &str = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36";
+const MAX_RETRIES: usize = 5;
+const RETRY_DELAY: u64 = 30; // seconds
 
 fn main() -> Result<(), Box<dyn Error>> {
     // 初始化目录
@@ -55,7 +57,14 @@ fn main() -> Result<(), Box<dyn Error>> {
         .redirect(Policy::limited(5))
         // .cookie_store(true)
         .timeout(Duration::from_secs(120))
-        .https_only(true)
+        .https_only(true) // 强制使用HTTPS
+        .http2_prior_knowledge() // 强制尝试HTTP/2
+        .http2_max_frame_size(10240000)
+        .no_gzip() // 禁用gzip压缩，避免大帧
+        .tls_built_in_root_certs(true) // 使用系统根证书
+        // .use_rustls_tls() // 使用rustls替代默认的native-tls
+        .pool_max_idle_per_host(0) // 禁用连接池，避免重用坏连接
+        .tcp_keepalive(Duration::from_secs(30)) // 启用TCP keepalive
         .build()?;
 
     // 下载索引页面
@@ -291,7 +300,7 @@ fn download_resource(
 }
 
 fn fetch_url(client: &Client, url: &str) -> Result<Response, Box<dyn Error>> {
-    return fetch_with_retry(client, url);
+    return fetch_with_retry2(client, url);
     // let response = client.get(url).timeout(Duration::from_secs(120)).send()?;
     // if !response.status().is_success() {
     //     let err  = format!("Failed to fetch {}: {}", url, response.status());
@@ -304,7 +313,10 @@ fn fetch_url(client: &Client, url: &str) -> Result<Response, Box<dyn Error>> {
 fn fetch_with_retry(client: &Client, url: &str) -> Result<Response, Box<dyn Error>> {
     // 第一次请求获取可能的cookies
     let first_resp = client.get(url)
-        .header(header::ACCEPT, "text/html")
+        .header(header::ACCEPT, "*/*")
+        .header(header::ACCEPT_LANGUAGE, "en-US,en;q=0.9")
+        .header(header::HOST, "www.elastic.co")
+        .version(Version::HTTP_2) // 明确指定HTTP/2
         .send()?;
     
     // 提取cookies
@@ -340,6 +352,81 @@ fn fetch_with_retry(client: &Client, url: &str) -> Result<Response, Box<dyn Erro
     }
 
     Ok(response)
+}
+
+fn fetch_with_retry2(client: &Client, url: &str) -> Result<Response, Box<dyn Error>> {
+    let mut last_error = None;
+
+    for attempt in 0..MAX_RETRIES {
+        match attempt_fetch(client, url) {
+            Ok(content) => return Ok(content),
+            Err(e) => {
+                last_error = Some(e);
+                if attempt < MAX_RETRIES - 1 {
+                    println!("Attempt {} failed, retrying in {} seconds...", attempt + 1, RETRY_DELAY);
+                    std::thread::sleep(Duration::from_secs(RETRY_DELAY));
+                }
+            }
+        }
+    }
+
+    Err(last_error.unwrap_or_else(|| "All attempts failed".into()))
+}
+
+fn attempt_fetch(client: &Client, url: &str) -> Result<Response, Box<dyn Error>> {
+    let start_time = Instant::now();
+    let mut response = client.get(url)
+        .header(header::ACCEPT, "text/html")
+        .header(header::ACCEPT_LANGUAGE, "en-US,en;q=0.9")
+        .send()?;
+
+    println!("Request took {:?}", start_time.elapsed());
+
+    // 检查响应状态
+    if !response.status().is_success() {
+        return Err(format!("HTTP error: {}", response.status()).into());
+    }
+
+    // 手动分块读取响应
+    let mut body = Vec::new();
+    let mut chunk = vec![0; 8192]; // 8KB chunks
+    loop {
+        let bytes_read = response.read(&mut chunk)?;
+        if bytes_read == 0 {
+            break;
+        }
+        body.extend_from_slice(&chunk[..bytes_read]);
+    }
+
+    // 验证内容完整性
+    if body.is_empty() {
+        return Err("Empty response body".into());
+    }
+
+    // String::from_utf8(body).map_err(|e| e.into())
+    // 重建Response对象
+    let reconstructed_response = rebuild_response(response, body)?;
+    
+    Ok(reconstructed_response)
+}
+
+fn rebuild_response(original: Response, body: Vec<u8>) -> Result<Response, Box<dyn std::error::Error>> {
+    use http::response::Builder;
+
+    let mut builder = Builder::new()
+        .status(original.status())
+        .url(original.url().clone())
+        .version(original.version());
+    // 复制headers
+    for (key, value) in original.headers() {
+        builder = builder.header(key, value);
+    }
+    
+    // 构建新Response
+    builder
+    .body(body)
+    .map(|r| Response::from(r))
+    .map_err(|e| e.into())
 }
 
 fn collect_links(document: &Document, base_url: &str) -> Vec<String> {
