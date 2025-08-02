@@ -7,6 +7,7 @@ import com.example.demo.model.Greeting;
 import com.example.demo.model.Greeting2;
 import com.example.demo.model.User;
 import com.example.demo.page.SamplePage;
+import com.example.demo.service.AsyncTaskService;
 import com.example.demo.service.UserService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -29,6 +30,9 @@ public class GreetingController {
     private static final Logger log = LogManager.getLogger();
 
     @Autowired
+    AsyncTaskService asyncTaskService;
+
+    @Autowired
     private JobRegistry jobRegistry;
 
     @Autowired
@@ -49,6 +53,14 @@ public class GreetingController {
 
     private static final String template = "Hello, %s!";
     private final AtomicLong counter = new AtomicLong();
+
+    @GetMapping(path = "/hello")
+    public String hello(@RequestParam(value = "name", defaultValue = "World") String name) {
+        String r = "hello " + name;
+        log.info("hello " + name);
+        asyncTaskService.hi("hello " + name);
+        return r;
+    }
 
     @GetMapping(path = "/greeting")
     public Greeting greeting(@RequestParam(value = "name", defaultValue = "World") String name) {
