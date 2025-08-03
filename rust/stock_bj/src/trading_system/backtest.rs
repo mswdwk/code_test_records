@@ -1,5 +1,7 @@
+// use crate::trading_system::risk_management::Portfolio;
+
 // backtest.rs
-use super::{market_data::StockData, order::Order, strategy::BeijingTraderModel, risk_management::RiskManager};
+use super::{market_data::StockData, order::{Order,OrderType}, strategy::BeijingTraderModel, risk_management::{RiskManager,Portfolio,Position}};
 use std::collections::HashMap;
 
 pub struct BacktestEngine {

@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 // risk_management.rs
 use super::{order::Order, market_data::StockData};
 

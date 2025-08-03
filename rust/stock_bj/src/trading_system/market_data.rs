@@ -1,6 +1,7 @@
 // market_data.rs
 use chrono::{DateTime, Local};
 use serde::{Serialize, Deserialize};
+use std::collections::HashMap;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StockData {

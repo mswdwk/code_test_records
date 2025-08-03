@@ -1,5 +1,6 @@
 // strategy.rs
-use super::{market_data::StockData, order::Order};
+use super::{market_data::StockData, order::{Order,OrderType}};
+ // use crate::trading_system::OrderType;
 
 pub struct BeijingTraderModel {
     // 策略参数
