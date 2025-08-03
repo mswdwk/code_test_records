@@ -1,0 +1,31 @@
+[package]
+name = "stock_bj"
+version = "0.1.0"
+edition = "2024"
+description = "量化交易（北炒demo）"
+
+[dependencies]
+# 1. 数据处理
+chrono = { version = "0.4", features = ["serde"] }  # 时间处理（含本地时区）
+serde = { version = "1.0", features = ["derive"] }  # 数据序列化
+csv = "1.2"                                       # CSV文件读写
+
+# 2. 数学计算
+statrs = "0.16"                                   # 统计计算（夏普比率等）
+ndarray = { version = "0.15", features = ["serde"] } # 多维数组运算
+
+# 3. 网络请求（对接国内行情API）
+reqwest = { version = "0.11", features = ["json", "blocking"] } 
+tokio = { version = "1.0", features = ["full"] }   # 异步运行时
+futures = "0.3"                                   # 异步支持
+
+# 4. 中国股市专用
+# rust-cnstock = { git = "https://github.com/rust-cn/stock-api.git" } # A股数据接口
+#ta-rs = "0.5"                                     # 技术指标计算（MACD/KDJ等）
+
+# 5. 策略开发
+rand = "0.8"                                      # 随机数生成（用于策略随机初始化）
+uuid = { version = "1.3", features = ["v4"] }     # 订单ID生成
+
+# 6. 可视化（可选）
+plotters = "0.3"                                  # K线图绘制
