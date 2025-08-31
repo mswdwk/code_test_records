@@ -82,10 +82,8 @@ LEFT JOIN (
 	FROM
 		customer
 	WHERE
-		(apli_stas IN ('1', '2')
-	AND take_effect_stas = '1')
-OR (apli_stas = '3'
-	AND take_effect_stas = '2')
+		( apli_stas IN ('1', '2') AND take_effect_stas = '1' )
+	     OR ( apli_stas = '3'         AND take_effect_stas = '2' )
 ) t2 ON
 	t1.user_name = t2.user_name
 WHERE
