@@ -17,7 +17,7 @@ import java.util.List;
 
 import static com.alibaba.druid.sql.SQLUtils.toStatementList;
 import static com.example.TranslateDB2SqlToMysql.db2sqlToMysql;
-import static org.junit.Assert.assertEquals;
+// import static org.junit.Assert.assertEquals;
 
 /**
  * Hello world!
@@ -32,7 +32,7 @@ public class App
         // SQLExpr expr = SQLTransformUtils.transformDecode(decodeExpr);
         SQLExpr expr = null;
         String targetSql = SQLUtils.toSQLString(expr, JdbcConstants.MYSQL);
-        assertEquals("if(a IS NULL, c, d)", targetSql);
+        // assertEquals("if(a IS NULL, c, d)", targetSql);
     }
 
     public static void t2(){

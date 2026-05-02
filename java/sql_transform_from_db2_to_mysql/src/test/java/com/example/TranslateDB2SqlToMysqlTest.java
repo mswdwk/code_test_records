@@ -75,4 +75,15 @@ public class TranslateDB2SqlToMysqlTest {
             Assert.assertEquals("g1", groupIds.get(0).getSimpleName());
         }
     }
+
+   @Test
+    public void qiantao_sql(){
+        String sql = "select a from b where b.id in (select c.id from c where c.name like 'abc%' limit 10)";
+        String mysql = TranslateDB2SqlToMysql.db2sqlToMysql(sql);
+        String targetMysql = "SELECT a\n" +
+                "FROM b\n" +
+                "LIMIT 20";
+        System.out.println("mysql: "+mysql);
+        // assertEquals(targetMysql,mysql);
+   }
 }
